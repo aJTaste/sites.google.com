@@ -1,0 +1,25 @@
+{
+  "version": 2,
+  "public": true,
+  "builds": [
+    {
+      "src": "public/**/*",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "^/sites\\.google\\.com/$",
+      "dest": "/public/sites.google.com/index.html"
+    },
+    {
+      "src": "^/sites\\.google\\.com/(.*)$",
+      "dest": "/public/sites.google.com/$1"
+    },
+    {
+      "src": "/(.*)",
+      "status": 404,
+      "dest": "/public/sites.google.com/404.html"
+    }
+  ]
+}
