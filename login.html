@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>ログイン | AppHub</title>
+    <link rel="stylesheet" href="common/common.css">
+    <link rel="stylesheet" href="css/login.css">
+    <link rel="icon" href="assets/favicon-main.png">
+    <link rel="apple-touch-icon" href="assets/icon-app.png">
+  </head>
+  <body>
+    <div class="auth-container">
+      <header class="auth-header">
+        <div class="header-left">
+          <img src="assets/favicon-main.png" alt="AppHub" class="logo-icon">
+          <h1 class="logo-text">AppHub</h1>
+          <span class="header-divider">|</span>
+          <span class="page-title">ログイン</span>
+        </div>
+      </header>
+      <main class="auth-main">
+        <div class="auth-box">
+          <form id="login-form">
+            <div class="input-group">
+              <label for="account-id">アカウントID</label>
+              <input type="text" id="account-id" placeholder="アカウントIDを入力" required>
+            </div>
+            <div class="input-group">
+              <label for="password">パスワード</label>
+              <input type="password" id="password" placeholder="パスワードを入力" required>
+              <span class="error-message" id="login-error"></span>
+            </div>
+            <button type="submit" class="btn-primary btn-full">ログイン</button>
+          </form>
+          <div class="auth-footer">
+            アカウントをお持ちでないですか？ <a href="register.html">新規登録</a>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="common/common.js" defer></script>
+    <script type="module" src="js/login.js"></script>
+  </body>
+</html>

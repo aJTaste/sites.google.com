@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>ホーム | AppHub</title>
+    <link rel="stylesheet" href="common/common.css">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="icon" href="assets/favicon-main.png">
+    <link rel="apple-touch-icon" href="assets/icon-app.png">
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="top-header">
+        <div class="header-left">
+          <img src="assets/favicon-main.png" alt="AppHub" class="logo-icon">
+          <h1 class="logo-text">AppHub</h1>
+          <span class="header-divider">|</span>
+          <span class="page-title" id="page-title">ホーム</span>
+        </div>
+        <div class="header-right">
+          <button class="icon-btn" id="notification-btn" title="通知">
+            <span class="material-icons">notifications</span>
+          </button>
+          <div class="user-menu">
+            <button class="user-btn" id="user-btn">
+              <img id="user-avatar" src="assets/school.png" alt="ユーザーアイコン">
+            </button>
+            <div class="user-dropdown" id="user-dropdown">
+              <div class="dropdown-item" id="profile-btn">
+                <span class="material-icons">person</span>
+                <span>プロフィール</span>
+              </div>
+              <div class="dropdown-item" id="settings-btn">
+                <span class="material-icons">settings</span>
+                <span>設定</span>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item" id="logout-btn">
+                <span class="material-icons">logout</span>
+                <span>ログアウト</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div class="main-container">
+        <aside class="sidebar">
+          <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-app="welcome">
+              <span class="material-icons">home</span>
+              <span>ホーム</span>
+            </a>
+            <a href="#" class="nav-item" data-app="html-preview">
+              <span class="material-icons">code</span>
+              <span>HTMLプレビュー</span>
+            </a>
+            <a href="#" class="nav-item" data-app="chat">
+              <span class="material-icons">chat</span>
+              <span>チャット</span>
+            </a>
+            <a href="#" class="nav-item" data-app="file-share">
+              <span class="material-icons">folder</span>
+              <span>ファイル共有</span>
+            </a>
+            <a href="#" class="nav-item" data-app="screen-share">
+              <span class="material-icons">screen_share</span>
+              <span>画面共有</span>
+            </a>
+          </nav>
+        </aside>
+        <main class="main-content" id="main-content">
+          <div class="welcome-section">
+            <h1>AppHubへようこそ</h1>
+            <p>左のメニューから機能を選択してください</p>
+            <div class="app-grid">
+              <div class="app-card">
+                <div class="app-icon">
+                  <span class="material-icons">code</span>
+                </div>
+                <h3>HTMLプレビュー</h3>
+                <p>HTMLコードをリアルタイムでプレビュー</p>
+              </div>
+              <div class="app-card">
+                <div class="app-icon">
+                  <span class="material-icons">chat</span>
+                </div>
+                <h3>チャット</h3>
+                <p>クラスメイトとリアルタイムチャット</p>
+              </div>
+              <div class="app-card">
+                <div class="app-icon">
+                  <span class="material-icons">folder</span>
+                </div>
+                <h3>ファイル共有</h3>
+                <p>ファイルをアップロード・共有</p>
+              </div>
+              <div class="app-card">
+                <div class="app-icon">
+                  <span class="material-icons">screen_share</span>
+                </div>
+                <h3>画面共有</h3>
+                <p>画面を共有してコラボレーション</p>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="common/common.js" defer></script>
+    <script type="module" src="js/index.js"></script>
+  </body>
+</html>
