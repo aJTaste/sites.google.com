@@ -1,34 +1,48 @@
-// TODO: 明日一緒に実装する
-
 import{auth,database}from'../common/firebase-config.js';
-import{checkAuth,logout}from'../common/common.js';
+import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import{ref,get}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 // ログイン状態チェック
-checkAuth(auth).then((user)=>{
-  // TODO: ユーザー情報を取得して表示
+onAuthStateChanged(auth,async(user)=>{
+  if(!user){
+    window.location.href='login.html';
+    return;
+  }
+  
+  const userRef=ref(database,`users/${user.uid}`);
+  const snapshot=await get(userRef);
+  
+  if(snapshot.exists()){
+    const userData=snapshot.val();
+    const userAvatar=document.getElementById('user-avatar');
+    if(userData.iconUrl&&userData.iconUrl!=='default'){
+      userAvatar.src=userData.iconUrl;
+    }
+  }
 });
 
-// DOM要素取得
+// ユーザーメニューの開閉
 const userBtn=document.getElementById('user-btn');
 const userDropdown=document.getElementById('user-dropdown');
-const logoutBtn=document.getElementById('logout-btn');
-const navItems=document.querySelectorAll('.nav-item');
 
-// ユーザーメニュー開閉
-userBtn.addEventListener('click',()=>{
-  // TODO: ドロップダウン表示切り替え
+userBtn.addEventListener('click',(e)=>{
+  e.stopPropagation();
+  userDropdown.classList.toggle('show');
+});
+
+document.addEventListener('click',()=>{
+  userDropdown.classList.remove('show');
 });
 
 // ログアウト
-logoutBtn.addEventListener('click',()=>{
-  // TODO: ログアウト処理
-});
+const logoutBtn=document.getElementById('logout-btn');
 
-// ナビゲーション
-navItems.forEach((item)=>{
-  item.addEventListener('click',(e)=>{
-    e.preventDefault();
-    // TODO: アプリ切り替え処理
-  });
+logoutBtn.addEventListener('click',async()=>{
+  try{
+    await signOut(auth);
+    window.location.href='login.html';
+  }catch(error){
+    console.error(error);
+    alert('ログアウトに失敗しました');
+  }
 });
