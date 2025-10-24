@@ -14,8 +14,17 @@ onAuthStateChanged(auth,async(user)=>{
   
   if(snapshot.exists()){
     const userData=snapshot.val();
+    
+    // プロフィール情報を表示
+    document.getElementById('profile-username').textContent=userData.username;
+    document.getElementById('profile-account-id').textContent=userData.accountId;
+    document.getElementById('profile-created').textContent='登録日: '+new Date(userData.createdAt).toLocaleDateString('ja-JP');
+    
+    // アイコン表示
+    const profileIcon=document.getElementById('profile-icon');
     const userAvatar=document.getElementById('user-avatar');
     if(userData.iconUrl&&userData.iconUrl!=='default'){
+      profileIcon.src=userData.iconUrl;
       userAvatar.src=userData.iconUrl;
     }
   }
@@ -34,20 +43,18 @@ document.addEventListener('click',()=>{
   userDropdown.classList.remove('show');
 });
 
-// プロフィールページへ
-document.getElementById('profile-btn').addEventListener('click',()=>{
-  window.location.href='profile.html';
-});
-
 // 設定ページへ
 document.getElementById('settings-btn').addEventListener('click',()=>{
   window.location.href='settings.html';
 });
 
-// ログアウト
-const logoutBtn=document.getElementById('logout-btn');
+// プロフィール編集（設定画面へ）
+document.getElementById('edit-profile-btn').addEventListener('click',()=>{
+  window.location.href='settings.html';
+});
 
-logoutBtn.addEventListener('click',async()=>{
+// ログアウト
+document.getElementById('logout-btn').addEventListener('click',async()=>{
   try{
     await signOut(auth);
     window.location.href='login.html';
