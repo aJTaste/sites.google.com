@@ -4,7 +4,7 @@ alias ga='git add .'
 alias gc='git commit -m'
 alias gp='git push'
 alias gl='git log --oneline'
-alias gsync='git add . && git commit -m "Update" && git push'
+alias all='git add . && git commit -m "Update" && git push'
 
 # Quick commit with custom message
 function gall() {
