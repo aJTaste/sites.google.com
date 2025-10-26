@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>チャット | AppHub</title>
+    <link rel="stylesheet" href="common/common.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="icon" href="assets/favicon-main.png">
+    <link rel="apple-touch-icon" href="assets/icon-app.png">
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="top-header">
+        <div class="header-left">
+          <img src="assets/favicon-main.png" alt="AppHub" class="logo-icon">
+          <h1 class="logo-text">AppHub</h1>
+          <span class="header-divider">|</span>
+          <span class="page-title">チャット</span>
+        </div>
+        <div class="header-right">
+          <button class="icon-btn" id="notification-btn" title="通知">
+            <span class="material-icons">notifications</span>
+          </button>
+          <div class="user-menu">
+            <button class="user-btn" id="user-btn">
+              <img id="user-avatar" src="assets/school.png" alt="ユーザーアイコン">
+            </button>
+            <div class="user-dropdown" id="user-dropdown">
+              <div class="dropdown-item" id="profile-btn">
+                <span class="material-icons">person</span>
+                <span>プロフィール</span>
+              </div>
+              <div class="dropdown-item" id="settings-btn">
+                <span class="material-icons">settings</span>
+                <span>設定</span>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item" id="logout-btn">
+                <span class="material-icons">logout</span>
+                <span>ログアウト</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div class="main-container">
+        <aside class="sidebar" id="main-sidebar">
+          <nav class="sidebar-nav">
+            <a href="index.html" class="nav-item">
+              <span class="material-icons">home</span>
+              <span>ホーム</span>
+            </a>
+            <a href="#" class="nav-item">
+              <span class="material-icons">code</span>
+              <span>HTMLプレビュー</span>
+            </a>
+            <a href="chat.html" class="nav-item active">
+              <span class="material-icons">chat</span>
+              <span>チャット</span>
+            </a>
+            <a href="#" class="nav-item">
+              <span class="material-icons">folder</span>
+              <span>ファイル共有</span>
+            </a>
+            <a href="eag.html" class="nav-item">
+              <span class="material-icons">block</span>
+              <span>Eaglercraft</span>
+            </a>
+          </nav>
+        </aside>
+        <aside class="chat-sidebar" id="chat-sidebar">
+          <div class="sidebar-header">
+            <button class="sidebar-toggle" id="sidebar-toggle">
+              <span class="material-icons">menu</span>
+            </button>
+            <h3>ルーム</h3>
+          </div>
+          <div class="room-list" id="room-list">
+            <!-- ルームはJSで生成 -->
+          </div>
+        </aside>
+        <main class="chat-main">
+          <div class="chat-header">
+            <h2 id="current-room-name">Room1</h2>
+          </div>
+          <div class="chat-messages" id="chat-messages">
+            <!-- メッセージはJSで生成 -->
+          </div>
+          <div class="chat-input-area">
+            <input type="text" id="message-input" placeholder="メッセージを入力..." maxlength="2000">
+            <button class="btn-primary" id="send-btn">
+              <span class="material-icons">send</span>
+            </button>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="common/common.js" defer></script>
+    <script type="module" src="js/chat/chat-main.js"></script>
+  </body>
+</html>
