@@ -208,17 +208,3 @@ document.getElementById('logout-btn').addEventListener('click',async()=>{
     alert('ログアウトに失敗しました');
   }
 });
-
-// サイドバー切り替え
-document.getElementById('sidebar-toggle').addEventListener('click',()=>{
-  const mainSidebar=document.getElementById('main-sidebar');
-  const chatSidebar=document.getElementById('chat-sidebar');
-  
-  if(mainSidebar.style.display==='none'){
-    mainSidebar.style.display='flex';
-    chatSidebar.style.display='none';
-  }else{
-    mainSidebar.style.display='none';
-    chatSidebar.style.display='flex';
-  }
-});
