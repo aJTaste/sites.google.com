@@ -1,6 +1,7 @@
 import{auth,database}from'../../common/firebase-config.js';
 import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import{ref,get,set,push,onValue,remove}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{initServers}from'./chat-servers.js';
 
 let currentUser=null;
 let currentUserData=null;
@@ -30,6 +31,9 @@ onAuthStateChanged(auth,async(user)=>{
   await initializeRooms();
   loadRoomList();
   loadMessages(currentRoom);
+  
+  // サーバー機能を初期化
+  initServers(currentUser,currentUserData);
 });
 
 // Room1〜Room10を初期化
