@@ -2,6 +2,7 @@ import{auth,database}from'../../common/firebase-config.js';
 import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import{ref,get,set,push,onValue,remove}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import{checkPermission,getRoleBadge}from'../../common/permissions.js';
+import{initServers}from'./chat-servers.js';
 
 let currentUser=null;
 let currentUserData=null;
@@ -25,6 +26,9 @@ onAuthStateChanged(auth,async(user)=>{
     if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
       userAvatar.src=currentUserData.iconUrl;
     }
+    
+    // サーバー機能を初期化
+    initServers(currentUser,currentUserData);
   }
   
   // 初期化

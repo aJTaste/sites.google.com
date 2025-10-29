@@ -563,3 +563,44 @@
   padding:20px 24px;
   border-top:1px solid var(--border);
 }
+
+/* 既存のchat.cssの最後に以下を追加してください */
+
+.server-list{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+
+.server-item{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  border-radius:6px;
+  color:var(--text-secondary);
+  cursor:pointer;
+  transition:background-color 0.15s;
+}
+
+.server-item:hover{
+  background:var(--bg-secondary);
+}
+
+.server-item.active{
+  background:var(--main-light);
+  color:var(--main);
+  font-weight:600;
+}
+
+.server-emoji{
+  font-size:20px;
+}
+
+.server-name{
+  flex:1;
+  font-size:14px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}

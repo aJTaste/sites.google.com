@@ -98,15 +98,17 @@ function setupServerModal(){
   const emojiGrid=document.getElementById('emoji-grid');
   
   // 権限チェック
-  createBtn.addEventListener('click',()=>{
-    const role=currentUserData.globalRole;
-    if(role==='admin'||role==='semi-admin'||role==='verified'){
-      modal.classList.add('show');
-      renderEmojis();
-    }else{
-      alert('サーバーを作成する権限がありません。\n承認済みユーザーになる必要があります。');
-    }
-  });
+  if(createBtn){
+    createBtn.addEventListener('click',()=>{
+      const role=currentUserData.role;
+      if(role==='owner'||role==='moderator'||role==='verified'){
+        modal.classList.add('show');
+        renderEmojis();
+      }else{
+        alert('サーバーを作成する権限がありません。\n承認済みユーザーになる必要があります。');
+      }
+    });
+  }
   
   closeBtn.addEventListener('click',()=>{
     modal.classList.remove('show');
@@ -136,6 +138,7 @@ function renderEmojis(){
     emojiItem.className='emoji-item';
     if(emoji==='👋'){
       emojiItem.classList.add('selected');
+      document.getElementById('selected-emoji').value='👋';
     }
     emojiItem.textContent=emoji;
     emojiItem.onclick=()=>{
@@ -156,7 +159,7 @@ async function createServer(){
   const privateCheckbox=document.getElementById('server-private');
   
   const name=nameInput.value.trim();
-  const emoji=emojiInput.value;
+  const emoji=emojiInput.value||'👋';
   const isPrivate=privateCheckbox.checked;
   
   if(!name){
@@ -179,7 +182,7 @@ async function createServer(){
     createdAt:Date.now(),
     members:{
       [currentUser.uid]:{
-        role:'owner',
+        role:'server_owner',
         joinedAt:Date.now()
       }
     }
