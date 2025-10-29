@@ -30,10 +30,6 @@ body{
   transition:opacity 0.2s ease-in-out;
 }
 
-body.loaded{
-  visibility:visible;
-  opacity:1;
-}
 
 /* リンク */
 a{
@@ -125,7 +121,18 @@ input::placeholder,textarea::placeholder{
 }
 
 /* ローディング */
-
+.loading{
+  display:inline-block;
+  width:16px;
+  height:16px;
+  border:2px solid var(--border);
+  border-top-color:var(--main);
+  border-radius:50%;
+  animation:spin 0.6s linear infinite;
+}
+@keyframes spin{
+  to{transform:rotate(360deg);}
+}
 
 /* 権限バッジ */
 .role-badge{
