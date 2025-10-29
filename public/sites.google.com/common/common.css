@@ -1,4 +1,45 @@
-/* 半分 */
+カラー変数
+:root{
+  --main:#ff6b35;
+  --main-hover:#e55a2b;
+  --main-light:#fff4f0;
+  --bg-primary:#ffffff;
+  --bg-secondary:#f6f8fa;
+  --text-primary:#24292f;
+  --text-secondary:#57606a;
+  --text-tertiary:#8b949e;
+  --border:#d0d7de;
+  --border-light:#eaeef2;
+}
+
+/* リセット */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+/* 基本スタイル */
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
+  color:var(--text-primary);
+  background:var(--bg-secondary);
+  min-height:100vh;
+  visibility:hidden;
+  opacity:0;
+  transition:opacity 0.2s ease-in-out;
+}
+
+
+
+
+
+
+
+
+
+
+
 /* プライマリボタン */
 .btn-primary{
   padding:12px 24px;
