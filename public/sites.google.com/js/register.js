@@ -15,7 +15,6 @@ const defaultBtn=document.getElementById('default-btn');
 
 let iconBase64='';
 
-
 uploadBtn.addEventListener('click',()=>{
   iconFileInput.click();
 });
@@ -114,11 +113,15 @@ form.addEventListener('submit',async(e)=>{
     const userCredential=await createUserWithEmailAndPassword(auth,email,password);
     const user=userCredential.user;
     
+    // 権限システム追加：新規ユーザーはデフォルトで 'user' 権限
     await set(ref(database,`users/${user.uid}`),{
       accountId:accountId,
       username:username,
       iconUrl:iconBase64||'default',
-      createdAt:Date.now()
+      role:'user',
+      createdAt:Date.now(),
+      lastOnline:Date.now(),
+      online:false
     });
     
     alert('登録完了！');

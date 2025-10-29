@@ -1,7 +1,7 @@
 import{auth,database}from'../../common/firebase-config.js';
 import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import{ref,get,set,push,onValue,remove}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-import{initServers}from'./chat-servers.js';
+import{checkPermission,getRoleBadge}from'../../common/permissions.js';
 
 let currentUser=null;
 let currentUserData=null;
@@ -31,9 +31,6 @@ onAuthStateChanged(auth,async(user)=>{
   await initializeRooms();
   loadRoomList();
   loadMessages(currentRoom);
-  
-  // サーバー機能を初期化
-  initServers(currentUser,currentUserData);
 });
 
 // Room1〜Room10を初期化
@@ -109,7 +106,7 @@ function loadMessages(roomId){
 }
 
 // メッセージを表示
-function displayMessage(msgId,msg){
+async function displayMessage(msgId,msg){
   const messagesEl=document.getElementById('chat-messages');
   const messageDiv=document.createElement('div');
   messageDiv.className='message';
@@ -120,17 +117,34 @@ function displayMessage(msgId,msg){
   
   const isOwn=currentUser&&msg.userId===currentUser.uid;
   
+  // メッセージ送信者の権限を取得してバッジを表示
+  let userRole='user';
+  try{
+    const userRef=ref(database,`users/${msg.userId}`);
+    const userSnapshot=await get(userRef);
+    if(userSnapshot.exists()){
+      userRole=userSnapshot.val().role||'user';
+    }
+  }catch(error){
+    console.error('Failed to get user role:',error);
+  }
+  
+  const roleBadge=getRoleBadge(userRole);
+  
+  // 削除ボタンの表示条件
+  const canDelete=isOwn||checkPermission(currentUserData?.role,'delete_any_message');
+  
   messageDiv.innerHTML=`
     <div class="message-avatar">
       <img src="${iconUrl}" alt="${msg.username}">
     </div>
     <div class="message-content">
       <div class="message-header">
-        <span class="message-username">${msg.username}</span>
+        <span class="message-username">${escapeHtml(msg.username)}${roleBadge}</span>
         <span class="message-time">${time}</span>
       </div>
       <div class="message-text">${escapeHtml(msg.text)}</div>
-      ${isOwn?`
+      ${canDelete?`
         <div class="message-actions">
           <button class="message-action-btn" onclick="deleteMessage('${msgId}')">削除</button>
         </div>
