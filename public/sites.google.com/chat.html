@@ -91,9 +91,14 @@
                   <span class="material-icons section-toggle">expand_more</span>
                   <span>サーバー</span>
                 </div>
-                <button class="add-btn" id="create-server-btn" title="サーバーを作成">
-                  <span class="material-icons">add</span>
-                </button>
+                <div style="display:flex;gap:4px;">
+                  <button class="add-btn" id="join-server-btn" title="サーバーに参加">
+                    <span class="material-icons">login</span>
+                  </button>
+                  <button class="add-btn" id="create-server-btn" title="サーバーを作成">
+                    <span class="material-icons">add</span>
+                  </button>
+                </div>
               </div>
               <div class="section-content" id="servers-content">
                 <div class="server-list" id="server-list">
@@ -190,6 +195,65 @@
         <div class="modal-footer">
           <button class="btn-secondary" id="cancel-channel-btn">キャンセル</button>
           <button class="btn-primary" id="submit-channel-btn">作成</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- サーバー参加モーダル -->
+    <div class="modal" id="join-server-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>サーバーに参加</h3>
+          <button class="modal-close" id="close-join-modal">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <label for="invite-code">招待コード</label>
+            <input type="text" id="invite-code" placeholder="6桁の招待コードを入力" maxlength="6" required style="text-transform:uppercase;">
+            <span class="help-text">プライベートサーバーの招待コードを入力してください</span>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="cancel-join-btn">キャンセル</button>
+          <button class="btn-primary" id="submit-join-btn">参加</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- サーバー設定モーダル -->
+    <div class="modal" id="server-settings-modal">
+      <div class="modal-content" style="max-width:600px;">
+        <div class="modal-header">
+          <h3>サーバー設定</h3>
+          <button class="modal-close" id="close-settings-modal">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <label for="settings-server-name">サーバー名</label>
+            <input type="text" id="settings-server-name" maxlength="30">
+          </div>
+          <div class="input-group">
+            <label>招待コード</label>
+            <div style="padding:10px 14px;background:var(--bg-secondary);border-radius:6px;font-family:monospace;font-size:16px;font-weight:600;" id="settings-invite-code">ABC123</div>
+            <span class="help-text">このコードを共有してサーバーに招待できます</span>
+          </div>
+          <div class="input-group">
+            <label>メンバー</label>
+            <div class="members-list" id="settings-members-list">
+              <!-- メンバーはJSで生成 -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer" style="justify-content:space-between;">
+          <div style="display:flex;gap:8px;">
+            <button class="btn-secondary" id="leave-server-btn">退出</button>
+            <button class="btn-secondary" id="delete-server-btn" style="display:none;color:#cf222e;">削除</button>
+          </div>
+          <button class="btn-primary" id="save-settings-btn">保存</button>
         </div>
       </div>
     </div>

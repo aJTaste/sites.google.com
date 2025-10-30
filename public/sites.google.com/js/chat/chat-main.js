@@ -4,6 +4,7 @@ import{ref,get,set,push,onValue,remove}from'https://www.gstatic.com/firebasejs/1
 import{checkPermission,getRoleBadge}from'../../common/permissions.js';
 import{initServers}from'./chat-servers.js';
 import{initUI}from'./chat-ui.js';
+import{initServerSettings}from'./chat-server-settings.js';
 
 let currentUser=null;
 let currentUserData=null;
@@ -40,6 +41,7 @@ onAuthStateChanged(auth,async(user)=>{
   loadRoomList();
   loadMessages();
   initUI();
+  initServerSettings(currentUser);
 });
 
 // サーバーチャンネルを選択（グローバル関数）

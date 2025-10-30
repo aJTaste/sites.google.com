@@ -25,6 +25,7 @@ export function initServers(user,userData){
   loadServerList();
   setupServerModal();
   setupChannelModal();
+  setupJoinServerModal();
 }
 
 // サーバー一覧を読み込み
@@ -66,7 +67,8 @@ function selectServer(serverId,server){
   event.target.closest('.server-item').classList.add('active');
   
   // サーバーのルーム一覧を表示
-  document.getElementById('server-rooms-section').style.display='block';
+  const serverRoomsSection=document.getElementById('server-rooms-section');
+  serverRoomsSection.style.display='block';
   document.getElementById('current-server-name').textContent=server.name;
   
   // チャンネル作成ボタンの表示制御
@@ -78,7 +80,30 @@ function selectServer(serverId,server){
     createRoomBtn.style.display='none';
   }
   
+  // サーバー設定ボタンの表示制御
+  const serverSettingsBtn=document.getElementById('server-settings-btn');
+  if(!serverSettingsBtn){
+    const btn=document.createElement('button');
+    btn.id='server-settings-btn';
+    btn.className='add-btn';
+    btn.title='サーバー設定';
+    btn.innerHTML='<span class="material-icons">settings</span>';
+    btn.onclick=()=>openServerSettings(serverId,server);
+    document.getElementById('server-rooms-header').querySelector('.section-header-left').appendChild(btn);
+  }
+  
+  if(userRole==='server_owner'){
+    serverSettingsBtn.style.display='flex';
+  }else{
+    serverSettingsBtn.style.display='none';
+  }
+  
   loadServerRooms(serverId);
+}
+
+// サーバー設定を開く
+function openServerSettings(serverId,server){
+  window.openServerSettingsModal(serverId,server);
 }
 
 // サーバー内のルームを読み込み
@@ -287,4 +312,97 @@ async function createChannel(){
   document.getElementById('create-channel-modal').classList.remove('show');
   nameInput.value='';
   alert('チャンネルを作成しました');
+}
+
+// サーバー参加モーダルのセットアップ
+function setupJoinServerModal(){
+  const modal=document.getElementById('join-server-modal');
+  const joinBtn=document.getElementById('join-server-btn');
+  const closeBtn=document.getElementById('close-join-modal');
+  const cancelBtn=document.getElementById('cancel-join-btn');
+  const submitBtn=document.getElementById('submit-join-btn');
+  
+  if(!joinBtn)return;
+  
+  joinBtn.addEventListener('click',()=>{
+    modal.classList.add('show');
+  });
+  
+  closeBtn.addEventListener('click',()=>{
+    modal.classList.remove('show');
+  });
+  
+  cancelBtn.addEventListener('click',()=>{
+    modal.classList.remove('show');
+  });
+  
+  submitBtn.addEventListener('click',joinServerByCode);
+  
+  modal.addEventListener('click',(e)=>{
+    if(e.target===modal){
+      modal.classList.remove('show');
+    }
+  });
+}
+
+// 招待コードでサーバーに参加
+async function joinServerByCode(){
+  const codeInput=document.getElementById('invite-code');
+  const code=codeInput.value.trim().toUpperCase();
+  
+  if(!code){
+    alert('招待コードを入力してください');
+    return;
+  }
+  
+  try{
+    const serversRef=ref(database,'servers');
+    const snapshot=await get(serversRef);
+    
+    if(!snapshot.exists()){
+      alert('サーバーが見つかりませんでした');
+      return;
+    }
+    
+    const servers=snapshot.val();
+    let foundServerId=null;
+    
+    // 招待コードに一致するサーバーを検索
+    Object.keys(servers).forEach(serverId=>{
+      const server=servers[serverId];
+      if(server.inviteCode===code){
+        foundServerId=serverId;
+      }
+    });
+    
+    if(!foundServerId){
+      alert('無効な招待コードです');
+      return;
+    }
+    
+    // 既にメンバーかチェック
+    const serverRef=ref(database,`servers/${foundServerId}`);
+    const serverSnapshot=await get(serverRef);
+    const serverData=serverSnapshot.val();
+    
+    if(serverData.members&&serverData.members[currentUser.uid]){
+      alert('既にこのサーバーに参加しています');
+      document.getElementById('join-server-modal').classList.remove('show');
+      codeInput.value='';
+      return;
+    }
+    
+    // メンバーとして参加
+    await set(ref(database,`servers/${foundServerId}/members/${currentUser.uid}`),{
+      role:'member',
+      joinedAt:Date.now()
+    });
+    
+    document.getElementById('join-server-modal').classList.remove('show');
+    codeInput.value='';
+    alert(`「${serverData.name}」に参加しました！`);
+  }catch(error){
+    console.error(error);
+    alert('サーバーへの参加に失敗しました');
+  }
 }
