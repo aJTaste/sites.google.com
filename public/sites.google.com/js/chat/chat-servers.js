@@ -1,8 +1,11 @@
 import{database}from'../../common/firebase-config.js';
-import{ref,set,get,push,onValue}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{ref,set,get,push,onValue,remove}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{checkServerPermission}from'../../common/permissions.js';
 
 let currentUser=null;
 let currentUserData=null;
+let currentServerId=null;
+let currentServerData=null;
 
 // 手と指の絵文字リスト
 const handEmojis=[
@@ -21,6 +24,7 @@ export function initServers(user,userData){
   
   loadServerList();
   setupServerModal();
+  setupChannelModal();
 }
 
 // サーバー一覧を読み込み
@@ -53,6 +57,9 @@ function loadServerList(){
 
 // サーバーを選択
 function selectServer(serverId,server){
+  currentServerId=serverId;
+  currentServerData=server;
+  
   document.querySelectorAll('.server-item').forEach(item=>{
     item.classList.remove('active');
   });
@@ -61,6 +68,15 @@ function selectServer(serverId,server){
   // サーバーのルーム一覧を表示
   document.getElementById('server-rooms-section').style.display='block';
   document.getElementById('current-server-name').textContent=server.name;
+  
+  // チャンネル作成ボタンの表示制御
+  const createRoomBtn=document.getElementById('create-room-btn');
+  const userRole=server.members[currentUser.uid]?.role||'member';
+  if(checkServerPermission(userRole,'create_channel')){
+    createRoomBtn.style.display='flex';
+  }else{
+    createRoomBtn.style.display='none';
+  }
   
   loadServerRooms(serverId);
 }
@@ -78,10 +94,12 @@ function loadServerRooms(serverId){
         const room=rooms[roomId];
         const roomItem=document.createElement('div');
         roomItem.className='room-item';
+        roomItem.dataset.roomId=roomId;
         roomItem.innerHTML=`
           <span class="material-icons">tag</span>
           <span>${room.name}</span>
         `;
+        roomItem.onclick=()=>window.selectServerChannel(serverId,roomId,room.name);
         roomListEl.appendChild(roomItem);
       });
     }
@@ -214,4 +232,59 @@ function generateInviteCode(){
     code+=chars.charAt(Math.floor(Math.random()*chars.length));
   }
   return code;
+}
+
+// チャンネル作成モーダルのセットアップ
+function setupChannelModal(){
+  const modal=document.getElementById('create-channel-modal');
+  const createBtn=document.getElementById('create-room-btn');
+  const closeBtn=document.getElementById('close-channel-modal');
+  const cancelBtn=document.getElementById('cancel-channel-btn');
+  const submitBtn=document.getElementById('submit-channel-btn');
+  
+  if(!createBtn)return;
+  
+  createBtn.addEventListener('click',()=>{
+    modal.classList.add('show');
+  });
+  
+  closeBtn.addEventListener('click',()=>{
+    modal.classList.remove('show');
+  });
+  
+  cancelBtn.addEventListener('click',()=>{
+    modal.classList.remove('show');
+  });
+  
+  submitBtn.addEventListener('click',createChannel);
+  
+  modal.addEventListener('click',(e)=>{
+    if(e.target===modal){
+      modal.classList.remove('show');
+    }
+  });
+}
+
+// チャンネルを作成
+async function createChannel(){
+  if(!currentServerId)return;
+  
+  const nameInput=document.getElementById('channel-name');
+  const name=nameInput.value.trim();
+  
+  if(!name){
+    alert('チャンネル名を入力してください');
+    return;
+  }
+  
+  const serverRoomsRef=ref(database,`serverRooms/${currentServerId}`);
+  await set(push(serverRoomsRef),{
+    name:name,
+    createdAt:Date.now(),
+    createdBy:currentUser.uid
+  });
+  
+  document.getElementById('create-channel-modal').classList.remove('show');
+  nameInput.value='';
+  alert('チャンネルを作成しました');
 }

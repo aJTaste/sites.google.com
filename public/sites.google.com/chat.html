@@ -70,34 +70,53 @@
             <h3>チャット</h3>
           </div>
           
-          <div class="sidebar-section">
-            <div class="section-header">共有ルーム</div>
-            <div class="room-list" id="room-list">
-              <!-- 共有ルーム（Room1〜10） -->
+          <div class="sidebar-sections">
+            <div class="sidebar-section">
+              <div class="section-header" id="public-rooms-header">
+                <div class="section-header-left">
+                  <span class="material-icons section-toggle">expand_more</span>
+                  <span>共有ルーム</span>
+                </div>
+              </div>
+              <div class="section-content" id="public-rooms-content">
+                <div class="room-list" id="room-list">
+                  <!-- 共有ルーム（Room1〜10） -->
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div class="sidebar-section">
-            <div class="section-header">
-              <span>サーバー</span>
-              <button class="add-btn" id="create-server-btn" title="サーバーを作成">
-                <span class="material-icons">add</span>
-              </button>
+            
+            <div class="sidebar-section">
+              <div class="section-header" id="servers-header">
+                <div class="section-header-left">
+                  <span class="material-icons section-toggle">expand_more</span>
+                  <span>サーバー</span>
+                </div>
+                <button class="add-btn" id="create-server-btn" title="サーバーを作成">
+                  <span class="material-icons">add</span>
+                </button>
+              </div>
+              <div class="section-content" id="servers-content">
+                <div class="server-list" id="server-list">
+                  <!-- サーバー一覧 -->
+                </div>
+              </div>
             </div>
-            <div class="server-list" id="server-list">
-              <!-- サーバー一覧 -->
-            </div>
-          </div>
-          
-          <div class="sidebar-section" id="server-rooms-section" style="display:none;">
-            <div class="section-header">
-              <span id="current-server-name">サーバー名</span>
-              <button class="add-btn" id="create-room-btn" title="ルームを作成">
-                <span class="material-icons">add</span>
-              </button>
-            </div>
-            <div class="room-list" id="server-room-list">
-              <!-- サーバー内のルーム -->
+            
+            <div class="sidebar-section" id="server-rooms-section" style="display:none;">
+              <div class="section-header" id="server-rooms-header">
+                <div class="section-header-left">
+                  <span class="material-icons section-toggle">expand_more</span>
+                  <span id="current-server-name">サーバー名</span>
+                </div>
+                <button class="add-btn" id="create-room-btn" title="ルームを作成">
+                  <span class="material-icons">add</span>
+                </button>
+              </div>
+              <div class="section-content" id="server-rooms-content">
+                <div class="room-list" id="server-room-list">
+                  <!-- サーバー内のルーム -->
+                </div>
+              </div>
             </div>
           </div>
         </aside>
@@ -149,6 +168,28 @@
         <div class="modal-footer">
           <button class="btn-secondary" id="cancel-server-btn">キャンセル</button>
           <button class="btn-primary" id="submit-server-btn">作成</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- チャンネル作成モーダル -->
+    <div class="modal" id="create-channel-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>チャンネルを作成</h3>
+          <button class="modal-close" id="close-channel-modal">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="input-group">
+            <label for="channel-name">チャンネル名</label>
+            <input type="text" id="channel-name" placeholder="チャンネル名を入力" maxlength="30" required>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="cancel-channel-btn">キャンセル</button>
+          <button class="btn-primary" id="submit-channel-btn">作成</button>
         </div>
       </div>
     </div>

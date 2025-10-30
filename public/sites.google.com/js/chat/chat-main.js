@@ -3,10 +3,14 @@ import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1
 import{ref,get,set,push,onValue,remove}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import{checkPermission,getRoleBadge}from'../../common/permissions.js';
 import{initServers}from'./chat-servers.js';
+import{initUI}from'./chat-ui.js';
 
 let currentUser=null;
 let currentUserData=null;
 let currentRoom='room_1';
+let currentContext='public';
+let currentServerId=null;
+let currentChannelId=null;
 
 // ログイン状態チェック
 onAuthStateChanged(auth,async(user)=>{
@@ -34,8 +38,28 @@ onAuthStateChanged(auth,async(user)=>{
   // 初期化
   await initializeRooms();
   loadRoomList();
-  loadMessages(currentRoom);
+  loadMessages();
+  initUI();
 });
+
+// サーバーチャンネルを選択（グローバル関数）
+window.selectServerChannel=function(serverId,channelId,channelName){
+  currentContext='server';
+  currentServerId=serverId;
+  currentChannelId=channelId;
+  
+  document.getElementById('current-room-name').textContent=channelName;
+  
+  document.querySelectorAll('#server-room-list .room-item').forEach(item=>{
+    item.classList.remove('active');
+  });
+  document.querySelectorAll('#room-list .room-item').forEach(item=>{
+    item.classList.remove('active');
+  });
+  event.target.closest('.room-item').classList.add('active');
+  
+  loadMessages();
+}
 
 // Room1〜Room10を初期化
 async function initializeRooms(){
@@ -81,6 +105,10 @@ function loadRoomList(){
 // ルームを切り替え
 function switchRoom(roomId,roomName){
   currentRoom=roomId;
+  currentContext='public';
+  currentServerId=null;
+  currentChannelId=null;
+  
   document.getElementById('current-room-name').textContent=roomName;
   
   document.querySelectorAll('.room-item').forEach(item=>{
@@ -88,13 +116,19 @@ function switchRoom(roomId,roomName){
   });
   event.target.closest('.room-item').classList.add('active');
   
-  loadMessages(roomId);
+  loadMessages();
 }
 
 // メッセージを読み込み
-function loadMessages(roomId){
+function loadMessages(){
   const messagesEl=document.getElementById('chat-messages');
-  const messagesRef=ref(database,`messages/${roomId}`);
+  let messagesRef;
+  
+  if(currentContext==='server'){
+    messagesRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}`);
+  }else{
+    messagesRef=ref(database,`messages/${currentRoom}`);
+  }
   
   onValue(messagesRef,(snapshot)=>{
     messagesEl.innerHTML='';
@@ -173,7 +207,13 @@ async function sendMessage(){
   
   if(!text||!currentUser||!currentUserData)return;
   
-  const messagesRef=ref(database,`messages/${currentRoom}`);
+  let messagesRef;
+  if(currentContext==='server'){
+    messagesRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}`);
+  }else{
+    messagesRef=ref(database,`messages/${currentRoom}`);
+  }
+  
   await push(messagesRef,{
     userId:currentUser.uid,
     username:currentUserData.username,
@@ -189,7 +229,13 @@ async function sendMessage(){
 window.deleteMessage=async function(msgId){
   if(!confirm('このメッセージを削除しますか？'))return;
   
-  const msgRef=ref(database,`messages/${currentRoom}/${msgId}`);
+  let msgRef;
+  if(currentContext==='server'){
+    msgRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}/${msgId}`);
+  }else{
+    msgRef=ref(database,`messages/${currentRoom}/${msgId}`);
+  }
+  
   await remove(msgRef);
 }
 
