@@ -439,7 +439,7 @@
   line-height:1.4;
 }
 
-.message-actions{
+/* .message-actions{
   display:none;
   gap:4px;
   margin-top:4px;
@@ -462,7 +462,7 @@
 
 .message-action-btn:hover{
   background:var(--bg-secondary);
-}
+} */
 
 .chat-input-area{
   display:flex;
@@ -741,4 +741,51 @@
 
 .chat-messages::-webkit-scrollbar-thumb:hover{
   background:var(--text-tertiary);
+}
+
+/* メッセージアクション（Discord風） */
+.message{
+  position:relative;
+}
+
+.message-actions{
+  position:absolute;
+  top:-12px;
+  right:12px;
+  display:none;
+  gap:4px;
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:6px;
+  padding:4px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+.message:hover .message-actions{
+  display:flex;
+}
+
+.message-action-btn{
+  width:32px;
+  height:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  font-size:11px;
+  color:var(--text-secondary);
+  background:transparent;
+  border:none;
+  border-radius:4px;
+  cursor:pointer;
+  transition:background-color 0.15s,color 0.15s;
+}
+
+.message-action-btn:hover{
+  background:var(--bg-secondary);
+  color:var(--text-primary);
+}
+
+.message-action-btn .material-icons{
+  font-size:18px;
 }

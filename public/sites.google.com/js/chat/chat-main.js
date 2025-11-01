@@ -185,6 +185,9 @@ function loadMessages(){
         });
       });
       
+      // ソート：timestampの昇順（古い→新しい）
+      messages.sort((a,b)=>a.timestamp-b.timestamp);
+      
       displayedMessages=messages;
       
       if(messages.length>0){
@@ -324,6 +327,9 @@ async function loadOlderMessages(){
       });
       
       if(olderMessages.length>0){
+        // ソート：timestampの昇順
+        olderMessages.sort((a,b)=>a.timestamp-b.timestamp);
+        
         displayedMessages=olderMessages.concat(displayedMessages);
         oldestTimestamp=olderMessages[0].timestamp;
         
@@ -378,7 +384,15 @@ async function displayMessage(msgId,msg){
   messageDiv.className='message';
   messageDiv.dataset.msgId=msgId;
   
-  const time=new Date(msg.timestamp).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  const date=new Date(msg.timestamp);
+  const timeStr=date.toLocaleString('ja-JP',{
+    month:'numeric',
+    day:'numeric',
+    hour:'2-digit',
+    minute:'2-digit',
+    second:'2-digit'
+  });
+  
   const iconUrl=msg.iconUrl&&msg.iconUrl!=='default'?msg.iconUrl:'assets/school.png';
   
   const isOwn=currentUser&&msg.userId===currentUser.uid;
@@ -404,12 +418,14 @@ async function displayMessage(msgId,msg){
     <div class="message-content">
       <div class="message-header">
         <span class="message-username">${escapeHtml(msg.username)}${roleBadge}</span>
-        <span class="message-time">${time}</span>
+        <span class="message-time">${timeStr}</span>
       </div>
       <div class="message-text">${escapeHtml(msg.text)}</div>
       ${canDelete?`
         <div class="message-actions">
-          <button class="message-action-btn" onclick="deleteMessage('${msgId}')">削除</button>
+          <button class="message-action-btn" onclick="deleteMessage('${msgId}')">
+            <span class="material-icons">delete</span>
+          </button>
         </div>
       `:''}
     </div>
