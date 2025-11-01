@@ -18,7 +18,7 @@ const INITIAL_LOAD=30;
 const LOAD_MORE=30;
 const MAX_DISPLAYED=150;
 let displayedMessages=[];
-let oldestTimestamp=null;
+let oldestMessageKey=null;
 let hasMoreOld=true;
 let isLoadingOld=false;
 let messagesListener=null;
@@ -150,11 +150,12 @@ function loadMessages(){
   // 既存のリスナーを解除
   if(messagesListener){
     off(messagesListener);
+    messagesListener=null;
   }
   
   // 状態をリセット
   displayedMessages=[];
-  oldestTimestamp=null;
+  oldestMessageKey=null;
   hasMoreOld=true;
   isLoadingOld=false;
   messagesEl.innerHTML='<div class="loading-initial">メッセージを読み込み中...</div>';
@@ -180,18 +181,15 @@ function loadMessages(){
       const messages=[];
       snapshot.forEach(child=>{
         messages.push({
-          id:child.key,
+          key:child.key,
           ...child.val()
         });
       });
       
-      // ソート：timestampの昇順（古い→新しい）
-      messages.sort((a,b)=>a.timestamp-b.timestamp);
-      
       displayedMessages=messages;
       
       if(messages.length>0){
-        oldestTimestamp=messages[0].timestamp;
+        oldestMessageKey=messages[0].key;
         
         // 30件未満なら、これ以上古いメッセージはない
         if(messages.length<INITIAL_LOAD){
@@ -199,13 +197,15 @@ function loadMessages(){
         }
       }
       
-      renderMessages();
-      scrollToBottom();
+      renderMessages().then(()=>{
+        scrollToBottom();
+      });
       
       // リアルタイム更新のリスナーを設定
-      setupRealtimeListener(messagesRef,messages[messages.length-1]?.timestamp);
+      setupRealtimeListener(messagesRef);
     }else{
       messagesEl.innerHTML='<div class="no-messages">まだメッセージがありません</div>';
+      setupRealtimeListener(messagesRef);
     }
   }).catch(error=>{
     console.error('Failed to load messages:',error);
@@ -214,48 +214,43 @@ function loadMessages(){
 }
 
 // リアルタイム更新のリスナー
-function setupRealtimeListener(messagesRef,latestTimestamp){
-  if(!latestTimestamp)return;
+function setupRealtimeListener(messagesRef){
+  const latestTimestamp=displayedMessages.length>0?displayedMessages[displayedMessages.length-1].timestamp:0;
   
-  const newMessagesQuery=query(
-    messagesRef,
-    orderByChild('timestamp'),
-    limitToLast(1)
-  );
-  
-  messagesListener=onValue(newMessagesQuery,(snapshot)=>{
-    if(snapshot.exists()){
-      const messages=[];
-      snapshot.forEach(child=>{
-        messages.push({
-          id:child.key,
-          ...child.val()
-        });
+  messagesListener=onValue(messagesRef,(snapshot)=>{
+    if(!snapshot.exists())return;
+    
+    const allMessages=[];
+    snapshot.forEach(child=>{
+      allMessages.push({
+        key:child.key,
+        ...child.val()
       });
+    });
+    
+    // 既存メッセージより新しいものだけ追加
+    const newMessages=allMessages.filter(msg=>
+      msg.timestamp>latestTimestamp&&!displayedMessages.find(m=>m.key===msg.key)
+    );
+    
+    if(newMessages.length>0){
+      displayedMessages.push(...newMessages);
       
-      const newMsg=messages[0];
+      // 最大表示数を超えたら古いものを削除
+      if(displayedMessages.length>MAX_DISPLAYED){
+        const removeCount=displayedMessages.length-MAX_DISPLAYED;
+        displayedMessages.splice(0,removeCount);
+        oldestMessageKey=displayedMessages[0].key;
+      }
       
-      // 既存メッセージより新しい場合のみ追加
-      if(newMsg.timestamp>latestTimestamp&&!displayedMessages.find(m=>m.id===newMsg.id)){
-        displayedMessages.push(newMsg);
-        
-        // 最大表示数を超えたら古いものを削除
-        if(displayedMessages.length>MAX_DISPLAYED){
-          displayedMessages.shift();
-          oldestTimestamp=displayedMessages[0].timestamp;
-        }
-        
-        renderMessages();
-        
-        // 下端にいる場合のみ自動スクロール
-        const messagesEl=document.getElementById('chat-messages');
-        const isAtBottom=messagesEl.scrollHeight-messagesEl.scrollTop-messagesEl.clientHeight<100;
-        if(isAtBottom){
+      const messagesEl=document.getElementById('chat-messages');
+      const wasAtBottom=messagesEl.scrollHeight-messagesEl.scrollTop-messagesEl.clientHeight<100;
+      
+      renderMessages().then(()=>{
+        if(wasAtBottom){
           scrollToBottom();
         }
-        
-        latestTimestamp=newMsg.timestamp;
-      }
+      });
     }
   });
 }
@@ -273,7 +268,9 @@ async function renderMessages(){
     const loadMoreBtn=document.createElement('div');
     loadMoreBtn.className='load-more-btn';
     loadMoreBtn.textContent=isLoadingOld?'読み込み中...':'古いメッセージを読み込む';
-    loadMoreBtn.onclick=loadOlderMessages;
+    if(!isLoadingOld){
+      loadMoreBtn.onclick=loadOlderMessages;
+    }
     messagesEl.appendChild(loadMoreBtn);
   }else if(!hasMoreOld&&displayedMessages.length>0){
     const noMoreMsg=document.createElement('div');
@@ -284,21 +281,20 @@ async function renderMessages(){
   
   // メッセージを表示
   for(const msg of displayedMessages){
-    await displayMessage(msg.id,msg);
+    await displayMessage(msg);
   }
   
   // スクロール位置を維持（古いメッセージを追加した場合）
-  if(currentScrollTop>0){
+  if(currentScrollTop>0&&isLoadingOld){
     messagesEl.scrollTop=currentScrollTop+(messagesEl.scrollHeight-currentScrollHeight);
   }
 }
 
 // 古いメッセージを読み込む
 async function loadOlderMessages(){
-  if(isLoadingOld||!hasMoreOld)return;
+  if(isLoadingOld||!hasMoreOld||!oldestMessageKey)return;
   
   isLoadingOld=true;
-  renderMessages();
   
   let messagesRef;
   if(currentContext==='server'){
@@ -307,31 +303,31 @@ async function loadOlderMessages(){
     messagesRef=ref(database,`messages/${currentRoom}`);
   }
   
-  const olderQuery=query(
-    messagesRef,
-    orderByChild('timestamp'),
-    endBefore(oldestTimestamp),
-    limitToLast(LOAD_MORE)
-  );
-  
   try{
+    // 最も古いメッセージのtimestampを取得
+    const oldestMsg=displayedMessages[0];
+    
+    const olderQuery=query(
+      messagesRef,
+      orderByChild('timestamp'),
+      endBefore(oldestMsg.timestamp),
+      limitToLast(LOAD_MORE)
+    );
+    
     const snapshot=await get(olderQuery);
     
     if(snapshot.exists()){
       const olderMessages=[];
       snapshot.forEach(child=>{
         olderMessages.push({
-          id:child.key,
+          key:child.key,
           ...child.val()
         });
       });
       
       if(olderMessages.length>0){
-        // ソート：timestampの昇順
-        olderMessages.sort((a,b)=>a.timestamp-b.timestamp);
-        
         displayedMessages=olderMessages.concat(displayedMessages);
-        oldestTimestamp=olderMessages[0].timestamp;
+        oldestMessageKey=olderMessages[0].key;
         
         // 読み込んだ件数が要求より少ない場合、これ以上ない
         if(olderMessages.length<LOAD_MORE){
@@ -350,11 +346,10 @@ async function loadOlderMessages(){
     }
   }catch(error){
     console.error('Failed to load older messages:',error);
-    alert('古いメッセージの読み込みに失敗しました');
   }
   
   isLoadingOld=false;
-  renderMessages();
+  await renderMessages();
 }
 
 // スクロールハンドラーのセットアップ
@@ -372,17 +367,17 @@ function setupScrollHandler(){
 // 下端にスクロール
 function scrollToBottom(){
   const messagesEl=document.getElementById('chat-messages');
-  setTimeout(()=>{
+  requestAnimationFrame(()=>{
     messagesEl.scrollTop=messagesEl.scrollHeight;
-  },100);
+  });
 }
 
 // メッセージを表示
-async function displayMessage(msgId,msg){
+async function displayMessage(msg){
   const messagesEl=document.getElementById('chat-messages');
   const messageDiv=document.createElement('div');
   messageDiv.className='message';
-  messageDiv.dataset.msgId=msgId;
+  messageDiv.dataset.msgKey=msg.key;
   
   const date=new Date(msg.timestamp);
   const timeStr=date.toLocaleString('ja-JP',{
@@ -423,7 +418,7 @@ async function displayMessage(msgId,msg){
       <div class="message-text">${escapeHtml(msg.text)}</div>
       ${canDelete?`
         <div class="message-actions">
-          <button class="message-action-btn" onclick="deleteMessage('${msgId}')">
+          <button class="message-action-btn" onclick="deleteMessage('${msg.key}')">
             <span class="material-icons">delete</span>
           </button>
         </div>
@@ -477,7 +472,7 @@ async function sendMessage(){
 }
 
 // メッセージ削除
-window.deleteMessage=async function(msgId){
+window.deleteMessage=async function(msgKey){
   if(!confirm('このメッセージを削除しますか？'))return;
   
   try{
@@ -485,16 +480,16 @@ window.deleteMessage=async function(msgId){
     
     let msgRef;
     if(currentContext==='server'){
-      msgRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}/${msgId}`);
+      msgRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}/${msgKey}`);
     }else{
-      msgRef=ref(database,`messages/${currentRoom}/${msgId}`);
+      msgRef=ref(database,`messages/${currentRoom}/${msgKey}`);
     }
     
     await remove(msgRef);
     
     // 表示中のメッセージからも削除
-    displayedMessages=displayedMessages.filter(m=>m.id!==msgId);
-    renderMessages();
+    displayedMessages=displayedMessages.filter(m=>m.key!==msgKey);
+    await renderMessages();
   }catch(error){
     console.error('Failed to delete message:',error);
     alert('メッセージの削除に失敗しました');
