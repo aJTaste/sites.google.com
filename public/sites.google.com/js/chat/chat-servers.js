@@ -53,6 +53,8 @@ function loadServerList(){
         }
       });
     }
+  },(error)=>{
+    console.error('Failed to load servers:',error);
   });
 }
 
@@ -80,19 +82,19 @@ function selectServer(serverId,server){
     createRoomBtn.style.display='none';
   }
   
-  // サーバー設定ボタンの表示制御
-  const serverSettingsBtn=document.getElementById('server-settings-btn');
+  // サーバー設定ボタンの表示制御（重複修正）
+  let serverSettingsBtn=document.getElementById('server-settings-btn');
   if(!serverSettingsBtn){
-    const btn=document.createElement('button');
-    btn.id='server-settings-btn';
-    btn.className='add-btn';
-    btn.title='サーバー設定';
-    btn.innerHTML='<span class="material-icons">settings</span>';
-    btn.onclick=()=>openServerSettings(serverId,server);
-    document.getElementById('server-rooms-header').querySelector('.section-header-left').appendChild(btn);
+    serverSettingsBtn=document.createElement('button');
+    serverSettingsBtn.id='server-settings-btn';
+    serverSettingsBtn.className='add-btn';
+    serverSettingsBtn.title='サーバー設定';
+    serverSettingsBtn.innerHTML='<span class="material-icons">settings</span>';
+    serverSettingsBtn.onclick=()=>openServerSettings(serverId,server);
+    document.getElementById('server-rooms-header').querySelector('.section-header-left').appendChild(serverSettingsBtn);
   }
   
-  if(userRole==='server_owner'){
+  if(userRole==='server_owner'||userRole==='server_mod'){
     serverSettingsBtn.style.display='flex';
   }else{
     serverSettingsBtn.style.display='none';
@@ -128,6 +130,8 @@ function loadServerRooms(serverId){
         roomListEl.appendChild(roomItem);
       });
     }
+  },(error)=>{
+    console.error('Failed to load server rooms:',error);
   });
 }
 
@@ -210,42 +214,49 @@ async function createServer(){
     return;
   }
   
-  // 招待コード生成（プライベートの場合）
-  const inviteCode=isPrivate?generateInviteCode():'';
-  
-  const serversRef=ref(database,'servers');
-  const newServerRef=push(serversRef);
-  
-  await set(newServerRef,{
-    name:name,
-    emoji:emoji,
-    ownerId:currentUser.uid,
-    type:isPrivate?'private':'public',
-    inviteCode:inviteCode,
-    createdAt:Date.now(),
-    members:{
-      [currentUser.uid]:{
-        role:'server_owner',
-        joinedAt:Date.now()
+  try{
+    // 招待コード生成（プライベートの場合）
+    const inviteCode=isPrivate?generateInviteCode():'';
+    
+    const serversRef=ref(database,'servers');
+    const newServerRef=push(serversRef);
+    
+    await set(newServerRef,{
+      name:name,
+      emoji:emoji,
+      ownerId:currentUser.uid,
+      type:isPrivate?'private':'public',
+      inviteCode:inviteCode,
+      createdAt:Date.now(),
+      members:{
+        [currentUser.uid]:{
+          role:'server_owner',
+          joinedAt:Date.now()
+        }
       }
+    });
+    
+    // デフォルトルーム作成
+    const serverRoomsRef=ref(database,`serverRooms/${newServerRef.key}`);
+    await set(push(serverRoomsRef),{
+      name:'一般',
+      createdAt:Date.now()
+    });
+    
+    // モーダルを閉じる
+    document.getElementById('create-server-modal').classList.remove('show');
+    nameInput.value='';
+    document.getElementById('selected-emoji').value='👋';
+    privateCheckbox.checked=false;
+    
+    if(isPrivate){
+      alert(`サーバーを作成しました！\n招待コード: ${inviteCode}`);
+    }else{
+      alert('サーバーを作成しました！');
     }
-  });
-  
-  // デフォルトルーム作成
-  const serverRoomsRef=ref(database,`serverRooms/${newServerRef.key}`);
-  await set(push(serverRoomsRef),{
-    name:'一般',
-    createdAt:Date.now()
-  });
-  
-  // モーダルを閉じる
-  document.getElementById('create-server-modal').classList.remove('show');
-  nameInput.value='';
-  document.getElementById('selected-emoji').value='👋';
-  privateCheckbox.checked=false;
-  
-  if(isPrivate){
-    alert(`サーバーを作成しました！\n招待コード: ${inviteCode}`);
+  }catch(error){
+    console.error('Failed to create server:',error);
+    alert('サーバーの作成に失敗しました');
   }
 }
 
@@ -302,16 +313,21 @@ async function createChannel(){
     return;
   }
   
-  const serverRoomsRef=ref(database,`serverRooms/${currentServerId}`);
-  await set(push(serverRoomsRef),{
-    name:name,
-    createdAt:Date.now(),
-    createdBy:currentUser.uid
-  });
-  
-  document.getElementById('create-channel-modal').classList.remove('show');
-  nameInput.value='';
-  alert('チャンネルを作成しました');
+  try{
+    const serverRoomsRef=ref(database,`serverRooms/${currentServerId}`);
+    await set(push(serverRoomsRef),{
+      name:name,
+      createdAt:Date.now(),
+      createdBy:currentUser.uid
+    });
+    
+    document.getElementById('create-channel-modal').classList.remove('show');
+    nameInput.value='';
+    alert('チャンネルを作成しました');
+  }catch(error){
+    console.error('Failed to create channel:',error);
+    alert('チャンネルの作成に失敗しました');
+  }
 }
 
 // サーバー参加モーダルのセットアップ
@@ -321,6 +337,7 @@ function setupJoinServerModal(){
   const closeBtn=document.getElementById('close-join-modal');
   const cancelBtn=document.getElementById('cancel-join-btn');
   const submitBtn=document.getElementById('submit-join-btn');
+  const codeInput=document.getElementById('invite-code');
   
   if(!joinBtn)return;
   
@@ -337,6 +354,11 @@ function setupJoinServerModal(){
   });
   
   submitBtn.addEventListener('click',joinServerByCode);
+  
+  // 入力を自動的に大文字に変換
+  codeInput.addEventListener('input',(e)=>{
+    e.target.value=e.target.value.toUpperCase();
+  });
   
   modal.addEventListener('click',(e)=>{
     if(e.target===modal){
@@ -393,7 +415,7 @@ async function joinServerByCode(){
     }
     
     // メンバーとして参加
-    await set(ref(database,`servers/${foundServerId}/members/${currentUser.uid}`),{
+  await set(ref(database,`servers/${foundServerId}/members/${currentUser.uid}`),{
       role:'member',
       joinedAt:Date.now()
     });
@@ -402,7 +424,7 @@ async function joinServerByCode(){
     codeInput.value='';
     alert(`「${serverData.name}」に参加しました！`);
   }catch(error){
-    console.error(error);
+    console.error('Failed to join server:',error);
     alert('サーバーへの参加に失敗しました');
   }
 }

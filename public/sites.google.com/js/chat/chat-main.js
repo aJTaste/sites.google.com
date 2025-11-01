@@ -13,6 +13,19 @@ let currentContext='public';
 let currentServerId=null;
 let currentChannelId=null;
 
+// ページ読み込み完了処理
+document.addEventListener('DOMContentLoaded',function(){
+  if(document.fonts&&document.fonts.ready){
+    document.fonts.ready.then(function(){
+      document.body.classList.add('loaded');
+    });
+  }else{
+    setTimeout(function(){
+      document.body.classList.add('loaded');
+    },100);
+  }
+});
+
 // ログイン状態チェック
 onAuthStateChanged(auth,async(user)=>{
   if(!user){
@@ -121,7 +134,7 @@ function switchRoom(roomId,roomName){
   loadMessages();
 }
 
-// メッセージを読み込み
+// メッセージを読み込み（エラーハンドリング追加）
 function loadMessages(){
   const messagesEl=document.getElementById('chat-messages');
   let messagesRef;
@@ -142,10 +155,13 @@ function loadMessages(){
       });
       messagesEl.scrollTop=messagesEl.scrollHeight;
     }
+  },(error)=>{
+    console.error('Failed to load messages:',error);
+    messagesEl.innerHTML='<div style="padding:20px;text-align:center;color:var(--text-secondary);">メッセージの読み込みに失敗しました</div>';
   });
 }
 
-// メッセージを表示
+// メッセージを表示（エラーハンドリング追加）
 async function displayMessage(msgId,msg){
   const messagesEl=document.getElementById('chat-messages');
   const messageDiv=document.createElement('div');
@@ -195,7 +211,7 @@ async function displayMessage(msgId,msg){
   messagesEl.appendChild(messageDiv);
 }
 
-// メッセージ送信
+// メッセージ送信（エラーハンドリング追加）
 document.getElementById('send-btn').addEventListener('click',sendMessage);
 document.getElementById('message-input').addEventListener('keypress',(e)=>{
   if(e.key==='Enter'){
@@ -209,36 +225,52 @@ async function sendMessage(){
   
   if(!text||!currentUser||!currentUserData)return;
   
-  let messagesRef;
-  if(currentContext==='server'){
-    messagesRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}`);
-  }else{
-    messagesRef=ref(database,`messages/${currentRoom}`);
+  // 送信ボタンを一時的に無効化
+  const sendBtn=document.getElementById('send-btn');
+  sendBtn.disabled=true;
+  
+  try{
+    let messagesRef;
+    if(currentContext==='server'){
+      messagesRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}`);
+    }else{
+      messagesRef=ref(database,`messages/${currentRoom}`);
+    }
+    
+    await push(messagesRef,{
+      userId:currentUser.uid,
+      username:currentUserData.username,
+      iconUrl:currentUserData.iconUrl||'default',
+      text:text,
+      timestamp:Date.now()
+    });
+    
+    input.value='';
+  }catch(error){
+    console.error('Failed to send message:',error);
+    alert('メッセージの送信に失敗しました');
+  }finally{
+    sendBtn.disabled=false;
   }
-  
-  await push(messagesRef,{
-    userId:currentUser.uid,
-    username:currentUserData.username,
-    iconUrl:currentUserData.iconUrl||'default',
-    text:text,
-    timestamp:Date.now()
-  });
-  
-  input.value='';
 }
 
-// メッセージ削除
+// メッセージ削除（エラーハンドリング追加）
 window.deleteMessage=async function(msgId){
   if(!confirm('このメッセージを削除しますか？'))return;
   
-  let msgRef;
-  if(currentContext==='server'){
-    msgRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}/${msgId}`);
-  }else{
-    msgRef=ref(database,`messages/${currentRoom}/${msgId}`);
+  try{
+    let msgRef;
+    if(currentContext==='server'){
+      msgRef=ref(database,`serverMessages/${currentServerId}/${currentChannelId}/${msgId}`);
+    }else{
+      msgRef=ref(database,`messages/${currentRoom}/${msgId}`);
+    }
+    
+    await remove(msgRef);
+  }catch(error){
+    console.error('Failed to delete message:',error);
+    alert('メッセージの削除に失敗しました');
   }
-  
-  await remove(msgRef);
 }
 
 // HTMLエスケープ
