@@ -661,3 +661,84 @@
     font-size:12px;
   }
 }
+/* 既存のchat.cssに以下を追加 */
+
+/* ローディング・メッセージ表示 */
+.loading-initial{
+  padding:20px;
+  text-align:center;
+  color:var(--text-secondary);
+  font-size:14px;
+}
+
+.no-messages{
+  padding:40px 20px;
+  text-align:center;
+  color:var(--text-tertiary);
+  font-size:14px;
+}
+
+.error-message{
+  padding:20px;
+  text-align:center;
+  color:#cf222e;
+  font-size:14px;
+}
+
+/* 「もっと読み込む」ボタン */
+.load-more-btn{
+  padding:10px 16px;
+  margin:12px 20px;
+  text-align:center;
+  font-size:13px;
+  font-weight:600;
+  color:var(--main);
+  background:var(--main-light);
+  border:1px solid var(--main);
+  border-radius:6px;
+  cursor:pointer;
+  transition:background-color 0.15s;
+  user-select:none;
+}
+
+.load-more-btn:hover{
+  background:var(--main);
+  color:#ffffff;
+}
+
+.load-more-btn:active{
+  transform:scale(0.98);
+}
+
+/* 「これ以上ない」メッセージ */
+.no-more-messages{
+  padding:10px 20px;
+  margin:12px 0;
+  text-align:center;
+  font-size:12px;
+  color:var(--text-tertiary);
+  border-bottom:1px solid var(--border-light);
+}
+
+/* メッセージエリアのスクロール改善 */
+.chat-messages{
+  scroll-behavior:smooth;
+}
+
+/* スクロールバーのスタイル（Chrome/Edge） */
+.chat-messages::-webkit-scrollbar{
+  width:8px;
+}
+
+.chat-messages::-webkit-scrollbar-track{
+  background:var(--bg-secondary);
+}
+
+.chat-messages::-webkit-scrollbar-thumb{
+  background:var(--border);
+  border-radius:4px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover{
+  background:var(--text-tertiary);
+}
