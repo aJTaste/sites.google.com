@@ -7,6 +7,7 @@ let currentUserData=null;
 let allUsers=[];
 let selectedUserId=null;
 let messageListener=null;
+let isSending=false; // 送信中フラグ
 
 // ログイン状態チェック
 onAuthStateChanged(auth,async(user)=>{
@@ -177,12 +178,18 @@ function loadChat(userId){
   chatInput.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'&&!e.shiftKey){
       e.preventDefault();
-      sendMessage();
+      if(!isSending){
+        sendMessage();
+      }
     }
   });
   
   // 送信ボタン
-  document.getElementById('send-btn').addEventListener('click',sendMessage);
+  document.getElementById('send-btn').addEventListener('click',()=>{
+    if(!isSending){
+      sendMessage();
+    }
+  });
   
   // メッセージを読み込み
   loadMessages(userId);
@@ -267,10 +274,25 @@ function displayMessage(msg){
 
 // メッセージを送信
 async function sendMessage(){
+  if(isSending)return; // 送信中は何もしない
+  
   const chatInput=document.getElementById('chat-input');
+  const sendBtn=document.getElementById('send-btn');
   const text=chatInput.value.trim();
   
   if(!text||!selectedUserId)return;
+  
+  // 送信中フラグを立てる
+  isSending=true;
+  
+  // UIを無効化
+  chatInput.disabled=true;
+  sendBtn.disabled=true;
+  
+  // 即座にテキストをクリア（視覚的なフィードバック）
+  const messageText=text;
+  chatInput.value='';
+  chatInput.style.height='auto';
   
   const dmId=getDmId(currentUser.uid,selectedUserId);
   const messagesRef=ref(database,`dms/${dmId}/messages`);
@@ -279,7 +301,7 @@ async function sendMessage(){
   try{
     await set(newMessageRef,{
       senderId:currentUser.uid,
-      text:text,
+      text:messageText,
       timestamp:Date.now()
     });
     
@@ -293,12 +315,17 @@ async function sendMessage(){
         [selectedUserId]:true
       });
     }
-    
-    chatInput.value='';
-    chatInput.style.height='auto';
   }catch(error){
     console.error('メッセージ送信エラー:',error);
     alert('メッセージの送信に失敗しました');
+    // 失敗した場合はテキストを戻す
+    chatInput.value=messageText;
+  }finally{
+    // 送信完了後、UIを再度有効化
+    isSending=false;
+    chatInput.disabled=false;
+    sendBtn.disabled=false;
+    chatInput.focus();
   }
 }
 
