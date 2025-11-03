@@ -1,13 +1,14 @@
 import{auth,database}from'../common/firebase-config.js';
 import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import{ref,get,set,update,push,onValue,off}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{ref,get,set,update,push,onValue,off,query,orderByChild,startAt}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 let currentUser=null;
 let currentUserData=null;
 let allUsers=[];
 let selectedUserId=null;
 let messageListener=null;
-let isSending=false; // 送信中フラグ
+let isSending=false;
+let unreadCounts={}; // 各ユーザーの未読件数を保存
 
 // ログイン状態チェック
 onAuthStateChanged(auth,async(user)=>{
@@ -76,9 +77,43 @@ function loadUsers(){
           ...users[uid]
         }));
       
-      displayUsers();
+      // 未読件数を計算してから表示
+      calculateUnreadCounts().then(()=>{
+        displayUsers();
+      });
     }
   });
+}
+
+// 未読件数を計算
+async function calculateUnreadCounts(){
+  unreadCounts={};
+  
+  // lastRead データを取得
+  const lastReadRef=ref(database,`users/${currentUser.uid}/lastRead`);
+  const lastReadSnapshot=await get(lastReadRef);
+  const lastReadData=lastReadSnapshot.exists()?lastReadSnapshot.val():{};
+  
+  // 各ユーザーとのDMの未読件数を計算
+  for(const user of allUsers){
+    const dmId=getDmId(currentUser.uid,user.uid);
+    const messagesRef=ref(database,`dms/${dmId}/messages`);
+    const messagesSnapshot=await get(messagesRef);
+    
+    if(messagesSnapshot.exists()){
+      const messages=messagesSnapshot.val();
+      const lastReadTime=lastReadData[user.uid]||0;
+      
+      // lastReadTime 以降の、相手が送信したメッセージをカウント
+      const unreadCount=Object.values(messages).filter(msg=>
+        msg.senderId===user.uid&&msg.timestamp>lastReadTime
+      ).length;
+      
+      unreadCounts[user.uid]=unreadCount;
+    }else{
+      unreadCounts[user.uid]=0;
+    }
+  }
 }
 
 // ユーザー一覧を表示
@@ -107,13 +142,20 @@ function displayUsers(){
     const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
     const statusText=isOnline?'オンライン':`最終ログイン: ${formatLastOnline(user.lastOnline||user.createdAt)}`;
     
+    // 未読バッジ
+    const unreadCount=unreadCounts[user.uid]||0;
+    const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
+    
     dmItem.innerHTML=`
       <div class="dm-item-avatar">
         <img src="${iconUrl}" alt="${user.username}">
         ${onlineIndicator}
       </div>
       <div class="dm-item-info">
-        <div class="dm-item-name">${user.username}</div>
+        <div class="dm-item-name">
+          ${user.username}
+          ${unreadBadge}
+        </div>
         <div class="dm-item-status">${statusText}</div>
       </div>
     `;
@@ -127,8 +169,17 @@ function displayUsers(){
 }
 
 // ユーザーを選択
-function selectUser(userId){
+async function selectUser(userId){
   selectedUserId=userId;
+  
+  // lastRead を更新（DMを開いた時刻）
+  await update(ref(database,`users/${currentUser.uid}/lastRead`),{
+    [userId]:Date.now()
+  });
+  
+  // 未読件数をリセット
+  unreadCounts[userId]=0;
+  
   displayUsers();
   loadChat(userId);
 }
@@ -235,6 +286,13 @@ function loadMessages(userId){
       // 最下部にスクロール
       chatMessages.scrollTop=chatMessages.scrollHeight;
     }
+    
+    // メッセージが更新されたら lastRead も更新
+    if(selectedUserId===userId){
+      update(ref(database,`users/${currentUser.uid}/lastRead`),{
+        [userId]:Date.now()
+      });
+    }
   });
 }
 
@@ -274,7 +332,7 @@ function displayMessage(msg){
 
 // メッセージを送信
 async function sendMessage(){
-  if(isSending)return; // 送信中は何もしない
+  if(isSending)return;
   
   const chatInput=document.getElementById('chat-input');
   const sendBtn=document.getElementById('send-btn');
@@ -282,14 +340,10 @@ async function sendMessage(){
   
   if(!text||!selectedUserId)return;
   
-  // 送信中フラグを立てる
   isSending=true;
-  
-  // UIを無効化
   chatInput.disabled=true;
   sendBtn.disabled=true;
   
-  // 即座にテキストをクリア（視覚的なフィードバック）
   const messageText=text;
   chatInput.value='';
   chatInput.style.height='auto';
@@ -305,7 +359,6 @@ async function sendMessage(){
       timestamp:Date.now()
     });
     
-    // DMの参加者情報を更新（初回のみ）
     const participantsRef=ref(database,`dms/${dmId}/participants`);
     const participantsSnapshot=await get(participantsRef);
     
@@ -318,10 +371,8 @@ async function sendMessage(){
   }catch(error){
     console.error('メッセージ送信エラー:',error);
     alert('メッセージの送信に失敗しました');
-    // 失敗した場合はテキストを戻す
     chatInput.value=messageText;
   }finally{
-    // 送信完了後、UIを再度有効化
     isSending=false;
     chatInput.disabled=false;
     sendBtn.disabled=false;
@@ -337,13 +388,10 @@ function formatMessageTime(timestamp){
   const messageDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
   
   if(messageDate.getTime()===today.getTime()){
-    // 今日
     return date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
   }else if(messageDate.getTime()===today.getTime()-86400000){
-    // 昨日
     return '昨日 '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
   }else{
-    // それ以前
     return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'})+' '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
   }
 }
@@ -398,7 +446,6 @@ document.getElementById('settings-btn').addEventListener('click',()=>{
 
 document.getElementById('logout-btn').addEventListener('click',async()=>{
   try{
-    // オフライン状態にしてからログアウト
     if(currentUser){
       await update(ref(database,`users/${currentUser.uid}`),{
         online:false,
