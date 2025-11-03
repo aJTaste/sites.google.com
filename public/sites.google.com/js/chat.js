@@ -8,82 +8,146 @@ let allUsers=[];
 let selectedUserId=null;
 let messageListener=null;
 
+// デバッグ用メッセージ表示
+function showDebug(message){
+  const dmList=document.getElementById('dm-list');
+  const debugEl=document.createElement('div');
+  debugEl.style.cssText='padding:12px;background:#ff6b35;color:#fff;font-size:12px;margin:8px;border-radius:6px;';
+  debugEl.textContent=message;
+  dmList.appendChild(debugEl);
+  console.log('DEBUG:',message);
+}
+
 // ログイン状態チェック
 onAuthStateChanged(auth,async(user)=>{
+  showDebug('認証状態チェック開始');
+  
   if(!user){
+    showDebug('未ログイン - ログインページへ');
     window.location.href='login.html';
     return;
   }
   
+  showDebug('ログイン済み: '+user.uid);
   currentUser=user;
   
-  const userRef=ref(database,`users/${user.uid}`);
-  const snapshot=await get(userRef);
-  
-  if(snapshot.exists()){
-    currentUserData=snapshot.val();
+  try{
+    const userRef=ref(database,`users/${user.uid}`);
+    showDebug('ユーザーデータ取得中...');
+    const snapshot=await get(userRef);
     
-    // アイコン表示
-    const userAvatar=document.getElementById('user-avatar');
-    if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
-      userAvatar.src=currentUserData.iconUrl;
-    }
-    
-    // online, lastOnline フィールドがない場合は追加
-    const updates={};
-    if(currentUserData.online===undefined){
-      updates.online=true;
-    }
-    if(currentUserData.lastOnline===undefined){
-      updates.lastOnline=Date.now();
-    }
-    
-    if(Object.keys(updates).length>0){
-      await update(userRef,updates);
-      currentUserData={...currentUserData,...updates};
-    }
-    
-    // オンライン状態を true に設定
-    await update(userRef,{
-      online:true,
-      lastOnline:Date.now()
-    });
-    
-    // ページを閉じる時にオフラインに
-    window.addEventListener('beforeunload',async()=>{
+    if(snapshot.exists()){
+      currentUserData=snapshot.val();
+      showDebug('ユーザーデータ取得成功: '+currentUserData.username);
+      
+      // アイコン表示
+      const userAvatar=document.getElementById('user-avatar');
+      if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
+        userAvatar.src=currentUserData.iconUrl;
+      }
+      
+      // online, lastOnline フィールドがない場合は追加
+      const updates={};
+      if(currentUserData.online===undefined){
+        updates.online=true;
+        showDebug('onlineフィールドを追加');
+      }
+      if(currentUserData.lastOnline===undefined){
+        updates.lastOnline=Date.now();
+        showDebug('lastOnlineフィールドを追加');
+      }
+      
+      if(Object.keys(updates).length>0){
+        await update(userRef,updates);
+        currentUserData={...currentUserData,...updates};
+      }
+      
+      // オンライン状態を true に設定
       await update(userRef,{
-        online:false,
+        online:true,
         lastOnline:Date.now()
       });
-    });
-    
-    // ユーザー一覧を読み込み
-    loadUsers();
+      showDebug('オンライン状態を更新');
+      
+      // ページを閉じる時にオフラインに
+      window.addEventListener('beforeunload',async()=>{
+        await update(userRef,{
+          online:false,
+          lastOnline:Date.now()
+        });
+      });
+      
+      // ユーザー一覧を読み込み
+      showDebug('ユーザー一覧読み込み開始');
+      loadUsers();
+    }else{
+      showDebug('エラー: ユーザーデータが存在しません');
+    }
+  }catch(error){
+    showDebug('エラー発生: '+error.message);
+    console.error(error);
   }
 });
 
 // ユーザー一覧を読み込み
 function loadUsers(){
-  const usersRef=ref(database,'users');
-  onValue(usersRef,(snapshot)=>{
-    if(snapshot.exists()){
-      const users=snapshot.val();
-      allUsers=Object.keys(users)
-        .filter(uid=>uid!==currentUser.uid)
-        .map(uid=>({
-          uid:uid,
-          ...users[uid]
-        }));
+  try{
+    const usersRef=ref(database,'users');
+    showDebug('/users からデータ取得中...');
+    
+    onValue(usersRef,(snapshot)=>{
+      showDebug('データ取得コールバック実行');
       
-      displayUsers();
-    }
-  });
+      if(snapshot.exists()){
+        const users=snapshot.val();
+        const userCount=Object.keys(users).length;
+        showDebug(`全ユーザー数: ${userCount}`);
+        
+        allUsers=Object.keys(users)
+          .filter(uid=>uid!==currentUser.uid)
+          .map(uid=>({
+            uid:uid,
+            ...users[uid]
+          }));
+        
+        showDebug(`自分以外のユーザー数: ${allUsers.length}`);
+        
+        if(allUsers.length>0){
+          showDebug('ユーザー一覧:');
+          allUsers.forEach(u=>{
+            showDebug(`- ${u.username} (${u.accountId})`);
+          });
+        }
+        
+        displayUsers();
+      }else{
+        showDebug('エラー: /users にデータが存在しません');
+      }
+    },(error)=>{
+      showDebug('データ取得エラー: '+error.message);
+      console.error(error);
+    });
+  }catch(error){
+    showDebug('loadUsers エラー: '+error.message);
+    console.error(error);
+  }
 }
 
 // ユーザー一覧を表示
 function displayUsers(){
   const dmList=document.getElementById('dm-list');
+  
+  // デバッグメッセージ以外をクリア
+  const debugMessages=Array.from(dmList.children).filter(el=>el.style.background==='rgb(255, 107, 53)');
   dmList.innerHTML='';
+  debugMessages.forEach(msg=>dmList.appendChild(msg));
+  
+  showDebug(`displayUsers: ${allUsers.length}人を表示`);
+  
+  if(allUsers.length===0){
+    showDebug('表示するユーザーがいません');
+    return;
+  }
   
   // オンライン状態でソート
   allUsers.sort((a,b)=>{
@@ -123,6 +187,8 @@ function displayUsers(){
     
     dmList.appendChild(dmItem);
   });
+  
+  showDebug('ユーザー表示完了');
 }
 
 // ユーザーを選択
