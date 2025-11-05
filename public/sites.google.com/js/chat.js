@@ -17,7 +17,7 @@ let notificationPermissionGranted=false;
 const CHANNELS=[
   {id:'general',name:'全体連絡',desc:'重要なお知らせ',icon:'campaign'},
   {id:'random',name:'雑談',desc:'自由に話そう',icon:'chat_bubble'},
-  {id:'tech',name:'技術相談',desc:'開発の質問など',icon:'code'}
+  {id:'tech',name:'その他',desc:'質問・あれこれ欲しいなど',icon:'code'}
 ];
 
 // ログイン状態チェック
