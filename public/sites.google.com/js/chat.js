@@ -1,14 +1,24 @@
 import{auth,database}from'../common/firebase-config.js';
 import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import{ref,get,set,update,push,onValue,off,query,orderByChild,startAt}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{ref,get,set,update,push,onValue,off}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 let currentUser=null;
 let currentUserData=null;
 let allUsers=[];
 let selectedUserId=null;
+let selectedChannelId=null;
 let messageListener=null;
 let isSending=false;
-let unreadCounts={}; // 各ユーザーの未読件数を保存
+let unreadCounts={};
+let lastOnlineUpdateInterval=null;
+let notificationPermissionGranted=false;
+
+// 共有チャンネル定義
+const CHANNELS=[
+  {id:'general',name:'全体連絡',desc:'重要なお知らせ',icon:'campaign'},
+  {id:'random',name:'雑談',desc:'自由に話そう',icon:'chat_bubble'},
+  {id:'tech',name:'技術相談',desc:'開発の質問など',icon:'code'}
+];
 
 // ログイン状態チェック
 onAuthStateChanged(auth,async(user)=>{
@@ -25,13 +35,11 @@ onAuthStateChanged(auth,async(user)=>{
   if(snapshot.exists()){
     currentUserData=snapshot.val();
     
-    // アイコン表示
     const userAvatar=document.getElementById('user-avatar');
     if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
       userAvatar.src=currentUserData.iconUrl;
     }
     
-    // online, lastOnline フィールドがない場合は追加
     const updates={};
     if(currentUserData.online===undefined){
       updates.online=true;
@@ -45,13 +53,11 @@ onAuthStateChanged(auth,async(user)=>{
       currentUserData={...currentUserData,...updates};
     }
     
-    // オンライン状態を true に設定
     await update(userRef,{
       online:true,
       lastOnline:Date.now()
     });
     
-    // ページを閉じる時にオフラインに
     window.addEventListener('beforeunload',async()=>{
       await update(userRef,{
         online:false,
@@ -59,10 +65,56 @@ onAuthStateChanged(auth,async(user)=>{
       });
     });
     
-    // ユーザー一覧を読み込み
+    // 通知権限をリクエスト
+    requestNotificationPermission();
+    
     loadUsers();
+    startLastOnlineUpdateTimer();
   }
 });
+
+// 通知権限をリクエスト
+async function requestNotificationPermission(){
+  if('Notification'in window){
+    if(Notification.permission==='default'){
+      const permission=await Notification.requestPermission();
+      notificationPermissionGranted=(permission==='granted');
+    }else if(Notification.permission==='granted'){
+      notificationPermissionGranted=true;
+    }
+  }
+}
+
+// 通知を表示
+function showNotification(title,body,icon){
+  if(notificationPermissionGranted&&document.hidden){
+    new Notification(title,{
+      body:body,
+      icon:icon||'assets/favicon-main.png',
+      tag:'chat-message'
+    });
+  }
+}
+
+// タブタイトルに未読件数を表示
+function updatePageTitle(){
+  const totalUnread=Object.values(unreadCounts).reduce((sum,count)=>sum+count,0);
+  if(totalUnread>0){
+    document.title=`(${totalUnread}) チャット | AppHub`;
+  }else{
+    document.title='チャット | AppHub';
+  }
+}
+
+// 最終ログイン時刻の定期更新
+function startLastOnlineUpdateTimer(){
+  if(lastOnlineUpdateInterval){
+    clearInterval(lastOnlineUpdateInterval);
+  }
+  lastOnlineUpdateInterval=setInterval(()=>{
+    displayUsers();
+  },1000);
+}
 
 // ユーザー一覧を読み込み
 function loadUsers(){
@@ -77,9 +129,9 @@ function loadUsers(){
           ...users[uid]
         }));
       
-      // 未読件数を計算してから表示
       calculateUnreadCounts().then(()=>{
         displayUsers();
+        updatePageTitle();
       });
     }
   });
@@ -89,12 +141,11 @@ function loadUsers(){
 async function calculateUnreadCounts(){
   unreadCounts={};
   
-  // lastRead データを取得
   const lastReadRef=ref(database,`users/${currentUser.uid}/lastRead`);
   const lastReadSnapshot=await get(lastReadRef);
   const lastReadData=lastReadSnapshot.exists()?lastReadSnapshot.val():{};
   
-  // 各ユーザーとのDMの未読件数を計算
+  // DM の未読
   for(const user of allUsers){
     const dmId=getDmId(currentUser.uid,user.uid);
     const messagesRef=ref(database,`dms/${dmId}/messages`);
@@ -104,7 +155,6 @@ async function calculateUnreadCounts(){
       const messages=messagesSnapshot.val();
       const lastReadTime=lastReadData[user.uid]||0;
       
-      // lastReadTime 以降の、相手が送信したメッセージをカウント
       const unreadCount=Object.values(messages).filter(msg=>
         msg.senderId===user.uid&&msg.timestamp>lastReadTime
       ).length;
@@ -114,6 +164,25 @@ async function calculateUnreadCounts(){
       unreadCounts[user.uid]=0;
     }
   }
+  
+  // チャンネルの未読
+  for(const channel of CHANNELS){
+    const messagesRef=ref(database,`channels/${channel.id}/messages`);
+    const messagesSnapshot=await get(messagesRef);
+    
+    if(messagesSnapshot.exists()){
+      const messages=messagesSnapshot.val();
+      const lastReadTime=lastReadData[channel.id]||0;
+      
+      const unreadCount=Object.values(messages).filter(msg=>
+        msg.senderId!==currentUser.uid&&msg.timestamp>lastReadTime
+      ).length;
+      
+      unreadCounts[channel.id]=unreadCount;
+    }else{
+      unreadCounts[channel.id]=0;
+    }
+  }
 }
 
 // ユーザー一覧を表示
@@ -121,13 +190,47 @@ function displayUsers(){
   const dmList=document.getElementById('dm-list');
   dmList.innerHTML='';
   
-  // オンライン状態でソート
+  // チャンネルを追加
+  CHANNELS.forEach(channel=>{
+    const channelItem=document.createElement('div');
+    channelItem.className='channel-item';
+    if(selectedChannelId===channel.id){
+      channelItem.classList.add('active');
+    }
+    
+    const unreadCount=unreadCounts[channel.id]||0;
+    const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
+    
+    channelItem.innerHTML=`
+      <div class="channel-icon">
+        <span class="material-icons">${channel.icon}</span>
+      </div>
+      <div class="channel-info">
+        <div class="channel-name">
+          ${channel.name}
+          ${unreadBadge}
+        </div>
+        <div class="channel-desc">${channel.desc}</div>
+      </div>
+    `;
+    
+    channelItem.addEventListener('click',()=>{
+      selectChannel(channel.id);
+    });
+    
+    dmList.appendChild(channelItem);
+  });
+  
+  // 区切り線
+  const divider=document.createElement('div');
+  divider.style.cssText='height:1px;background:var(--border);margin:8px 0;';
+  dmList.appendChild(divider);
+  
+  // 最終ログイン時刻でソート（新しい順）
   allUsers.sort((a,b)=>{
-    const aOnline=a.online||false;
-    const bOnline=b.online||false;
-    if(aOnline&&!bOnline)return -1;
-    if(!aOnline&&bOnline)return 1;
-    return a.username.localeCompare(b.username);
+    const aTime=a.lastOnline||a.createdAt||0;
+    const bTime=b.lastOnline||b.createdAt||0;
+    return bTime-aTime;
   });
   
   allUsers.forEach(user=>{
@@ -140,9 +243,8 @@ function displayUsers(){
     const iconUrl=user.iconUrl&&user.iconUrl!=='default'?user.iconUrl:'assets/school.png';
     const isOnline=user.online||false;
     const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
-    const statusText=isOnline?'オンライン':`最終ログイン: ${formatLastOnline(user.lastOnline||user.createdAt)}`;
+    const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(user.lastOnline||user.createdAt)}`;
     
-    // 未読バッジ
     const unreadCount=unreadCounts[user.uid]||0;
     const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
     
@@ -171,20 +273,36 @@ function displayUsers(){
 // ユーザーを選択
 async function selectUser(userId){
   selectedUserId=userId;
+  selectedChannelId=null;
   
-  // lastRead を更新（DMを開いた時刻）
   await update(ref(database,`users/${currentUser.uid}/lastRead`),{
     [userId]:Date.now()
   });
   
-  // 未読件数をリセット
   unreadCounts[userId]=0;
+  updatePageTitle();
   
   displayUsers();
   loadChat(userId);
 }
 
-// チャットを読み込み
+// チャンネルを選択
+async function selectChannel(channelId){
+  selectedChannelId=channelId;
+  selectedUserId=null;
+  
+  await update(ref(database,`users/${currentUser.uid}/lastRead`),{
+    [channelId]:Date.now()
+  });
+  
+  unreadCounts[channelId]=0;
+  updatePageTitle();
+  
+  displayUsers();
+  loadChannelChat(channelId);
+}
+
+// チャットを読み込み（DM）
 function loadChat(userId){
   const chatMain=document.getElementById('chat-main');
   const selectedUser=allUsers.find(u=>u.uid===userId);
@@ -193,7 +311,7 @@ function loadChat(userId){
   
   const iconUrl=selectedUser.iconUrl&&selectedUser.iconUrl!=='default'?selectedUser.iconUrl:'assets/school.png';
   const isOnline=selectedUser.online||false;
-  const statusText=isOnline?'オンライン':`最終ログイン: ${formatLastOnline(selectedUser.lastOnline||selectedUser.createdAt)}`;
+  const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(selectedUser.lastOnline||selectedUser.createdAt)}`;
   
   chatMain.innerHTML=`
     <div class="chat-header">
@@ -218,14 +336,52 @@ function loadChat(userId){
     </div>
   `;
   
-  // テキストエリアの自動リサイズ
+  setupChatInput();
+  loadMessages(userId);
+}
+
+// チャットを読み込み（チャンネル）
+function loadChannelChat(channelId){
+  const chatMain=document.getElementById('chat-main');
+  const channel=CHANNELS.find(c=>c.id===channelId);
+  
+  if(!channel)return;
+  
+  chatMain.innerHTML=`
+    <div class="chat-header">
+      <div class="chat-header-user">
+        <div class="channel-icon" style="width:36px;height:36px;">
+          <span class="material-icons">${channel.icon}</span>
+        </div>
+        <div class="chat-header-info">
+          <div class="chat-header-name">${channel.name}</div>
+          <div class="chat-header-status">${channel.desc}</div>
+        </div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-input-container">
+      <div class="chat-input-wrapper">
+        <textarea class="chat-input" id="chat-input" placeholder="${channel.name} にメッセージを送信" rows="1"></textarea>
+        <button class="send-btn" id="send-btn">
+          <span class="material-icons">send</span>
+        </button>
+      </div>
+    </div>
+  `;
+  
+  setupChatInput();
+  loadChannelMessages(channelId);
+}
+
+// チャット入力のセットアップ
+function setupChatInput(){
   const chatInput=document.getElementById('chat-input');
   chatInput.addEventListener('input',()=>{
     chatInput.style.height='auto';
     chatInput.style.height=chatInput.scrollHeight+'px';
   });
   
-  // Enter キーで送信（Shift+Enter で改行）
   chatInput.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'&&!e.shiftKey){
       e.preventDefault();
@@ -235,25 +391,20 @@ function loadChat(userId){
     }
   });
   
-  // 送信ボタン
   document.getElementById('send-btn').addEventListener('click',()=>{
     if(!isSending){
       sendMessage();
     }
   });
-  
-  // メッセージを読み込み
-  loadMessages(userId);
 }
 
-// DM IDを生成（2人のユーザーIDをアルファベット順にソート）
+// DM IDを生成
 function getDmId(uid1,uid2){
   return[uid1,uid2].sort().join('_');
 }
 
-// メッセージを読み込み
+// メッセージを読み込み（DM）
 function loadMessages(userId){
-  // 既存のリスナーを削除
   if(messageListener){
     off(messageListener);
   }
@@ -276,18 +427,15 @@ function loadMessages(userId){
         ...messages[key]
       }));
       
-      // タイムスタンプでソート
       messageArray.sort((a,b)=>a.timestamp-b.timestamp);
       
       messageArray.forEach(msg=>{
-        displayMessage(msg);
+        displayMessage(msg,userId);
       });
       
-      // 最下部にスクロール
       chatMessages.scrollTop=chatMessages.scrollHeight;
     }
     
-    // メッセージが更新されたら lastRead も更新
     if(selectedUserId===userId){
       update(ref(database,`users/${currentUser.uid}/lastRead`),{
         [userId]:Date.now()
@@ -296,13 +444,114 @@ function loadMessages(userId){
   });
 }
 
-// メッセージを表示
-function displayMessage(msg){
+// メッセージを読み込み（チャンネル）
+function loadChannelMessages(channelId){
+  if(messageListener){
+    off(messageListener);
+  }
+  
+  const messagesRef=ref(database,`channels/${channelId}/messages`);
+  
+  messageListener=messagesRef;
+  
+  let lastMessageCount=0;
+  
+  onValue(messagesRef,(snapshot)=>{
+    const chatMessages=document.getElementById('chat-messages');
+    if(!chatMessages)return;
+    
+    chatMessages.innerHTML='';
+    
+    if(snapshot.exists()){
+      const messages=snapshot.val();
+      const messageArray=Object.keys(messages).map(key=>({
+        id:key,
+        ...messages[key]
+      }));
+      
+      messageArray.sort((a,b)=>a.timestamp-b.timestamp);
+      
+      // 新しいメッセージがあれば通知
+      if(messageArray.length>lastMessageCount&&lastMessageCount>0){
+        const newMsg=messageArray[messageArray.length-1];
+        if(newMsg.senderId!==currentUser.uid){
+          const sender=allUsers.find(u=>u.uid===newMsg.senderId);
+          const senderName=sender?sender.username:'誰か';
+          const channel=CHANNELS.find(c=>c.id===channelId);
+          showNotification(`${channel.name}: ${senderName}`,newMsg.text);
+        }
+      }
+      lastMessageCount=messageArray.length;
+      
+      messageArray.forEach(msg=>{
+        displayChannelMessage(msg);
+      });
+      
+      chatMessages.scrollTop=chatMessages.scrollHeight;
+    }
+    
+    if(selectedChannelId===channelId){
+      update(ref(database,`users/${currentUser.uid}/lastRead`),{
+        [channelId]:Date.now()
+      });
+    }
+  });
+}
+
+// メッセージを表示（DM）
+async function displayMessage(msg,otherUserId){
   const chatMessages=document.getElementById('chat-messages');
   const isCurrentUser=msg.senderId===currentUser.uid;
   
   let senderData;
   if(isCurrentUser){
+    senderData=currentUserData;
+  }else{
+    senderData=allUsers.find(u=>u.uid===msg.senderId);
+  }
+  
+  if(!senderData)return;
+  
+  const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/school.png';
+  
+  // 既読状態を取得
+  let readStatus='';
+  if(isCurrentUser){
+    const otherUserRef=ref(database,`users/${otherUserId}/lastRead/${currentUser.uid}`);
+    const readSnapshot=await get(otherUserRef);
+    if(readSnapshot.exists()){
+      const lastReadTime=readSnapshot.val();
+      if(msg.timestamp<=lastReadTime){
+        readStatus='<div class="message-read">既読</div>';
+      }
+    }
+  }
+  
+  const messageEl=document.createElement('div');
+  messageEl.className='message';
+  messageEl.innerHTML=`
+    <div class="message-avatar">
+      <img src="${iconUrl}" alt="${senderData.username}">
+    </div>
+    <div class="message-content">
+      <div class="message-header">
+        <span class="message-author">${senderData.username}</span>
+        <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
+      </div>
+      <div class="message-text">${escapeHtml(msg.text)}</div>
+      ${readStatus}
+    </div>
+  `;
+  
+  chatMessages.appendChild(messageEl);
+}
+
+// メッセージを表示（チャンネル）
+function displayChannelMessage(msg){
+  const chatMessages=document.getElementById('chat-messages');
+  
+  let senderData;
+  if(msg.senderId===currentUser.uid){
     senderData=currentUserData;
   }else{
     senderData=allUsers.find(u=>u.uid===msg.senderId);
@@ -338,7 +587,8 @@ async function sendMessage(){
   const sendBtn=document.getElementById('send-btn');
   const text=chatInput.value.trim();
   
-  if(!text||!selectedUserId)return;
+  if(!text)return;
+  if(!selectedUserId&&!selectedChannelId)return;
   
   isSending=true;
   chatInput.disabled=true;
@@ -348,29 +598,48 @@ async function sendMessage(){
   chatInput.value='';
   chatInput.style.height='auto';
   
-  const dmId=getDmId(currentUser.uid,selectedUserId);
-  const messagesRef=ref(database,`dms/${dmId}/messages`);
-  const newMessageRef=push(messagesRef);
-  
   try{
-    await set(newMessageRef,{
-      senderId:currentUser.uid,
-      text:messageText,
-      timestamp:Date.now()
-    });
-    
-    const participantsRef=ref(database,`dms/${dmId}/participants`);
-    const participantsSnapshot=await get(participantsRef);
-    
-    if(!participantsSnapshot.exists()){
-      await set(participantsRef,{
-        [currentUser.uid]:true,
-        [selectedUserId]:true
+    if(selectedUserId){
+      // DM送信
+      const dmId=getDmId(currentUser.uid,selectedUserId);
+      const messagesRef=ref(database,`dms/${dmId}/messages`);
+      const newMessageRef=push(messagesRef);
+      
+      await set(newMessageRef,{
+        senderId:currentUser.uid,
+        text:messageText,
+        timestamp:Date.now()
+      });
+      
+      const participantsRef=ref(database,`dms/${dmId}/participants`);
+      const participantsSnapshot=await get(participantsRef);
+      
+      if(!participantsSnapshot.exists()){
+        await set(participantsRef,{
+          [currentUser.uid]:true,
+          [selectedUserId]:true
+        });
+      }
+      
+      // 相手に通知
+      const otherUser=allUsers.find(u=>u.uid===selectedUserId);
+      if(otherUser){
+        showNotification(`${currentUserData.username}からのメッセージ`,messageText,currentUserData.iconUrl);
+      }
+    }else if(selectedChannelId){
+      // チャンネル送信
+      const messagesRef=ref(database,`channels/${selectedChannelId}/messages`);
+      const newMessageRef=push(messagesRef);
+      
+      await set(newMessageRef,{
+        senderId:currentUser.uid,
+        text:messageText,
+        timestamp:Date.now()
       });
     }
   }catch(error){
-    console.error('メッセージ送信エラー:',error);
-    alert('メッセージの送信に失敗しました');
+    console.error('送信エラー:',error);
+    alert('送信に失敗しました');
     chatInput.value=messageText;
   }finally{
     isSending=false;
@@ -380,7 +649,7 @@ async function sendMessage(){
   }
 }
 
-// 時刻フォーマット（メッセージ用）
+// 時刻フォーマット
 function formatMessageTime(timestamp){
   const date=new Date(timestamp);
   const now=new Date();
@@ -396,18 +665,20 @@ function formatMessageTime(timestamp){
   }
 }
 
-// 最終ログイン時刻フォーマット
+// 最終ログイン時刻フォーマット（リアルタイム更新対応）
 function formatLastOnline(timestamp){
   if(!timestamp)return '不明';
   
   const date=new Date(timestamp);
   const now=new Date();
   const diff=now-date;
+  const seconds=Math.floor(diff/1000);
   const minutes=Math.floor(diff/60000);
   const hours=Math.floor(diff/3600000);
   const days=Math.floor(diff/86400000);
   
-  if(minutes<1)return 'たった今';
+  if(seconds<10)return 'たった今';
+  if(seconds<60)return `${seconds}秒前`;
   if(minutes<60)return `${minutes}分前`;
   if(hours<24)return `${hours}時間前`;
   if(days<7)return `${days}日前`;
@@ -422,7 +693,7 @@ function escapeHtml(text){
   return div.innerHTML;
 }
 
-// ユーザーメニューの開閉
+// ユーザーメニュー
 const userBtn=document.getElementById('user-btn');
 const userDropdown=document.getElementById('user-dropdown');
 
@@ -435,7 +706,6 @@ document.addEventListener('click',()=>{
   userDropdown.classList.remove('show');
 });
 
-// プロフィール・設定・ログアウト
 document.getElementById('profile-btn').addEventListener('click',()=>{
   window.location.href='profile.html';
 });
@@ -451,6 +721,9 @@ document.getElementById('logout-btn').addEventListener('click',async()=>{
         online:false,
         lastOnline:Date.now()
       });
+    }
+    if(lastOnlineUpdateInterval){
+      clearInterval(lastOnlineUpdateInterval);
     }
     await signOut(auth);
     window.location.href='login.html';
