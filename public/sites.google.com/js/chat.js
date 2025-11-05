@@ -15,9 +15,9 @@ let notificationPermissionGranted=false;
 
 // 共有チャンネル定義
 const CHANNELS=[
-  {id:'general',name:'全体連絡',desc:'アプデとか',icon:'campaign'},
-  {id:'random',name:'雑談',desc:'共用チャット',icon:'chat_bubble'},
-  {id:'tech',name:'その他',desc:'質問・あれこれ欲しいとか',icon:'code'}
+  {id:'general',name:'連絡',desc:'アプデとか',icon:'campaign'},
+  {id:'random',name:'共用チャット',desc:'ただの共用チャット',icon:'chat_bubble'},
+  {id:'tech',name:'to俺',desc:'あれこれ欲しいとか',icon:'code'}
 ];
 
 // ログイン状態チェック
