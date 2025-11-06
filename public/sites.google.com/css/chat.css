@@ -352,7 +352,6 @@
   border-top-color:var(--main);
   border-radius:50%;
   animation:spin 0.8s linear infinite;
-  margin-bottom:12px;
 }
 
 @keyframes spin{
@@ -361,6 +360,7 @@
 
 .loading-text{
   font-size:14px;
+  margin-top:12px;
 }
 
 .chat-header{
@@ -421,6 +421,13 @@
 .message{
   display:flex;
   gap:12px;
+  padding:8px 12px;
+  border-radius:8px;
+  transition:background-color 0.15s;
+}
+
+.message:hover{
+  background:var(--bg-primary);
 }
 
 .message-avatar{
@@ -465,7 +472,7 @@
 .message-read{
   font-size:11px;
   color:#2da44e;
-  margin-left:auto;
+  margin-left:8px;
 }
 
 .message-text{
@@ -482,6 +489,22 @@
 
 .message-text a:hover{
   color:var(--main-hover);
+}
+
+.message-reply{
+  font-size:12px;
+  color:var(--text-secondary);
+  padding:4px 8px;
+  background:var(--bg-secondary);
+  border-left:3px solid var(--main);
+  border-radius:4px;
+  margin-bottom:4px;
+}
+
+.message-edited{
+  font-size:11px;
+  color:var(--text-tertiary);
+  margin-top:4px;
 }
 
 .message-image{
