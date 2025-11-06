@@ -68,7 +68,7 @@
   background:var(--bg-secondary);
 }
 
-.icon-btn .material-symbols-outlined{
+.icon-btn .material-icons{
   font-size:20px;
 }
 
@@ -125,7 +125,7 @@
   background:var(--bg-secondary);
 }
 
-.dropdown-item .material-symbols-outlined{
+.dropdown-item .material-icons{
   font-size:18px;
 }
 
@@ -179,11 +179,11 @@
   color:var(--main);
 }
 
-.nav-item.active .material-symbols-outlined{
+.nav-item.active .material-icons{
   color:var(--main);
 }
 
-.nav-item .material-symbols-outlined{
+.nav-item .material-icons{
   font-size:24px;
   color:var(--text-tertiary);
 }
@@ -244,7 +244,7 @@
   margin-bottom:16px;
 }
 
-.app-icon .material-symbols-outlined{
+.app-icon .material-icons{
   font-size:28px;
   color:var(--main);
 }
