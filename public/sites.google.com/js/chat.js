@@ -15,9 +15,9 @@ let notificationPermissionGranted=false;
 
 // 共有チャンネル定義
 const CHANNELS=[
-  {id:'general',name:'連絡',desc:'アプデとか',icon:'campaign'},
-  {id:'random',name:'共用チャット',desc:'ただの共用チャット',icon:'chat_bubble'},
-  {id:'tech',name:'to俺',desc:'あれこれ欲しいとか',icon:'code'}
+  {id:'general',name:'全体連絡',desc:'重要なお知らせ',icon:'campaign'},
+  {id:'random',name:'雑談',desc:'自由に話そう',icon:'chat_bubble'},
+  {id:'tech',name:'技術相談',desc:'開発の質問など',icon:'code'}
 ];
 
 // ログイン状態チェック
@@ -87,6 +87,7 @@ async function requestNotificationPermission(){
 
 // 通知を表示
 function showNotification(title,body,icon){
+  // タブを開いているが、別のタブを見ている時のみ通知
   if(notificationPermissionGranted&&document.hidden){
     new Notification(title,{
       body:body,
@@ -325,8 +326,21 @@ function loadChat(userId){
         </div>
       </div>
     </div>
-    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">メッセージを読み込み中...</div>
+      </div>
+    </div>
     <div class="chat-input-container">
+      <div class="chat-input-actions">
+        <button class="action-btn" id="attach-image-btn" title="画像を添付（準備中）" disabled>
+          <span class="material-icons">image</span>
+        </button>
+        <button class="action-btn" id="attach-file-btn" title="ファイルを添付（準備中）" disabled>
+          <span class="material-icons">attach_file</span>
+        </button>
+      </div>
       <div class="chat-input-wrapper">
         <textarea class="chat-input" id="chat-input" placeholder="${selectedUser.username} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
@@ -359,8 +373,21 @@ function loadChannelChat(channelId){
         </div>
       </div>
     </div>
-    <div class="chat-messages" id="chat-messages"></div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">メッセージを読み込み中...</div>
+      </div>
+    </div>
     <div class="chat-input-container">
+      <div class="chat-input-actions">
+        <button class="action-btn" id="attach-image-btn" title="画像を添付（準備中）" disabled>
+          <span class="material-icons">image</span>
+        </button>
+        <button class="action-btn" id="attach-file-btn" title="ファイルを添付（準備中）" disabled>
+          <span class="material-icons">attach_file</span>
+        </button>
+      </div>
       <div class="chat-input-wrapper">
         <textarea class="chat-input" id="chat-input" placeholder="${channel.name} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
@@ -522,7 +549,7 @@ async function displayMessage(msg,otherUserId){
     if(readSnapshot.exists()){
       const lastReadTime=readSnapshot.val();
       if(msg.timestamp<=lastReadTime){
-        readStatus='<div class="message-read">既読</div>';
+        readStatus='<span class="message-read">✓ 既読</span>';
       }
     }
   }
@@ -537,9 +564,9 @@ async function displayMessage(msg,otherUserId){
       <div class="message-header">
         <span class="message-author">${senderData.username}</span>
         <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
+        ${readStatus}
       </div>
       <div class="message-text">${escapeHtml(msg.text)}</div>
-      ${readStatus}
     </div>
   `;
   
@@ -649,7 +676,7 @@ async function sendMessage(){
   }
 }
 
-// 時刻フォーマット
+// 時刻フォーマット（秒単位）
 function formatMessageTime(timestamp){
   const date=new Date(timestamp);
   const now=new Date();
@@ -657,11 +684,11 @@ function formatMessageTime(timestamp){
   const messageDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
   
   if(messageDate.getTime()===today.getTime()){
-    return date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    return date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   }else if(messageDate.getTime()===today.getTime()-86400000){
-    return '昨日 '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    return '昨日 '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   }else{
-    return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'})+' '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'})+' '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   }
 }
 
@@ -686,11 +713,17 @@ function formatLastOnline(timestamp){
   return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
 }
 
-// HTMLエスケープ
+// HTMLエスケープ + URLリンク化
 function escapeHtml(text){
   const div=document.createElement('div');
   div.textContent=text;
-  return div.innerHTML;
+  let escaped=div.innerHTML;
+  
+  // URLをリンク化
+  const urlRegex=/(https?:\/\/[^\s]+)/g;
+  escaped=escaped.replace(urlRegex,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+  
+  return escaped;
 }
 
 // ユーザーメニュー
