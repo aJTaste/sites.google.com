@@ -12,7 +12,8 @@ let isSending=false;
 let unreadCounts={};
 let lastOnlineUpdateInterval=null;
 let notificationPermissionGranted=false;
-let selectedImage=null; // 添付予定の画像
+let selectedImage=null;
+let replyToMessage=null; // リプライ先のメッセージ // 添付予定の画像
 
 // 共有チャンネル定義
 const CHANNELS=[
@@ -530,7 +531,10 @@ function loadMessages(userId){
         displayMessage(msg,userId);
       });
       
-      chatMessages.scrollTop=chatMessages.scrollHeight;
+      // メッセージ表示後、最下部にスクロール
+      setTimeout(()=>{
+        chatMessages.scrollTop=chatMessages.scrollHeight;
+      },0);
     }
     
     if(selectedUserId===userId){
@@ -568,7 +572,6 @@ function loadChannelMessages(channelId){
       
       messageArray.sort((a,b)=>a.timestamp-b.timestamp);
       
-      // 新しいメッセージがあれば通知
       if(messageArray.length>lastMessageCount&&lastMessageCount>0){
         const newMsg=messageArray[messageArray.length-1];
         if(newMsg.senderId!==currentUser.uid){
@@ -584,7 +587,10 @@ function loadChannelMessages(channelId){
         displayChannelMessage(msg);
       });
       
-      chatMessages.scrollTop=chatMessages.scrollHeight;
+      // メッセージ表示後、最下部にスクロール
+      setTimeout(()=>{
+        chatMessages.scrollTop=chatMessages.scrollHeight;
+      },0);
     }
     
     if(selectedChannelId===channelId){
@@ -626,6 +632,7 @@ async function displayMessage(msg,otherUserId){
   
   const messageEl=document.createElement('div');
   messageEl.className='message';
+  messageEl.setAttribute('data-message-id',msg.id);
   messageEl.innerHTML=`
     <div class="message-avatar">
       <img src="${iconUrl}" alt="${senderData.username}">
@@ -636,8 +643,10 @@ async function displayMessage(msg,otherUserId){
         <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
         ${readStatus}
       </div>
+      ${msg.replyTo?`<div class="message-reply">返信: ${msg.replyTo.text.substring(0,50)}...</div>`:''}
       <div class="message-text">${escapeHtml(msg.text)}</div>
       ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="openImageModal('${msg.imageUrl}')">`:''}
+      ${msg.editedAt?`<div class="message-edited">(編集済み)</div>`:''}
     </div>
   `;
   
@@ -661,6 +670,7 @@ function displayChannelMessage(msg){
   
   const messageEl=document.createElement('div');
   messageEl.className='message';
+  messageEl.setAttribute('data-message-id',msg.id);
   messageEl.innerHTML=`
     <div class="message-avatar">
       <img src="${iconUrl}" alt="${senderData.username}">
@@ -670,8 +680,10 @@ function displayChannelMessage(msg){
         <span class="message-author">${senderData.username}</span>
         <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
       </div>
+      ${msg.replyTo?`<div class="message-reply">返信: ${msg.replyTo.text.substring(0,50)}...</div>`:''}
       <div class="message-text">${escapeHtml(msg.text)}</div>
       ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="openImageModal('${msg.imageUrl}')">`:''}
+      ${msg.editedAt?`<div class="message-edited">(編集済み)</div>`:''}
     </div>
   `;
   
@@ -709,6 +721,15 @@ async function sendMessage(){
     
     if(messageImage){
       messageData.imageUrl=messageImage;
+    }
+    
+    if(replyToMessage){
+      messageData.replyTo={
+        messageId:replyToMessage.id,
+        text:replyToMessage.text,
+        senderId:replyToMessage.senderId
+      };
+      replyToMessage=null;
     }
     
     if(selectedUserId){
