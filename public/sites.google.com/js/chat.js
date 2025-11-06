@@ -12,6 +12,7 @@ let isSending=false;
 let unreadCounts={};
 let lastOnlineUpdateInterval=null;
 let notificationPermissionGranted=false;
+let selectedImage=null; // 添付予定の画像
 
 // 共有チャンネル定義
 const CHANNELS=[
@@ -333,8 +334,15 @@ function loadChat(userId){
       </div>
     </div>
     <div class="chat-input-container">
+      <div class="image-preview-container" id="image-preview-container">
+        <button class="image-preview-close" id="image-preview-close">
+          <span class="material-icons">close</span>
+        </button>
+        <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
+      </div>
       <div class="chat-input-actions">
-        <button class="action-btn" id="attach-image-btn" title="画像を添付（準備中）" disabled>
+        <input type="file" id="image-file-input" accept="image/*" hidden>
+        <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-icons">image</span>
         </button>
         <button class="action-btn" id="attach-file-btn" title="ファイルを添付（準備中）" disabled>
@@ -380,8 +388,15 @@ function loadChannelChat(channelId){
       </div>
     </div>
     <div class="chat-input-container">
+      <div class="image-preview-container" id="image-preview-container">
+        <button class="image-preview-close" id="image-preview-close">
+          <span class="material-icons">close</span>
+        </button>
+        <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
+      </div>
       <div class="chat-input-actions">
-        <button class="action-btn" id="attach-image-btn" title="画像を添付（準備中）" disabled>
+        <input type="file" id="image-file-input" accept="image/*" hidden>
+        <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-icons">image</span>
         </button>
         <button class="action-btn" id="attach-file-btn" title="ファイルを添付（準備中）" disabled>
@@ -418,11 +433,66 @@ function setupChatInput(){
     }
   });
   
+  // クリップボードから画像を貼り付け
+  chatInput.addEventListener('paste',(e)=>{
+    const items=e.clipboardData.items;
+    for(let i=0;i<items.length;i++){
+      if(items[i].type.indexOf('image')!==-1){
+        const file=items[i].getAsFile();
+        handleImageFile(file);
+        e.preventDefault();
+        break;
+      }
+    }
+  });
+  
   document.getElementById('send-btn').addEventListener('click',()=>{
     if(!isSending){
       sendMessage();
     }
   });
+  
+  // 画像添付ボタン
+  const attachImageBtn=document.getElementById('attach-image-btn');
+  const imageFileInput=document.getElementById('image-file-input');
+  
+  attachImageBtn.addEventListener('click',()=>{
+    imageFileInput.click();
+  });
+  
+  imageFileInput.addEventListener('change',(e)=>{
+    const file=e.target.files[0];
+    if(file){
+      handleImageFile(file);
+    }
+  });
+  
+  // 画像プレビュー削除
+  document.getElementById('image-preview-close').addEventListener('click',()=>{
+    selectedImage=null;
+    document.getElementById('image-preview-container').classList.remove('show');
+  });
+}
+
+// 画像ファイルを処理
+function handleImageFile(file){
+  if(!file.type.startsWith('image/')){
+    alert('画像ファイルを選択してください');
+    return;
+  }
+  
+  if(file.size>2*1024*1024){
+    alert('画像サイズは2MB以下にしてください');
+    return;
+  }
+  
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    selectedImage=e.target.result;
+    document.getElementById('image-preview').src=selectedImage;
+    document.getElementById('image-preview-container').classList.add('show');
+  };
+  reader.readAsDataURL(file);
 }
 
 // DM IDを生成
@@ -567,6 +637,7 @@ async function displayMessage(msg,otherUserId){
         ${readStatus}
       </div>
       <div class="message-text">${escapeHtml(msg.text)}</div>
+      ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="openImageModal('${msg.imageUrl}')">`:''}
     </div>
   `;
   
@@ -600,6 +671,7 @@ function displayChannelMessage(msg){
         <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
       </div>
       <div class="message-text">${escapeHtml(msg.text)}</div>
+      ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="openImageModal('${msg.imageUrl}')">`:''}
     </div>
   `;
   
@@ -614,7 +686,7 @@ async function sendMessage(){
   const sendBtn=document.getElementById('send-btn');
   const text=chatInput.value.trim();
   
-  if(!text)return;
+  if(!text&&!selectedImage)return;
   if(!selectedUserId&&!selectedChannelId)return;
   
   isSending=true;
@@ -622,21 +694,29 @@ async function sendMessage(){
   sendBtn.disabled=true;
   
   const messageText=text;
+  const messageImage=selectedImage;
   chatInput.value='';
   chatInput.style.height='auto';
+  selectedImage=null;
+  document.getElementById('image-preview-container').classList.remove('show');
   
   try{
+    const messageData={
+      senderId:currentUser.uid,
+      text:messageText,
+      timestamp:Date.now()
+    };
+    
+    if(messageImage){
+      messageData.imageUrl=messageImage;
+    }
+    
     if(selectedUserId){
-      // DM送信
       const dmId=getDmId(currentUser.uid,selectedUserId);
       const messagesRef=ref(database,`dms/${dmId}/messages`);
       const newMessageRef=push(messagesRef);
       
-      await set(newMessageRef,{
-        senderId:currentUser.uid,
-        text:messageText,
-        timestamp:Date.now()
-      });
+      await set(newMessageRef,messageData);
       
       const participantsRef=ref(database,`dms/${dmId}/participants`);
       const participantsSnapshot=await get(participantsRef);
@@ -648,21 +728,15 @@ async function sendMessage(){
         });
       }
       
-      // 相手に通知
       const otherUser=allUsers.find(u=>u.uid===selectedUserId);
       if(otherUser){
-        showNotification(`${currentUserData.username}からのメッセージ`,messageText,currentUserData.iconUrl);
+        showNotification(`${currentUserData.username}からのメッセージ`,messageText||'画像を送信しました',currentUserData.iconUrl);
       }
     }else if(selectedChannelId){
-      // チャンネル送信
       const messagesRef=ref(database,`channels/${selectedChannelId}/messages`);
       const newMessageRef=push(messagesRef);
       
-      await set(newMessageRef,{
-        senderId:currentUser.uid,
-        text:messageText,
-        timestamp:Date.now()
-      });
+      await set(newMessageRef,messageData);
     }
   }catch(error){
     console.error('送信エラー:',error);
@@ -725,6 +799,28 @@ function escapeHtml(text){
   
   return escaped;
 }
+
+// 画像拡大モーダルを開く
+window.openImageModal=function(imageUrl){
+  document.getElementById('image-modal-img').src=imageUrl;
+  document.getElementById('image-modal').classList.add('show');
+}
+
+// 画像拡大モーダルを閉じる
+document.addEventListener('DOMContentLoaded',()=>{
+  const imageModal=document.getElementById('image-modal');
+  const imageModalClose=document.getElementById('image-modal-close');
+  
+  imageModalClose.addEventListener('click',()=>{
+    imageModal.classList.remove('show');
+  });
+  
+  imageModal.addEventListener('click',(e)=>{
+    if(e.target===imageModal){
+      imageModal.classList.remove('show');
+    }
+  });
+});
 
 // ユーザーメニュー
 const userBtn=document.getElementById('user-btn');
