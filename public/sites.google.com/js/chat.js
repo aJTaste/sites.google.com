@@ -1,6 +1,6 @@
 import{auth,database}from'../common/firebase-config.js';
 import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import{ref,get,set,update,push,onValue,off}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{ref,get,set,update,push,onValue,off,remove}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 let currentUser=null;
 let currentUserData=null;
@@ -13,13 +13,15 @@ let unreadCounts={};
 let lastOnlineUpdateInterval=null;
 let notificationPermissionGranted=false;
 let selectedImage=null;
-let replyToMessage=null; // リプライ先のメッセージ // 添付予定の画像
+let replyToMessage=null;
+let editingMessageId=null;
+let editingMessagePath=null; // リプライ先のメッセージ // 添付予定の画像
 
 // 共有チャンネル定義
 const CHANNELS=[
-  {id:'general',name:'連絡',desc:'同じく壊れてる',icon:'campaign'},
-  {id:'random',name:'共用チャット',desc:'なんか壊れてる',icon:'chat_bubble'},
-  {id:'tech',name:'to俺',desc:'俺へ',icon:'code'}
+  {id:'general',name:'全体連絡',desc:'重要なお知らせ',icon:'campaign'},
+  {id:'random',name:'雑談',desc:'自由に話そう',icon:'chat_bubble'},
+  {id:'tech',name:'技術相談',desc:'開発の質問など',icon:'code'}
 ];
 
 // ログイン状態チェック
@@ -331,10 +333,17 @@ function loadChat(userId){
     <div class="chat-messages" id="chat-messages">
       <div class="loading">
         <div class="loading-spinner"></div>
-        <div class="loading-text">/div>
+        <div class="loading-text">メッセージを読み込み中...</div>
       </div>
     </div>
     <div class="chat-input-container">
+      <div class="reply-preview" id="reply-preview">
+        <button class="reply-preview-close" id="reply-preview-close">
+          <span class="material-icons">close</span>
+        </button>
+        <div class="reply-preview-header">返信先:</div>
+        <div class="reply-preview-text" id="reply-preview-text"></div>
+      </div>
       <div class="image-preview-container" id="image-preview-container">
         <button class="image-preview-close" id="image-preview-close">
           <span class="material-icons">close</span>
@@ -385,10 +394,17 @@ function loadChannelChat(channelId){
     <div class="chat-messages" id="chat-messages">
       <div class="loading">
         <div class="loading-spinner"></div>
-        <div class="loading-text"></div>
+        <div class="loading-text">メッセージを読み込み中...</div>
       </div>
     </div>
     <div class="chat-input-container">
+      <div class="reply-preview" id="reply-preview">
+        <button class="reply-preview-close" id="reply-preview-close">
+          <span class="material-icons">close</span>
+        </button>
+        <div class="reply-preview-header">返信先:</div>
+        <div class="reply-preview-text" id="reply-preview-text"></div>
+      </div>
       <div class="image-preview-container" id="image-preview-container">
         <button class="image-preview-close" id="image-preview-close">
           <span class="material-icons">close</span>
@@ -472,6 +488,12 @@ function setupChatInput(){
   document.getElementById('image-preview-close').addEventListener('click',()=>{
     selectedImage=null;
     document.getElementById('image-preview-container').classList.remove('show');
+  });
+  
+  // リプライプレビュー削除
+  document.getElementById('reply-preview-close').addEventListener('click',()=>{
+    replyToMessage=null;
+    document.getElementById('reply-preview').classList.remove('show');
   });
 }
 
@@ -668,6 +690,30 @@ function displayChannelMessage(msg){
   
   const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/school.png';
   
+  // 操作ボタン（自分のメッセージのみ編集・削除、他人のメッセージには返信）
+  const isCurrentUser=msg.senderId===currentUser.uid;
+  let actionsHtml='';
+  if(isCurrentUser){
+    actionsHtml=`
+      <div class="message-actions">
+        <button class="message-action-btn" onclick="editMessage('${msg.id}','${selectedChannelId}','${escapeHtml(msg.text).replace(/'/g,"\\'")}',false)" title="編集">
+          <span class="material-icons">edit</span>
+        </button>
+        <button class="message-action-btn delete" onclick="deleteMessage('${msg.id}','${selectedChannelId}',false)" title="削除">
+          <span class="material-icons">delete</span>
+        </button>
+      </div>
+    `;
+  }else{
+    actionsHtml=`
+      <div class="message-actions">
+        <button class="message-action-btn" onclick="replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.senderId}')" title="返信">
+          <span class="material-icons">reply</span>
+        </button>
+      </div>
+    `;
+  }
+  
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
@@ -680,11 +726,12 @@ function displayChannelMessage(msg){
         <span class="message-author">${senderData.username}</span>
         <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
       </div>
-      ${msg.replyTo?`<div class="message-reply">返信: ${msg.replyTo.text.substring(0,50)}...</div>`:''}
+      ${msg.replyTo?`<div class="message-reply">返信: ${escapeHtml(msg.replyTo.text).substring(0,50)}...</div>`:''}
       <div class="message-text">${escapeHtml(msg.text)}</div>
       ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="openImageModal('${msg.imageUrl}')">`:''}
       ${msg.editedAt?`<div class="message-edited">(編集済み)</div>`:''}
     </div>
+    ${actionsHtml}
   `;
   
   chatMessages.appendChild(messageEl);
@@ -827,6 +874,29 @@ window.openImageModal=function(imageUrl){
   document.getElementById('image-modal').classList.add('show');
 }
 
+// リプライ
+window.replyMessage=function(messageId,text,senderId){
+  replyToMessage={id:messageId,text:text,senderId:senderId};
+  document.getElementById('reply-preview-text').textContent=text.substring(0,100);
+  document.getElementById('reply-preview').classList.add('show');
+  document.getElementById('chat-input').focus();
+}
+
+// 編集
+window.editMessage=function(messageId,path,text,isDM){
+  editingMessageId=messageId;
+  editingMessagePath=isDM?`dms/${path}/messages/${messageId}`:`channels/${path}/messages/${messageId}`;
+  document.getElementById('edit-textarea').value=text.replace(/&#39;/g,"'");
+  document.getElementById('edit-modal').classList.add('show');
+}
+
+// 削除
+window.deleteMessage=function(messageId,path,isDM){
+  editingMessageId=messageId;
+  editingMessagePath=isDM?`dms/${path}/messages/${messageId}`:`channels/${path}/messages/${messageId}`;
+  document.getElementById('delete-modal').classList.add('show');
+}
+
 // 画像拡大モーダルを閉じる
 document.addEventListener('DOMContentLoaded',()=>{
   const imageModal=document.getElementById('image-modal');
@@ -839,6 +909,72 @@ document.addEventListener('DOMContentLoaded',()=>{
   imageModal.addEventListener('click',(e)=>{
     if(e.target===imageModal){
       imageModal.classList.remove('show');
+    }
+  });
+  
+  // 編集モーダル
+  const editModal=document.getElementById('edit-modal');
+  const editModalClose=document.getElementById('edit-modal-close');
+  const editCancel=document.getElementById('edit-cancel');
+  const editSave=document.getElementById('edit-save');
+  
+  editModalClose.addEventListener('click',()=>{
+    editModal.classList.remove('show');
+  });
+  
+  editCancel.addEventListener('click',()=>{
+    editModal.classList.remove('show');
+  });
+  
+  editModal.addEventListener('click',(e)=>{
+    if(e.target===editModal){
+      editModal.classList.remove('show');
+    }
+  });
+  
+  editSave.addEventListener('click',async()=>{
+    const newText=document.getElementById('edit-textarea').value.trim();
+    if(!newText)return;
+    
+    try{
+      await update(ref(database,editingMessagePath),{
+        text:newText,
+        editedAt:Date.now()
+      });
+      editModal.classList.remove('show');
+    }catch(error){
+      console.error('編集エラー:',error);
+      alert('編集に失敗しました');
+    }
+  });
+  
+  // 削除モーダル
+  const deleteModal=document.getElementById('delete-modal');
+  const deleteModalClose=document.getElementById('delete-modal-close');
+  const deleteCancel=document.getElementById('delete-cancel');
+  const deleteConfirm=document.getElementById('delete-confirm');
+  
+  deleteModalClose.addEventListener('click',()=>{
+    deleteModal.classList.remove('show');
+  });
+  
+  deleteCancel.addEventListener('click',()=>{
+    deleteModal.classList.remove('show');
+  });
+  
+  deleteModal.addEventListener('click',(e)=>{
+    if(e.target===deleteModal){
+      deleteModal.classList.remove('show');
+    }
+  });
+  
+  deleteConfirm.addEventListener('click',async()=>{
+    try{
+      await remove(ref(database,editingMessagePath));
+      deleteModal.classList.remove('show');
+    }catch(error){
+      console.error('削除エラー:',error);
+      alert('削除に失敗しました');
     }
   });
 });
