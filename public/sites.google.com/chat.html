@@ -48,20 +48,20 @@
       <div class="main-container">
         <aside class="sidebar">
           <nav class="sidebar-nav">
-            <a href="index.html" class="nav-item active" title="ホーム">
+            <a href="index.html" class="nav-item" title="ホーム">
               <span class="material-icons">home</span>
             </a>
             <a href="#" class="nav-item" title="HTMLプレビュー">
-              <span class="material-icons">preview</span>
+              <span class="material-icons">code</span>
             </a>
-            <a href="chat.html" class="nav-item" title="チャット">
+            <a href="chat.html" class="nav-item active" title="チャット">
               <span class="material-icons">chat</span>
             </a>
             <a href="#" class="nav-item" title="ファイル共有">
               <span class="material-icons">folder</span>
             </a>
             <a href="eag.html" class="nav-item" title="Eaglercraft">
-              <span class="material-icons">public</span>
+              <span class="material-icons">block</span>
             </a>
           </nav>
         </aside>
@@ -90,6 +90,44 @@
         <span class="material-icons">close</span>
       </button>
       <img id="image-modal-img" src="" alt="拡大画像">
+    </div>
+    
+    <!-- 編集モーダル -->
+    <div class="modal" id="edit-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>メッセージを編集</h3>
+          <button class="modal-close" id="edit-modal-close">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <textarea id="edit-textarea" placeholder="メッセージを入力"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="edit-cancel">キャンセル</button>
+          <button class="btn-primary" id="edit-save">保存</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 削除確認モーダル -->
+    <div class="modal" id="delete-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>メッセージを削除</h3>
+          <button class="modal-close" id="delete-modal-close">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="color:var(--text-secondary);">このメッセージを削除しますか？</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="delete-cancel">キャンセル</button>
+          <button class="btn-primary" id="delete-confirm" style="background:#cf222e;">削除</button>
+        </div>
+      </div>
     </div>
     
     <script src="common/common.js" defer></script>
