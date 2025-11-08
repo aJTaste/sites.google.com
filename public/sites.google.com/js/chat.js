@@ -1,6 +1,7 @@
 import{auth,database}from'../common/firebase-config.js';
 import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import{ref,get,set,update,push,onValue,off,remove}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{getDmId,formatMessageTime,formatLastOnline,escapeHtml,showNotification,updatePageTitle,handleImageFile}from'./chat-utils.js';
 
 let currentUser=null;
 let currentUserData=null;
@@ -11,11 +12,11 @@ let messageListener=null;
 let isSending=false;
 let unreadCounts={};
 let lastOnlineUpdateInterval=null;
-let notificationPermissionGranted=false;
 let selectedImage=null;
 let replyToMessage=null;
 let editingMessageId=null;
-let editingMessagePath=null; // リプライ先のメッセージ // 添付予定の画像
+let editingMessagePath=null;
+let lastMessageCounts={}; // チャンネルごとの最終メッセージ数
 
 // 共有チャンネル定義
 const CHANNELS=[
@@ -44,24 +45,13 @@ onAuthStateChanged(auth,async(user)=>{
       userAvatar.src=currentUserData.iconUrl;
     }
     
-    const updates={};
-    if(currentUserData.online===undefined){
-      updates.online=true;
-    }
-    if(currentUserData.lastOnline===undefined){
-      updates.lastOnline=Date.now();
-    }
-    
-    if(Object.keys(updates).length>0){
-      await update(userRef,updates);
-      currentUserData={...currentUserData,...updates};
-    }
-    
+    // オンライン状態を初期化
     await update(userRef,{
       online:true,
       lastOnline:Date.now()
     });
     
+    // ページを閉じる時にオフラインに
     window.addEventListener('beforeunload',async()=>{
       await update(userRef,{
         online:false,
@@ -70,46 +60,14 @@ onAuthStateChanged(auth,async(user)=>{
     });
     
     // 通知権限をリクエスト
-    requestNotificationPermission();
+    if('Notification'in window&&Notification.permission==='default'){
+      await Notification.requestPermission();
+    }
     
     loadUsers();
     startLastOnlineUpdateTimer();
   }
 });
-
-// 通知権限をリクエスト
-async function requestNotificationPermission(){
-  if('Notification'in window){
-    if(Notification.permission==='default'){
-      const permission=await Notification.requestPermission();
-      notificationPermissionGranted=(permission==='granted');
-    }else if(Notification.permission==='granted'){
-      notificationPermissionGranted=true;
-    }
-  }
-}
-
-// 通知を表示
-function showNotification(title,body,icon){
-  // タブを開いているが、別のタブを見ている時のみ通知
-  if(notificationPermissionGranted&&document.hidden){
-    new Notification(title,{
-      body:body,
-      icon:icon||'assets/favicon-main.png',
-      tag:'chat-message'
-    });
-  }
-}
-
-// タブタイトルに未読件数を表示
-function updatePageTitle(){
-  const totalUnread=Object.values(unreadCounts).reduce((sum,count)=>sum+count,0);
-  if(totalUnread>0){
-    document.title=`(${totalUnread}) チャット | AppHub`;
-  }else{
-    document.title='チャット | AppHub';
-  }
-}
 
 // 最終ログイン時刻の定期更新
 function startLastOnlineUpdateTimer(){
@@ -136,7 +94,7 @@ function loadUsers(){
       
       calculateUnreadCounts().then(()=>{
         displayUsers();
-        updatePageTitle();
+        updatePageTitle(unreadCounts);
       });
     }
   });
@@ -285,7 +243,7 @@ async function selectUser(userId){
   });
   
   unreadCounts[userId]=0;
-  updatePageTitle();
+  updatePageTitle(unreadCounts);
   
   displayUsers();
   loadChat(userId);
@@ -301,7 +259,7 @@ async function selectChannel(channelId){
   });
   
   unreadCounts[channelId]=0;
-  updatePageTitle();
+  updatePageTitle(unreadCounts);
   
   displayUsers();
   loadChannelChat(channelId);
@@ -354,9 +312,6 @@ function loadChat(userId){
         <input type="file" id="image-file-input" accept="image/*" hidden>
         <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-icons">image</span>
-        </button>
-        <button class="action-btn" id="attach-file-btn" title="ファイルを添付（準備中）" disabled>
-          <span class="material-icons">attach_file</span>
         </button>
       </div>
       <div class="chat-input-wrapper">
@@ -416,9 +371,6 @@ function loadChannelChat(channelId){
         <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-icons">image</span>
         </button>
-        <button class="action-btn" id="attach-file-btn" title="ファイルを添付（準備中）" disabled>
-          <span class="material-icons">attach_file</span>
-        </button>
       </div>
       <div class="chat-input-wrapper">
         <textarea class="chat-input" id="chat-input" placeholder="${channel.name} にメッセージを送信" rows="1"></textarea>
@@ -438,7 +390,7 @@ function setupChatInput(){
   const chatInput=document.getElementById('chat-input');
   chatInput.addEventListener('input',()=>{
     chatInput.style.height='auto';
-    chatInput.style.height=chatInput.scrollHeight+'px';
+    chatInput.style.height=Math.min(chatInput.scrollHeight,120)+'px';
   });
   
   chatInput.addEventListener('keydown',(e)=>{
@@ -456,7 +408,11 @@ function setupChatInput(){
     for(let i=0;i<items.length;i++){
       if(items[i].type.indexOf('image')!==-1){
         const file=items[i].getAsFile();
-        handleImageFile(file);
+        handleImageFile(file,(base64)=>{
+          selectedImage=base64;
+          document.getElementById('image-preview').src=base64;
+          document.getElementById('image-preview-container').classList.add('show');
+        });
         e.preventDefault();
         break;
       }
@@ -480,7 +436,11 @@ function setupChatInput(){
   imageFileInput.addEventListener('change',(e)=>{
     const file=e.target.files[0];
     if(file){
-      handleImageFile(file);
+      handleImageFile(file,(base64)=>{
+        selectedImage=base64;
+        document.getElementById('image-preview').src=base64;
+        document.getElementById('image-preview-container').classList.add('show');
+      });
     }
   });
   
@@ -497,32 +457,6 @@ function setupChatInput(){
   });
 }
 
-// 画像ファイルを処理
-function handleImageFile(file){
-  if(!file.type.startsWith('image/')){
-    alert('画像ファイルを選択してください');
-    return;
-  }
-  
-  if(file.size>2*1024*1024){
-    alert('画像サイズは2MB以下にしてください');
-    return;
-  }
-  
-  const reader=new FileReader();
-  reader.onload=(e)=>{
-    selectedImage=e.target.result;
-    document.getElementById('image-preview').src=selectedImage;
-    document.getElementById('image-preview-container').classList.add('show');
-  };
-  reader.readAsDataURL(file);
-}
-
-// DM IDを生成
-function getDmId(uid1,uid2){
-  return[uid1,uid2].sort().join('_');
-}
-
 // メッセージを読み込み（DM）
 function loadMessages(userId){
   if(messageListener){
@@ -533,6 +467,9 @@ function loadMessages(userId){
   const messagesRef=ref(database,`dms/${dmId}/messages`);
   
   messageListener=messagesRef;
+  
+  // 初回読み込みフラグ
+  let isFirstLoad=true;
   
   onValue(messagesRef,(snapshot)=>{
     const chatMessages=document.getElementById('chat-messages');
@@ -549,6 +486,21 @@ function loadMessages(userId){
       
       messageArray.sort((a,b)=>a.timestamp-b.timestamp);
       
+      // 新着メッセージ通知（初回読み込み後のみ）
+      if(!isFirstLoad&&messageArray.length>0){
+        const latestMsg=messageArray[messageArray.length-1];
+        if(latestMsg.senderId===userId){
+          const sender=allUsers.find(u=>u.uid===userId);
+          if(sender){
+            showNotification(
+              `${sender.username}からのメッセージ`,
+              latestMsg.text||'画像を送信しました',
+              sender.iconUrl&&sender.iconUrl!=='default'?sender.iconUrl:'assets/school.png'
+            );
+          }
+        }
+      }
+      
       messageArray.forEach(msg=>{
         displayMessage(msg,userId);
       });
@@ -557,6 +509,8 @@ function loadMessages(userId){
       setTimeout(()=>{
         chatMessages.scrollTop=chatMessages.scrollHeight;
       },0);
+      
+      isFirstLoad=false;
     }
     
     if(selectedUserId===userId){
@@ -577,7 +531,8 @@ function loadChannelMessages(channelId){
   
   messageListener=messagesRef;
   
-  let lastMessageCount=0;
+  // 初回読み込みフラグ
+  let isFirstLoad=true;
   
   onValue(messagesRef,(snapshot)=>{
     const chatMessages=document.getElementById('chat-messages');
@@ -594,16 +549,20 @@ function loadChannelMessages(channelId){
       
       messageArray.sort((a,b)=>a.timestamp-b.timestamp);
       
-      if(messageArray.length>lastMessageCount&&lastMessageCount>0){
-        const newMsg=messageArray[messageArray.length-1];
-        if(newMsg.senderId!==currentUser.uid){
-          const sender=allUsers.find(u=>u.uid===newMsg.senderId);
+      // 新着メッセージ通知（初回読み込み後のみ）
+      if(!isFirstLoad&&messageArray.length>0){
+        const latestMsg=messageArray[messageArray.length-1];
+        if(latestMsg.senderId!==currentUser.uid){
+          const sender=allUsers.find(u=>u.uid===latestMsg.senderId);
           const senderName=sender?sender.username:'誰か';
           const channel=CHANNELS.find(c=>c.id===channelId);
-          showNotification(`${channel.name}: ${senderName}`,newMsg.text);
+          showNotification(
+            `${channel.name}: ${senderName}`,
+            latestMsg.text||'画像を送信しました',
+            sender&&sender.iconUrl&&sender.iconUrl!=='default'?sender.iconUrl:'assets/school.png'
+          );
         }
       }
-      lastMessageCount=messageArray.length;
       
       messageArray.forEach(msg=>{
         displayChannelMessage(msg);
@@ -613,6 +572,8 @@ function loadChannelMessages(channelId){
       setTimeout(()=>{
         chatMessages.scrollTop=chatMessages.scrollHeight;
       },0);
+      
+      isFirstLoad=false;
     }
     
     if(selectedChannelId===channelId){
@@ -652,6 +613,30 @@ async function displayMessage(msg,otherUserId){
     }
   }
   
+  // 操作ボタン（自分のメッセージのみ編集・削除、他人のメッセージには返信）
+  const dmId=getDmId(currentUser.uid,otherUserId);
+  let actionsHtml='';
+  if(isCurrentUser){
+    actionsHtml=`
+      <div class="message-actions">
+        <button class="message-action-btn" onclick="window.editMessage('${msg.id}','${dmId}','${escapeHtml(msg.text).replace(/'/g,"\\'")}',true)" title="編集">
+          <span class="material-icons">edit</span>
+        </button>
+        <button class="message-action-btn delete" onclick="window.deleteMessage('${msg.id}','${dmId}',true)" title="削除">
+          <span class="material-icons">delete</span>
+        </button>
+      </div>
+    `;
+  }else{
+    actionsHtml=`
+      <div class="message-actions">
+        <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.senderId}')" title="返信">
+          <span class="material-icons">reply</span>
+        </button>
+      </div>
+    `;
+  }
+  
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
@@ -665,11 +650,12 @@ async function displayMessage(msg,otherUserId){
         <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
         ${readStatus}
       </div>
-      ${msg.replyTo?`<div class="message-reply">返信: ${msg.replyTo.text.substring(0,50)}...</div>`:''}
+      ${msg.replyTo?`<div class="message-reply">返信: ${escapeHtml(msg.replyTo.text).substring(0,50)}...</div>`:''}
       <div class="message-text">${escapeHtml(msg.text)}</div>
-      ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="openImageModal('${msg.imageUrl}')">`:''}
+      ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="window.openImageModal('${msg.imageUrl}')">`:''}
       ${msg.editedAt?`<div class="message-edited">(編集済み)</div>`:''}
     </div>
+    ${actionsHtml}
   `;
   
   chatMessages.appendChild(messageEl);
@@ -696,10 +682,10 @@ function displayChannelMessage(msg){
   if(isCurrentUser){
     actionsHtml=`
       <div class="message-actions">
-        <button class="message-action-btn" onclick="editMessage('${msg.id}','${selectedChannelId}','${escapeHtml(msg.text).replace(/'/g,"\\'")}',false)" title="編集">
+        <button class="message-action-btn" onclick="window.editMessage('${msg.id}','${selectedChannelId}','${escapeHtml(msg.text).replace(/'/g,"\\'")}',false)" title="編集">
           <span class="material-icons">edit</span>
         </button>
-        <button class="message-action-btn delete" onclick="deleteMessage('${msg.id}','${selectedChannelId}',false)" title="削除">
+        <button class="message-action-btn delete" onclick="window.deleteMessage('${msg.id}','${selectedChannelId}',false)" title="削除">
           <span class="material-icons">delete</span>
         </button>
       </div>
@@ -707,7 +693,7 @@ function displayChannelMessage(msg){
   }else{
     actionsHtml=`
       <div class="message-actions">
-        <button class="message-action-btn" onclick="replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.senderId}')" title="返信">
+        <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.senderId}')" title="返信">
           <span class="material-icons">reply</span>
         </button>
       </div>
@@ -728,7 +714,7 @@ function displayChannelMessage(msg){
       </div>
       ${msg.replyTo?`<div class="message-reply">返信: ${escapeHtml(msg.replyTo.text).substring(0,50)}...</div>`:''}
       <div class="message-text">${escapeHtml(msg.text)}</div>
-      ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="openImageModal('${msg.imageUrl}')">`:''}
+      ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="window.openImageModal('${msg.imageUrl}')">`:''}
       ${msg.editedAt?`<div class="message-edited">(編集済み)</div>`:''}
     </div>
     ${actionsHtml}
@@ -754,10 +740,14 @@ async function sendMessage(){
   
   const messageText=text;
   const messageImage=selectedImage;
+  const messageReply=replyToMessage;
+  
   chatInput.value='';
   chatInput.style.height='auto';
   selectedImage=null;
+  replyToMessage=null;
   document.getElementById('image-preview-container').classList.remove('show');
+  document.getElementById('reply-preview').classList.remove('show');
   
   try{
     const messageData={
@@ -770,13 +760,12 @@ async function sendMessage(){
       messageData.imageUrl=messageImage;
     }
     
-    if(replyToMessage){
+    if(messageReply){
       messageData.replyTo={
-        messageId:replyToMessage.id,
-        text:replyToMessage.text,
-        senderId:replyToMessage.senderId
+        messageId:messageReply.id,
+        text:messageReply.text,
+        senderId:messageReply.senderId
       };
-      replyToMessage=null;
     }
     
     if(selectedUserId){
@@ -795,11 +784,6 @@ async function sendMessage(){
           [selectedUserId]:true
         });
       }
-      
-      const otherUser=allUsers.find(u=>u.uid===selectedUserId);
-      if(otherUser){
-        showNotification(`${currentUserData.username}からのメッセージ`,messageText||'画像を送信しました',currentUserData.iconUrl);
-      }
     }else if(selectedChannelId){
       const messagesRef=ref(database,`channels/${selectedChannelId}/messages`);
       const newMessageRef=push(messagesRef);
@@ -816,56 +800,6 @@ async function sendMessage(){
     sendBtn.disabled=false;
     chatInput.focus();
   }
-}
-
-// 時刻フォーマット（秒単位）
-function formatMessageTime(timestamp){
-  const date=new Date(timestamp);
-  const now=new Date();
-  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  const messageDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
-  
-  if(messageDate.getTime()===today.getTime()){
-    return date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  }else if(messageDate.getTime()===today.getTime()-86400000){
-    return '昨日 '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  }else{
-    return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'})+' '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  }
-}
-
-// 最終ログイン時刻フォーマット（リアルタイム更新対応）
-function formatLastOnline(timestamp){
-  if(!timestamp)return '不明';
-  
-  const date=new Date(timestamp);
-  const now=new Date();
-  const diff=now-date;
-  const seconds=Math.floor(diff/1000);
-  const minutes=Math.floor(diff/60000);
-  const hours=Math.floor(diff/3600000);
-  const days=Math.floor(diff/86400000);
-  
-  if(seconds<10)return 'たった今';
-  if(seconds<60)return `${seconds}秒前`;
-  if(minutes<60)return `${minutes}分前`;
-  if(hours<24)return `${hours}時間前`;
-  if(days<7)return `${days}日前`;
-  
-  return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
-}
-
-// HTMLエスケープ + URLリンク化
-function escapeHtml(text){
-  const div=document.createElement('div');
-  div.textContent=text;
-  let escaped=div.innerHTML;
-  
-  // URLをリンク化
-  const urlRegex=/(https?:\/\/[^\s]+)/g;
-  escaped=escaped.replace(urlRegex,'<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
-  
-  return escaped;
 }
 
 // 画像拡大モーダルを開く
@@ -897,8 +831,9 @@ window.deleteMessage=function(messageId,path,isDM){
   document.getElementById('delete-modal').classList.add('show');
 }
 
-// 画像拡大モーダルを閉じる
+// モーダルのセットアップ
 document.addEventListener('DOMContentLoaded',()=>{
+  // 画像拡大モーダル
   const imageModal=document.getElementById('image-modal');
   const imageModalClose=document.getElementById('image-modal-close');
   
@@ -934,7 +869,10 @@ document.addEventListener('DOMContentLoaded',()=>{
   
   editSave.addEventListener('click',async()=>{
     const newText=document.getElementById('edit-textarea').value.trim();
-    if(!newText)return;
+    if(!newText){
+      alert('メッセージを入力してください');
+      return;
+    }
     
     try{
       await update(ref(database,editingMessagePath),{
