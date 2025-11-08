@@ -3,40 +3,15 @@
 import{state,CHANNELS}from'./chat-state.js';
 import{formatLastOnline}from'./chat-utils.js';
 
-function log(msg){
-  const debugDiv=document.getElementById('debug-log');
-  if(debugDiv){
-    const time=new Date().toLocaleTimeString();
-    const p=document.createElement('div');
-    p.textContent=`[${time}] UI: ${msg}`;
-    debugDiv.appendChild(p);
-    debugDiv.scrollTop=debugDiv.scrollHeight;
-  }
-  console.log('UI:',msg);
-}
-
-log('chat-ui.js読み込み開始');
-
 // ユーザー一覧を表示
 export function displayUsers(){
-  log('displayUsers開始');
-  log('allUsers数:'+state.allUsers.length);
-  log('CHANNELS数:'+CHANNELS.length);
-  
   const dmList=document.getElementById('dm-list');
-  if(!dmList){
-    log('ERROR:dm-list要素なし');
-    return;
-  }
+  if(!dmList)return;
   
-  log('dm-listクリア');
   dmList.innerHTML='';
   
   // チャンネルを追加
-  log('チャンネル追加開始');
-  CHANNELS.forEach((channel,index)=>{
-    log(`チャンネル${index}:${channel.name}`);
-    
+  CHANNELS.forEach(channel=>{
     const channelItem=document.createElement('div');
     channelItem.className='channel-item';
     if(state.selectedChannelId===channel.id){
@@ -60,18 +35,13 @@ export function displayUsers(){
     `;
     
     channelItem.addEventListener('click',()=>{
-      log('チャンネルクリック:'+channel.id);
       if(window.selectChannel){
         window.selectChannel(channel.id);
-      }else{
-        log('ERROR:selectChannel関数なし');
       }
     });
     
     dmList.appendChild(channelItem);
   });
-  
-  log('チャンネル追加完了');
   
   // 区切り線
   const divider=document.createElement('div');
@@ -80,18 +50,13 @@ export function displayUsers(){
   
   // 最終ログイン時刻でソート（新しい順）
   if(state.allUsers&&state.allUsers.length>0){
-    log('ユーザーソート開始');
     state.allUsers.sort((a,b)=>{
       const aTime=a.lastOnline||a.createdAt||0;
       const bTime=b.lastOnline||b.createdAt||0;
       return bTime-aTime;
     });
     
-    log('ユーザー表示:'+state.allUsers.length+'人');
-    
-    state.allUsers.forEach((user,index)=>{
-      log(`ユーザー${index}:${user.username}`);
-      
+    state.allUsers.forEach(user=>{
       const dmItem=document.createElement('div');
       dmItem.className='dm-item';
       if(state.selectedUserId===user.uid){
@@ -121,20 +86,13 @@ export function displayUsers(){
       `;
       
       dmItem.addEventListener('click',()=>{
-        log('ユーザークリック:'+user.uid);
         if(window.selectUser){
           window.selectUser(user.uid);
-        }else{
-          log('ERROR:selectUser関数なし');
         }
       });
       
       dmList.appendChild(dmItem);
     });
-    
-    log('ユーザー追加完了');
-  }else{
-    log('表示ユーザー0人');
   }
 }
 
@@ -241,5 +199,3 @@ export function createChannelChatHTML(channel){
     </div>
   `;
 }
-
-log('chat-ui.js読み込み完了');
