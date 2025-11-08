@@ -5,6 +5,13 @@ export function getDmId(uid1,uid2){
   return[uid1,uid2].sort().join('_');
 }
 
+// 通知権限をリクエスト
+export async function requestNotificationPermission(){
+  if('Notification'in window&&Notification.permission==='default'){
+    await Notification.requestPermission();
+  }
+}
+
 // 時刻フォーマット（秒単位）
 export function formatMessageTime(timestamp){
   const date=new Date(timestamp);
