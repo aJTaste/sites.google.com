@@ -1,0 +1,39 @@
+// チャットアプリの状態管理
+
+// 共有チャンネル定義
+export const CHANNELS=[
+  {id:'general',name:'連絡',desc:'連絡です',icon:'campaign'},
+  {id:'random',name:'共用チャット',desc:'全員見れます',icon:'chat_bubble'},
+  {id:'tech',name:'to俺',desc:'俺へなんかあれば',icon:'code'}
+];
+
+// グローバル状態
+export const state={
+  currentUser:null,
+  currentUserData:null,
+  allUsers:[],
+  selectedUserId:null,
+  selectedChannelId:null,
+  messageListener:null,
+  isSending:false,
+  unreadCounts:{},
+  lastOnlineUpdateInterval:null,
+  selectedImage:null,
+  replyToMessage:null,
+  editingMessageId:null,
+  editingMessagePath:null
+};
+
+// 状態更新関数
+export function updateState(key,value){
+  state[key]=value;
+}
+
+export function getState(key){
+  return state[key];
+}
+
+export function resetMessageState(){
+  state.selectedImage=null;
+  state.replyToMessage=null;
+}
