@@ -19,9 +19,9 @@ let editingMessagePath=null; // リプライ先のメッセージ // 添付予�
 
 // 共有チャンネル定義
 const CHANNELS=[
-  {id:'general',name:'全体連絡',desc:'重要なお知らせ',icon:'campaign'},
-  {id:'random',name:'雑談',desc:'自由に話そう',icon:'chat_bubble'},
-  {id:'tech',name:'技術相談',desc:'開発の質問など',icon:'code'}
+  {id:'general',name:'連絡',desc:'連絡です',icon:'campaign'},
+  {id:'random',name:'共用チャット',desc:'全員見れます',icon:'chat_bubble'},
+  {id:'tech',name:'to俺',desc:'俺へなんかあれば',icon:'code'}
 ];
 
 // ログイン状態チェック
