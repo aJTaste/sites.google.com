@@ -1,9 +1,26 @@
-// メッセージ表示・送信関連
+// メッセージ表示・送信関連（デバッグ版）
 
 import{database}from'../common/firebase-config.js';
 import{ref,get,set,push,onValue,off}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import{state,updateState,resetMessageState}from'./chat-state.js';
 import{getDmId,formatMessageTime,escapeHtml,showNotification}from'./chat-utils.js';
+
+// デバッグ用：画面にメッセージ順を表示
+function showDebugInfo(messages){
+  const debugInfo=document.createElement('div');
+  debugInfo.style.cssText='position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.9);color:#0f0;padding:10px;font-family:monospace;font-size:11px;z-index:9999;border-radius:5px;max-width:400px;';
+  debugInfo.innerHTML='<strong>メッセージ順序:</strong><br>';
+  messages.forEach((msg,index)=>{
+    const time=new Date(msg.timestamp).toLocaleTimeString();
+    const sender=msg.senderId===state.currentUser.uid?'自分':'相手';
+    debugInfo.innerHTML+=`${index+1}. ${sender} ${time} - ${msg.text.substring(0,20)}<br>`;
+  });
+  
+  const oldDebug=document.querySelector('[data-debug-info]');
+  if(oldDebug)oldDebug.remove();
+  debugInfo.setAttribute('data-debug-info','true');
+  document.body.appendChild(debugInfo);
+}
 
 // メッセージを読み込み（DM）
 export function loadMessages(userId){
@@ -22,20 +39,39 @@ export function loadMessages(userId){
     const chatMessages=document.getElementById('chat-messages');
     if(!chatMessages)return;
     
-    // スクロール位置を保存（新しいメッセージが来た時に最下部にいるかチェック）
     const wasAtBottom=chatMessages.scrollHeight-chatMessages.scrollTop<=chatMessages.clientHeight+50;
     
     chatMessages.innerHTML='';
     
     if(snapshot.exists()){
       const messages=snapshot.val();
+      
+      console.log('===== Firebaseから取得した生データ =====');
+      console.log(messages);
+      
       const messageArray=Object.keys(messages).map(key=>({
         id:key,
         ...messages[key]
       }));
       
+      console.log('===== ソート前のメッセージ配列 =====');
+      messageArray.forEach((msg,i)=>{
+        console.log(`${i}: ${new Date(msg.timestamp).toLocaleTimeString()} - ${msg.senderId===state.currentUser.uid?'自分':'相手'} - ${msg.text}`);
+      });
+      
       // タイムスタンプで昇順ソート（古いメッセージが上）
-      messageArray.sort((a,b)=>a.timestamp-b.timestamp);
+      messageArray.sort((a,b)=>{
+        console.log(`比較: ${a.timestamp} vs ${b.timestamp} = ${a.timestamp-b.timestamp}`);
+        return a.timestamp-b.timestamp;
+      });
+      
+      console.log('===== ソート後のメッセージ配列 =====');
+      messageArray.forEach((msg,i)=>{
+        console.log(`${i}: ${new Date(msg.timestamp).toLocaleTimeString()} - ${msg.senderId===state.currentUser.uid?'自分':'相手'} - ${msg.text}`);
+      });
+      
+      // デバッグ情報を画面に表示
+      showDebugInfo(messageArray);
       
       // 新着メッセージ通知
       if(!isFirstLoad&&messageArray.length>0){
@@ -52,10 +88,13 @@ export function loadMessages(userId){
         }
       }
       
+      console.log('===== メッセージをDOMに追加開始 =====');
       // 全メッセージを順番に表示
-      messageArray.forEach(msg=>{
+      messageArray.forEach((msg,index)=>{
+        console.log(`${index}番目のメッセージを追加: ${msg.text}`);
         displayMessage(msg,userId);
       });
+      console.log('===== メッセージをDOMに追加完了 =====');
       
       // スクロール位置を調整
       if(isFirstLoad||wasAtBottom){
@@ -98,6 +137,9 @@ export function loadChannelMessages(channelId){
       
       // タイムスタンプで昇順ソート（古いメッセージが上）
       messageArray.sort((a,b)=>a.timestamp-b.timestamp);
+      
+      // デバッグ情報を画面に表示
+      showDebugInfo(messageArray);
       
       // 新着メッセージ通知
       if(!isFirstLoad&&messageArray.length>0){
@@ -210,6 +252,7 @@ async function displayMessage(msg,otherUserId){
     ${actionsHtml}
   `;
   
+  console.log(`appendChild実行: ${msg.text} (timestamp: ${msg.timestamp})`);
   chatMessages.appendChild(messageEl);
 }
 
@@ -309,6 +352,8 @@ export async function sendMessage(){
       text:messageText,
       timestamp:Date.now()
     };
+    
+    console.log('送信するメッセージ:',messageData);
     
     if(messageImage){
       messageData.imageUrl=messageImage;
