@@ -74,14 +74,14 @@ export function showNotification(title,body,icon){
 }
 
 // タブタイトルに未読件数を表示（今はなし）
-// export function updatePageTitle(unreadCounts){
-//   const totalUnread=Object.values(unreadCounts).reduce((sum,count)=>sum+count,0);
-//   if(totalUnread>0){
-//     document.title=`(${totalUnread}) チャット | AppHub`;
-//   }else{
-//     document.title='チャット | AppHub';
-//   }
-// }
+export function updatePageTitle(unreadCounts){
+  const totalUnread=Object.values(unreadCounts).reduce((sum,count)=>sum+count,0);
+  if(totalUnread>0){
+    document.title=`(${totalUnread}) 学校コード入力画面`;
+  }else{
+    document.title='学校コード入力画面';
+  }
+}
 
 // 画像ファイルを処理
 export function handleImageFile(file,callback){
