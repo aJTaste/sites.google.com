@@ -22,6 +22,9 @@ export function loadMessages(userId){
     const chatMessages=document.getElementById('chat-messages');
     if(!chatMessages)return;
     
+    // スクロール位置を保存（新しいメッセージが来た時に最下部にいるかチェック）
+    const wasAtBottom=chatMessages.scrollHeight-chatMessages.scrollTop<=chatMessages.clientHeight+50;
+    
     chatMessages.innerHTML='';
     
     if(snapshot.exists()){
@@ -49,12 +52,17 @@ export function loadMessages(userId){
         }
       }
       
+      // 全メッセージを順番に表示
       messageArray.forEach(msg=>{
         displayMessage(msg,userId);
       });
       
-      // 最下部にスクロール
-      chatMessages.scrollTop=chatMessages.scrollHeight;
+      // スクロール位置を調整
+      if(isFirstLoad||wasAtBottom){
+        setTimeout(()=>{
+          chatMessages.scrollTop=chatMessages.scrollHeight;
+        },0);
+      }
       
       isFirstLoad=false;
     }
@@ -77,6 +85,8 @@ export function loadChannelMessages(channelId){
     const chatMessages=document.getElementById('chat-messages');
     if(!chatMessages)return;
     
+    const wasAtBottom=chatMessages.scrollHeight-chatMessages.scrollTop<=chatMessages.clientHeight+50;
+    
     chatMessages.innerHTML='';
     
     if(snapshot.exists()){
@@ -95,21 +105,26 @@ export function loadChannelMessages(channelId){
         if(latestMsg.senderId!==state.currentUser.uid){
           const sender=state.allUsers.find(u=>u.uid===latestMsg.senderId);
           const senderName=sender?sender.username:'誰か';
-          const channel=state.CHANNELS?.find(c=>c.id===channelId);
+          const channel={name:channelId};
           showNotification(
-            `${channel?.name||'チャンネル'}: ${senderName}`,
+            `${channel.name}: ${senderName}`,
             latestMsg.text||'画像を送信しました',
             sender&&sender.iconUrl&&sender.iconUrl!=='default'?sender.iconUrl:'assets/school.png'
           );
         }
       }
       
+      // 全メッセージを順番に表示
       messageArray.forEach(msg=>{
         displayChannelMessage(msg);
       });
       
-      // 最下部にスクロール
-      chatMessages.scrollTop=chatMessages.scrollHeight;
+      // スクロール位置を調整
+      if(isFirstLoad||wasAtBottom){
+        setTimeout(()=>{
+          chatMessages.scrollTop=chatMessages.scrollHeight;
+        },0);
+      }
       
       isFirstLoad=false;
     }
@@ -119,6 +134,8 @@ export function loadChannelMessages(channelId){
 // メッセージを表示（DM）
 async function displayMessage(msg,otherUserId){
   const chatMessages=document.getElementById('chat-messages');
+  if(!chatMessages)return;
+  
   const isCurrentUser=msg.senderId===state.currentUser.uid;
   
   let senderData;
@@ -135,17 +152,21 @@ async function displayMessage(msg,otherUserId){
   // 既読状態を取得
   let readStatus='';
   if(isCurrentUser){
-    const otherUserRef=ref(database,`users/${otherUserId}/lastRead/${state.currentUser.uid}`);
-    const readSnapshot=await get(otherUserRef);
-    if(readSnapshot.exists()){
-      const lastReadTime=readSnapshot.val();
-      if(msg.timestamp<=lastReadTime){
-        readStatus='<span class="message-read">✓ 既読</span>';
+    try{
+      const otherUserRef=ref(database,`users/${otherUserId}/lastRead/${state.currentUser.uid}`);
+      const readSnapshot=await get(otherUserRef);
+      if(readSnapshot.exists()){
+        const lastReadTime=readSnapshot.val();
+        if(msg.timestamp<=lastReadTime){
+          readStatus='<span class="message-read">✓ 既読</span>';
+        }
       }
+    }catch(error){
+      console.error('既読状態取得エラー:',error);
     }
   }
   
-  // 操作ボタン（自分のメッセージは編集・削除、他人のメッセージとも全てリプライ可能）
+  // 操作ボタン（全てのメッセージにリプライ可能、自分のメッセージは編集・削除も）
   const dmId=getDmId(state.currentUser.uid,otherUserId);
   let actionsHtml=`
     <div class="message-actions">
@@ -170,6 +191,7 @@ async function displayMessage(msg,otherUserId){
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
+  messageEl.setAttribute('data-timestamp',msg.timestamp);
   messageEl.innerHTML=`
     <div class="message-avatar">
       <img src="${iconUrl}" alt="${senderData.username}">
@@ -194,6 +216,7 @@ async function displayMessage(msg,otherUserId){
 // メッセージを表示（チャンネル）
 function displayChannelMessage(msg){
   const chatMessages=document.getElementById('chat-messages');
+  if(!chatMessages)return;
   
   let senderData;
   if(msg.senderId===state.currentUser.uid){
@@ -206,7 +229,7 @@ function displayChannelMessage(msg){
   
   const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/school.png';
   
-  // 操作ボタン（自分のメッセージは編集・削除、全てのメッセージにリプライ可能）
+  // 操作ボタン（全てのメッセージにリプライ可能、自分のメッセージは編集・削除も）
   const isCurrentUser=msg.senderId===state.currentUser.uid;
   let actionsHtml=`
     <div class="message-actions">
@@ -231,6 +254,7 @@ function displayChannelMessage(msg){
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
+  messageEl.setAttribute('data-timestamp',msg.timestamp);
   messageEl.innerHTML=`
     <div class="message-avatar">
       <img src="${iconUrl}" alt="${senderData.username}">
@@ -273,8 +297,11 @@ export async function sendMessage(){
   chatInput.value='';
   chatInput.style.height='auto';
   resetMessageState();
-  document.getElementById('image-preview-container').classList.remove('show');
-  document.getElementById('reply-preview').classList.remove('show');
+  
+  const imagePreviewContainer=document.getElementById('image-preview-container');
+  const replyPreview=document.getElementById('reply-preview');
+  if(imagePreviewContainer)imagePreviewContainer.classList.remove('show');
+  if(replyPreview)replyPreview.classList.remove('show');
   
   try{
     const messageData={
