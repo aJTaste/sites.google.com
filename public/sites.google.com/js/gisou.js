@@ -1,73 +1,71 @@
 /**
- * 検索キー + 数字キー (0〜9) のショートカットで、画面の表示モードを切り替えるJavaScriptファイル
+ * 検索キー + 1 または 2 で、真っ白/真っ黒のオーバーレイを切り替えるJavaScriptファイル
  */
 
-let lastPressedKey = ''; // 最後に押された数字キー ('0', '1', '2'など)
+let lastPressedKey = ''; // 最後に押された数字キー ('1', '2')
+
+// オーバーレイ要素を作成し管理する
+function getOrCreateOverlay() {
+    let overlay = document.getElementById('custom-mode-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'custom-mode-overlay';
+        Object.assign(overlay.style, {
+            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
+            zIndex: '99999', opacity: '0', display: 'none',
+            transition: 'opacity 0.4s ease-in-out',
+            // マウス操作を透過させることで、下のページ操作を可能にする
+            pointerEvents: 'none' 
+        });
+        document.body.appendChild(overlay);
+    }
+    return overlay;
+}
 
 // 表示モードを適用する関数
 function setDisplayMode(mode, key) {
-    const bodyStyle = document.body.style;
-    let filterStyle = 'none';
-    let bgColor = ''; // bodyの背景色は基本空（CSS任せ）
+    const overlay = getOrCreateOverlay();
+    let bgColor = ''; // オーバーレイの色
 
-    // 同じショートカットキーが連続で押された場合、リセット（モード0）に切り替える
-    if (lastPressedKey === key && mode !== 0) {
-        mode = 0;
+    // 同じショートカットキーが連続で押された場合、非表示（リセット）に切り替える
+    if (lastPressedKey === key) {
+        mode = 0; // モード0（非表示）へ移行
         key = ''; // リセット実行後はキー記録をクリア
     }
 
     lastPressedKey = key;
     console.log(`モード設定: ${mode}`);
 
-    // まず、前回のモードで適用した可能性のある特定のスタイルをリセット
-    bodyStyle.filter = 'none';
-    bodyStyle.backgroundColor = ''; 
-
     switch (mode) {
-        case 0:
-            // モード0: デフォルト表示
-            break;
         case 1:
-            // モード1: 真っ白 (明るさ最大・コントラスト最大)
-            filterStyle = 'brightness(500%) contrast(1000%)';
+            // モード1: 真っ白オーバーレイ
+            bgColor = 'rgba(255, 255, 255, 1)';
             break;
         case 2:
-            // モード2: 真っ黒 (画面を反転させてから明るさを最低にする)
-            filterStyle = 'invert(100%) brightness(0%)';
-            // または、真っ黒のオーバーレイが必要なら前回のコードの applyBlackOverlay() を使用
+            // モード2: 真っ黒オーバーレイ
+            bgColor = 'rgba(0, 0, 0, 1)';
             break;
-        case 3:
-            // モード3: ブルーライト軽減 (セピアと明るさ調整)
-            filterStyle = 'sepia(80%) brightness(90%) hue-rotate(330deg)';
-            break;
-        case 4:
-            // モード4: 夜間モード (全体を暗く、青みを加える)
-            filterStyle = 'brightness(50%) hue-rotate(180deg) saturate(150%)';
-            break;
-        case 5:
-            // モード5: 集中モード (背景をぼかす + 暗く)
-            filterStyle = 'blur(5px) brightness(60%)';
-            break;
-        case 6:
-            // モード6: ハイコントラスト（視認性向上）
-            filterStyle = 'contrast(200%)';
-            break;
-        case 7:
-            // モード7: レトロ調 (セピアと明るさ調整)
-            filterStyle = 'sepia(100%) brightness(85%)';
-            break;
-        case 8:
-            // モード8: サイバーパンク (鮮やかな色反転)
-            filterStyle = 'invert(100%) contrast(150%) hue-rotate(180deg)';
-            break;
-        case 9:
-            // モード9: グレースケール（白黒）
-            filterStyle = 'grayscale(100%)';
-            break;
+        case 0:
+        default:
+            // モード0: 非表示
+            bgColor = 'rgba(0, 0, 0, 0)'; // 透明に設定
     }
     
-    // body要素にフィルターを適用する
-    bodyStyle.filter = filterStyle;
+    overlay.style.backgroundColor = bgColor;
+
+    if (mode === 0) {
+        overlay.style.opacity = '0';
+        // アニメーション後にdisplayをnoneにする
+        setTimeout(() => {
+            overlay.style.display = 'none';
+        }, 400); 
+    } else {
+        overlay.style.display = 'block';
+        // display: block後にopacityを1にしてトランジションを発生させる
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+        }, 10);
+    }
 }
 
 
@@ -79,10 +77,13 @@ document.addEventListener('keydown', function(event) {
         let modeToSet = -1;
         let keyPressed = '';
         
-        // 押されたキーが数字の0から9かを判定
-        if (event.key >= '0' && event.key <= '9') {
-            modeToSet = parseInt(event.key, 10);
-            keyPressed = event.key;
+        // 押されたキーが数字の1または2かを判定
+        if (event.key === '1' || event.code === 'Digit1') {
+            modeToSet = 1;
+            keyPressed = '1';
+        } else if (event.key === '2' || event.code === 'Digit2') {
+            modeToSet = 2;
+            keyPressed = '2';
         }
 
         if (modeToSet !== -1) {
@@ -92,10 +93,7 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// body要素にスムーズな切り替えのためのトランジションを追加
+// ページ読み込み時にオーバーレイ要素を準備する
 document.addEventListener('DOMContentLoaded', () => {
-    // filterプロパティの変更をスムーズにする
-    document.body.style.transition = 'filter 0.5s ease';
-    // ページ読み込み時のデフォルトモードを設定
-    setDisplayMode(0, '');
+    getOrCreateOverlay(); // 要素を事前に作成しておく
 });
