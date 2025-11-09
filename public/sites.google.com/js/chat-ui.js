@@ -117,7 +117,7 @@ export function createChatHTML(selectedUser){
     <div class="chat-messages" id="chat-messages">
       <div class="loading">
         <div class="loading-spinner"></div>
-        <div class="loading-text">メッセージを読み込み中...</div>
+        <div class="loading-text"></div>
       </div>
     </div>
     <div class="chat-input-container">
@@ -167,7 +167,7 @@ export function createChannelChatHTML(channel){
     <div class="chat-messages" id="chat-messages">
       <div class="loading">
         <div class="loading-spinner"></div>
-        <div class="loading-text">メッセージを読み込み中...</div>
+        <div class="loading-text"></div>
       </div>
     </div>
     <div class="chat-input-container">
