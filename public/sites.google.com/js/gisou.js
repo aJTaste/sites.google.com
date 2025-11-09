@@ -4,28 +4,11 @@
 
 let lastPressedKey = ''; // 最後に押された数字キー ('0', '1', '2'など)
 
-// オーバーレイ要素を作成し管理する
-function getOrCreateOverlay() {
-    let overlay = document.getElementById('custom-mode-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'custom-mode-overlay';
-        Object.assign(overlay.style, {
-            position: 'fixed', top: '0', left: '0', width: '100%', height: '100%',
-            zIndex: '99999', opacity: '0', display: 'none',
-            transition: 'opacity 0.4s ease-in-out',
-            pointerEvents: 'none' // オーバーレイがあっても下の要素をクリックできるようにする
-        });
-        document.body.appendChild(overlay);
-    }
-    return overlay;
-}
-
 // 表示モードを適用する関数
 function setDisplayMode(mode, key) {
-    const overlay = getOrCreateOverlay();
+    const bodyStyle = document.body.style;
     let filterStyle = 'none';
-    let bgColor = 'rgba(0, 0, 0, 0)'; // デフォルトは透明
+    let bgColor = ''; // bodyの背景色は基本空（CSS任せ）
 
     // 同じショートカットキーが連続で押された場合、リセット（モード0）に切り替える
     if (lastPressedKey === key && mode !== 0) {
@@ -36,63 +19,55 @@ function setDisplayMode(mode, key) {
     lastPressedKey = key;
     console.log(`モード設定: ${mode}`);
 
+    // まず、前回のモードで適用した可能性のある特定のスタイルをリセット
+    bodyStyle.filter = 'none';
+    bodyStyle.backgroundColor = ''; 
+
     switch (mode) {
         case 0:
             // モード0: デフォルト表示
             break;
         case 1:
-            // モード1: 真っ白オーバーレイ
-            bgColor = 'rgba(255, 255, 255, 1)';
+            // モード1: 真っ白 (明るさ最大・コントラスト最大)
+            filterStyle = 'brightness(500%) contrast(1000%)';
             break;
         case 2:
-            // モード2: 真っ黒オーバーレイ
-            bgColor = 'rgba(0, 0, 0, 1)';
+            // モード2: 真っ黒 (画面を反転させてから明るさを最低にする)
+            filterStyle = 'invert(100%) brightness(0%)';
+            // または、真っ黒のオーバーレイが必要なら前回のコードの applyBlackOverlay() を使用
             break;
         case 3:
-            // モード3: ブルーライト軽減 (暖色オーバーレイ)
-            bgColor = 'rgba(255, 160, 0, 0.2)'; // 薄いオレンジ色の半透明
+            // モード3: ブルーライト軽減 (セピアと明るさ調整)
+            filterStyle = 'sepia(80%) brightness(90%) hue-rotate(330deg)';
             break;
         case 4:
-            // モード4: 夜間モード (暗めのブルー)
-            bgColor = 'rgba(0, 0, 50, 0.7)';
+            // モード4: 夜間モード (全体を暗く、青みを加える)
+            filterStyle = 'brightness(50%) hue-rotate(180deg) saturate(150%)';
             break;
         case 5:
             // モード5: 集中モード (背景をぼかす + 暗く)
-            // bodyへのフィルタ適用が必要なため、このモードだけ特殊処理
-            overlay.style.display = 'none';
-            document.body.style.filter = 'blur(5px) brightness(0.6)';
-            console.log("モード5: 集中モード (bodyフィルタ適用)");
-            return; 
+            filterStyle = 'blur(5px) brightness(60%)';
+            break;
         case 6:
             // モード6: ハイコントラスト（視認性向上）
-            filterStyle = 'contrast(200%) invert(0%)';
+            filterStyle = 'contrast(200%)';
             break;
         case 7:
-            // モード7: レトロ調 (セピアとノイズを模倣)
-            filterStyle = 'sepia(80%) brightness(90%)';
+            // モード7: レトロ調 (セピアと明るさ調整)
+            filterStyle = 'sepia(100%) brightness(85%)';
             break;
         case 8:
-            // モード8: サイバーパンク (マゼンタとシアンの反転風)
-            filterStyle = 'hue-rotate(280deg) contrast(150%) saturate(200%)';
+            // モード8: サイバーパンク (鮮やかな色反転)
+            filterStyle = 'invert(100%) contrast(150%) hue-rotate(180deg)';
             break;
         case 9:
             // モード9: グレースケール（白黒）
             filterStyle = 'grayscale(100%)';
             break;
     }
-
-    // モード5以外の場合、bodyフィルタをリセットし、オーバーレイを適用
-    document.body.style.filter = 'none';
-    overlay.style.backgroundColor = bgColor;
-    overlay.style.filter = filterStyle;
     
-    if (mode === 0) {
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.style.display = 'none', 400);
-    } else {
-        overlay.style.display = 'block';
-        setTimeout(() => overlay.style.opacity = '1', 10);
-    }
+    // body要素にフィルターを適用する
+    bodyStyle.filter = filterStyle;
 }
 
 
@@ -119,6 +94,7 @@ document.addEventListener('keydown', function(event) {
 
 // body要素にスムーズな切り替えのためのトランジションを追加
 document.addEventListener('DOMContentLoaded', () => {
+    // filterプロパティの変更をスムーズにする
     document.body.style.transition = 'filter 0.5s ease';
     // ページ読み込み時のデフォルトモードを設定
     setDisplayMode(0, '');
