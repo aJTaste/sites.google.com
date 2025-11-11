@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>学校コード入力画面</title>
+    <link rel="stylesheet" href="common/common.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <!-- <link rel="icon" href="assets/favicon-main.png"> -->
+    <link rel="apple-touch-icon" href="assets/icon-app.png">
+  </head>
+  <body>
+    <div class="app-container">
+      <header class="top-header">
+        <div class="header-left">
+          <img src="assets/favicon-main.png" alt="AppHub" class="logo-icon">
+          <h1 class="logo-text">AppHub</h1>
+          <span class="header-divider">|</span>
+          <span class="page-title">チャット</span>
+        </div>
+        <div class="header-right">
+          <button class="icon-btn" id="notification-btn" title="通知">
+            <span class="material-icons">notifications</span>
+          </button>
+          <div class="user-menu">
+            <button class="user-btn" id="user-btn">
+              <img id="user-avatar" src="assets/school.png" alt="ユーザーアイコン">
+            </button>
+            <div class="user-dropdown" id="user-dropdown">
+              <div class="dropdown-item" id="profile-btn">
+                <span class="material-icons">person</span>
+                <span>プロフィール</span>
+              </div>
+              <div class="dropdown-item" id="settings-btn">
+                <span class="material-icons">settings</span>
+                <span>設定</span>
+              </div>
+              <div class="dropdown-divider"></div>
+              <div class="dropdown-item" id="logout-btn">
+                <span class="material-icons">logout</span>
+                <span>ログアウト</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div class="main-container">
+        <aside class="sidebar">
+          <nav class="sidebar-nav">
+            <a href="index.html" class="nav-item" title="ホーム">
+              <span class="material-icons">home</span>
+            </a>
+            <a href="#" class="nav-item" title="HTMLプレビュー">
+              <span class="material-icons">preview</span>
+            </a>
+            <a href="chat.html" class="nav-item active" title="チャット">
+              <span class="material-icons">chat</span>
+            </a>
+            <a href="#" class="nav-item" title="ファイル共有">
+              <span class="material-icons">folder</span>
+            </a>
+            <a href="eag.html" class="nav-item" title="Eaglercraft">
+              <span class="material-icons">public</span>
+            </a>
+          </nav>
+        </aside>
+        <div class="chat-container">
+          <aside class="dm-sidebar">
+            <div class="dm-header">
+              <h2>ダイレクトメッセージ</h2>
+            </div>
+            <div class="dm-list" id="dm-list">
+              <!-- ユーザー一覧がJSで生成される -->
+            </div>
+          </aside>
+          <main class="chat-main" id="chat-main">
+            <div class="chat-empty">
+              <span class="material-icons">chat_bubble_outline</span>
+              <p>ユーザーを選択してメッセージを送信</p>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 画像拡大モーダル -->
+    <div class="image-modal" id="image-modal">
+      <button class="image-modal-close" id="image-modal-close">
+        <span class="material-icons">close</span>
+      </button>
+      <img id="image-modal-img" src="" alt="拡大画像">
+    </div>
+    
+    <!-- 編集モーダル -->
+    <div class="modal" id="edit-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>メッセージを編集</h3>
+          <button class="modal-close" id="edit-modal-close">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <textarea id="edit-textarea" placeholder="メッセージを入力"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="edit-cancel">キャンセル</button>
+          <button class="btn-primary" id="edit-save">保存</button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 削除確認モーダル -->
+    <div class="modal" id="delete-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>メッセージを削除</h3>
+          <button class="modal-close" id="delete-modal-close">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p style="color:var(--text-secondary);">このメッセージを削除しますか？</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="delete-cancel">キャンセル</button>
+          <button class="btn-primary" id="delete-confirm" style="background:#cf222e;">削除</button>
+        </div>
+      </div>
+    </div>
+    
+    <script type="module" src="js/chat.js"></script>
+    <script src="js/gisou.js"></script>
+  </body>
+</html>
