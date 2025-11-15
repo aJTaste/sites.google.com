@@ -8,7 +8,7 @@ alias gl='git log --oneline --graph --decorate'
 # All-in-one add+commit+push (message required)
 function gall() {
   if [ -z "$1" ]; then
-    echo "Usage: gall \"commit message\""
+    echo "Usage:  \"commit message\""
     return 1
   fi
   git add .
