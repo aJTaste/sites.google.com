@@ -28,15 +28,20 @@ function activateStealth(){
   // タイトルとファビコンを保存
   originalTitle=document.title;
   originalFavicon=document.querySelector('link[rel="icon"]')?.href||'';
+  const originalType=document.querySelector('link[rel="icon"]')?.type||'';
   
   // タイトルを変更
   document.title='まなびポケット';
   
-  // ファビコンを変更
+  // ファビコンを変更（PNGの場合はtype属性も設定）
   const faviconLink=document.querySelector('link[rel="icon"]');
   if(faviconLink){
     faviconLink.href='assets/manabi.png';
+    faviconLink.type='image/png';
   }
+  
+  // 念のため保存
+  window.originalFaviconType=originalType;
   
   // bodyの内容を保存して非表示
   originalContent=document.body.innerHTML;
@@ -57,6 +62,12 @@ function deactivateStealth(){
   const faviconLink=document.querySelector('link[rel="icon"]');
   if(faviconLink&&originalFavicon){
     faviconLink.href=originalFavicon;
+    // type属性も復元
+    if(window.originalFaviconType){
+      faviconLink.type=window.originalFaviconType;
+    }else{
+      faviconLink.removeAttribute('type');
+    }
   }
   
   // bodyの内容を復元
