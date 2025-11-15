@@ -35,7 +35,7 @@ function activateStealth(){
   // ファビコンを変更
   const faviconLink=document.querySelector('link[rel="icon"]');
   if(faviconLink){
-    faviconLink.href='assets/manabi.svg';
+    faviconLink.href='assets/manabi.png';
   }
   
   // bodyの内容を保存して非表示
