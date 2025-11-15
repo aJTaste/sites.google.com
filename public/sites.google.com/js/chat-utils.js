@@ -77,9 +77,9 @@ export function showNotification(title,body,icon){
 export function updatePageTitle(unreadCounts){
   const totalUnread=Object.values(unreadCounts).reduce((sum,count)=>sum+count,0);
   if(totalUnread>0){
-    document.title=`(${totalUnread}) 学校コード入力画面`;
+    document.title=`(${totalUnread}) チャット | AppHub`;
   }else{
-    document.title='学校コード入力画面';
+    document.title='チャット | AppHub';
   }
 }
 
