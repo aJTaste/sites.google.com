@@ -36,7 +36,7 @@ function activateStealth(){
   // ファビコンを変更（PNGの場合はtype属性も設定）
   const faviconLink=document.querySelector('link[rel="icon"]');
   if(faviconLink){
-    faviconLink.href='../assets/manabi.png';
+    faviconLink.href='assets/manabi.svg';
     faviconLink.type='image/png';
   }
   
