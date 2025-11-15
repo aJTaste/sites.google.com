@@ -32,7 +32,6 @@ import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1
 import{ref,get,update,onValue}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
 import{displayUsers}from'./chat-ui.js';
-import{updatePageTitle}from'./chat-utils.js';
 import'./chat-handlers.js';
 import'./chat-modals.js';
 
@@ -95,7 +94,6 @@ function loadUsers(){
       
       calculateUnreadCounts().then(()=>{
         displayUsers();
-        updatePageTitle(state.unreadCounts);
       });
     }
   },(error)=>{

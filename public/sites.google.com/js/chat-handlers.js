@@ -5,7 +5,7 @@ import{ref,update}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-databa
 import{state,updateState,CHANNELS}from'./chat-state.js';
 import{displayUsers,createChatHTML,createChannelChatHTML}from'./chat-ui.js';
 import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
-import{handleImageFile,updatePageTitle}from'./chat-utils.js';
+import{handleImageFile}from'./chat-utils.js';
 
 console.log('chat-handlers.js読み込み開始');
 
@@ -20,7 +20,6 @@ export async function selectUser(userId){
   });
   
   state.unreadCounts[userId]=0;
-  updatePageTitle(state.unreadCounts);
   
   displayUsers();
   
@@ -48,7 +47,6 @@ export async function selectChannel(channelId){
   });
   
   state.unreadCounts[channelId]=0;
-  updatePageTitle(state.unreadCounts);
   
   displayUsers();
   

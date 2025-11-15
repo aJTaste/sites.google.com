@@ -67,19 +67,9 @@ export function showNotification(title,body,icon){
   if('Notification'in window&&Notification.permission==='granted'&&document.hidden){
     new Notification(title,{
       body:body,
-      icon:icon||'assets/favicon-main.png',
+      icon:icon||'assets/favicon1.svg',
       tag:'chat-message'
     });
-  }
-}
-
-// タブタイトルに未読件数を表示（今はなし）
-export function updatePageTitle(unreadCounts){
-  const totalUnread=Object.values(unreadCounts).reduce((sum,count)=>sum+count,0);
-  if(totalUnread>0){
-    document.title=`(${totalUnread}) チャット | AppHub`;
-  }else{
-    document.title='チャット | AppHub';
   }
 }
 
