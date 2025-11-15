@@ -63,7 +63,7 @@ export function displayUsers(){
         dmItem.classList.add('active');
       }
       
-      const iconUrl=user.iconUrl&&user.iconUrl!=='default'?user.iconUrl:'assets/school.png';
+      const iconUrl=user.iconUrl&&user.iconUrl!=='default'?user.iconUrl:'assets/github-mark.svg';
       const isOnline=user.online||false;
       const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
       const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(user.lastOnline||user.createdAt)}`;
@@ -98,7 +98,7 @@ export function displayUsers(){
 
 // チャット画面のHTMLを生成（DM）
 export function createChatHTML(selectedUser){
-  const iconUrl=selectedUser.iconUrl&&selectedUser.iconUrl!=='default'?selectedUser.iconUrl:'assets/school.png';
+  const iconUrl=selectedUser.iconUrl&&selectedUser.iconUrl!=='default'?selectedUser.iconUrl:'assets/github-mark.svg';
   const isOnline=selectedUser.online||false;
   const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(selectedUser.lastOnline||selectedUser.createdAt)}`;
   
@@ -115,8 +115,8 @@ export function createChatHTML(selectedUser){
       </div>
     </div>
     <div class="chat-messages" id="chat-messages">
-      <div class="loading">
-        <div class="loading-spinner"></div>
+      <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-tertiary);font-size:14px;">
+        メッセージを読み込み中...
       </div>
     </div>
     <div class="chat-input-container">
@@ -164,8 +164,8 @@ export function createChannelChatHTML(channel){
       </div>
     </div>
     <div class="chat-messages" id="chat-messages">
-      <div class="loading">
-        <div class="loading-spinner"></div>
+      <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-tertiary);font-size:14px;">
+        メッセージを読み込み中...
       </div>
     </div>
     <div class="chat-input-container">
