@@ -30,12 +30,12 @@ function activateStealth(){
   originalFavicon=document.querySelector('link[rel="icon"]')?.href||'';
   
   // タイトルを変更
-  document.title='学校コード入力画面';
+  document.title='まなびポケット';
   
-  // ファビコンを削除
+  // ファビコンを変更
   const faviconLink=document.querySelector('link[rel="icon"]');
   if(faviconLink){
-    faviconLink.href='';
+    faviconLink.href='assets/manabi.svg';
   }
   
   // bodyの内容を保存して非表示
