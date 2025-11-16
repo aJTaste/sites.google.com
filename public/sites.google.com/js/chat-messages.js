@@ -1,7 +1,7 @@
-// メッセージ表示・送信関連（同期処理修正版）
+// メッセージ表示・送信関連（既読バグ修正版）
 
 import{database}from'../common/firebase-config.js';
-import{ref,get,set,push,onValue,off}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{ref,get,set,push,onValue,off,update}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import{state,updateState,resetMessageState}from'./chat-state.js';
 import{getDmId,formatMessageTime,escapeHtml,showNotification}from'./chat-utils.js';
 
@@ -45,7 +45,7 @@ export function loadMessages(userId){
             showNotification(
               `${sender.username}からのメッセージ`,
               latestMsg.text||'画像を送信しました',
-              sender.iconUrl&&sender.iconUrl!=='default'?sender.iconUrl:'assets/school.png'
+              sender.iconUrl&&sender.iconUrl!=='default'?sender.iconUrl:'assets/github-mark.svg'
             );
           }
         }
@@ -61,6 +61,13 @@ export function loadMessages(userId){
         setTimeout(()=>{
           chatMessages.scrollTop=chatMessages.scrollHeight;
         },10);
+      }
+      
+      // 既読を更新（チャットを開いている間は常に既読にする）
+      if(!isFirstLoad){
+        await update(ref(database,`users/${state.currentUser.uid}/lastRead`),{
+          [userId]:Date.now()
+        });
       }
       
       isFirstLoad=false;
@@ -80,7 +87,7 @@ export function loadChannelMessages(channelId){
   
   let isFirstLoad=true;
   
-  onValue(messagesRef,(snapshot)=>{
+  onValue(messagesRef,async(snapshot)=>{
     const chatMessages=document.getElementById('chat-messages');
     if(!chatMessages)return;
     
@@ -108,7 +115,7 @@ export function loadChannelMessages(channelId){
           showNotification(
             `${channel.name}: ${senderName}`,
             latestMsg.text||'画像を送信しました',
-            sender&&sender.iconUrl&&sender.iconUrl!=='default'?sender.iconUrl:'assets/school.png'
+            sender&&sender.iconUrl&&sender.iconUrl!=='default'?sender.iconUrl:'assets/github-mark.svg'
           );
         }
       }
@@ -123,6 +130,13 @@ export function loadChannelMessages(channelId){
         setTimeout(()=>{
           chatMessages.scrollTop=chatMessages.scrollHeight;
         },10);
+      }
+      
+      // 既読を更新（チャットを開いている間は常に既読にする）
+      if(!isFirstLoad){
+        await update(ref(database,`users/${state.currentUser.uid}/lastRead`),{
+          [channelId]:Date.now()
+        });
       }
       
       isFirstLoad=false;
@@ -146,7 +160,7 @@ async function displayMessage(msg,otherUserId){
   
   if(!senderData)return;
   
-  const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/school.png';
+  const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/github-mark.svg';
   
   // 操作ボタン（全てのメッセージにリプライ可能、自分のメッセージは編集・削除も）
   const dmId=getDmId(state.currentUser.uid,otherUserId);
@@ -234,7 +248,7 @@ function displayChannelMessage(msg){
   
   if(!senderData)return;
   
-  const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/school.png';
+  const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/github-mark.svg';
   
   // 操作ボタン（全てのメッセージにリプライ可能、自分のメッセージは編集・削除も）
   const isCurrentUser=msg.senderId===state.currentUser.uid;
