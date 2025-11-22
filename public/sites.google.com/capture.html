@@ -1,88 +1,116 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>キャプチャ | AppHub</title>
-  <link rel="stylesheet" href="common/common.css" />
-  <link rel="stylesheet" href="css/capture.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>スクリーンキャプチャ | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/index.css"><!-- AppHub 共通 -->
+  <link rel="stylesheet" href="css/capture.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link rel="icon" href="assets/favicon1.svg">
 </head>
-<body class="loaded">
-  <header class="app-header">
-    <div class="brand">
-      <h1>AppHub — スクリーンキャプチャ</h1>
+<body>
+  <div class="app-container">
+    <header class="top-header">
+      <div class="header-left">
+        <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
+        <a href="index.html" style="text-decoration:none;color:inherit;">
+          <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
+        </a>
+        <span class="header-divider">|</span>
+        <span class="page-title" id="page-title">スクリーンキャプチャ</span>
+      </div>
+      <div class="header-right">
+        <button class="icon-btn" id="notification-btn" title="通知">
+          <span class="material-icons">notifications</span>
+        </button>
+        <div class="user-menu">
+          <button class="user-btn" id="user-btn">
+            <img id="user-avatar" src="assets/school.svg" alt="ユーザーアイコン">
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="main-container">
+      <aside class="sidebar" aria-hidden="true">
+        <nav class="sidebar-nav">
+          <a href="index.html" class="nav-item" title="ホーム"><span class="material-icons">home</span></a>
+          <a href="#" class="nav-item" title="HTMLプレビュー"><span class="material-icons">preview</span></a>
+          <a href="chat.html" class="nav-item" title="チャット"><span class="material-icons">chat</span></a>
+          <a href="#" class="nav-item" title="ファイル共有"><span class="material-icons">folder</span></a>
+          <a href="eag.html" class="nav-item" title="Eaglercraft"><span class="material-icons">public</span></a>
+        </nav>
+      </aside>
+
+      <main class="main-content" id="main-content">
+        <section class="view-card">
+          <div class="view-head">
+            <div class="tabs" role="tablist" aria-label="ビュー切替">
+              <button class="tab active" data-target="captureView" role="tab">キャプチャ</button>
+              <button class="tab" data-target="galleryView" role="tab">ギャラリー</button>
+            </div>
+          </div>
+
+          <!-- キャプチャビュー -->
+          <section id="captureView" class="view">
+            <div class="capture-panel">
+              <div class="primary-actions">
+                <button id="nowBtn" class="btn-primary large">今すぐ撮影</button>
+                <button id="timerBtn" class="btn-secondary large">セルフタイマー</button>
+              </div>
+
+              <div class="options">
+                <label>秒数:
+                  <input id="delayInput" type="number" min="1" max="30" value="3">
+                </label>
+                <label>形式:
+                  <select id="formatSelect">
+                    <option value="image/png">PNG（推奨）</option>
+                    <option value="image/webp">WebP（軽量）</option>
+                    <option value="image/jpeg">JPEG</option>
+                  </select>
+                </label>
+                <label class="small">
+                  <input id="useNotification" type="checkbox" checked> 撮影後に通知を出す
+                </label>
+                <label class="small">
+                  <input id="useBeep" type="checkbox"> ビープ音
+                </label>
+              </div>
+
+              <div id="hint" class="hint">
+                画面共有を選択 → 撮影 → 保存ダイアログが開きます。保存に成功したものだけギャラリーに残ります。
+              </div>
+            </div>
+          </section>
+
+          <!-- ギャラリー -->
+          <section id="galleryView" class="view hidden">
+            <div class="gallery-header">
+              <h2>ギャラリー</h2>
+              <div class="gallery-actions">
+                <button id="clearGallery" class="btn-secondary">ギャラリーを消去</button>
+              </div>
+            </div>
+            <div id="galleryList" class="gallery-grid"></div>
+          </section>
+        </section>
+      </main>
     </div>
+  </div>
 
-    <nav class="tabs" role="tablist" aria-label="ビュー切替">
-      <button class="tab active" data-target="captureView" role="tab">キャプチャ</button>
-      <button class="tab" data-target="galleryView" role="tab">ギャラリー</button>
-    </nav>
-  </header>
-
-  <main class="container">
-    <!-- キャプチャビュー -->
-    <section id="captureView" class="view">
-      <div class="capture-panel">
-        <div class="controls">
-          <div class="primary-actions">
-            <button id="nowBtn" class="btn-primary large">今すぐ撮影</button>
-            <button id="timerBtn" class="btn-secondary large">セルフタイマー撮影</button>
-          </div>
-
-          <div class="options">
-            <label class="option">
-              秒数:
-              <input id="delayInput" type="number" min="1" max="30" value="3" />
-            </label>
-
-            <label class="option">
-              形式:
-              <select id="formatSelect">
-                <option value="image/png">PNG（推奨）</option>
-                <option value="image/webp">WebP（軽量）</option>
-                <option value="image/jpeg">JPEG（画質調整可）</option>
-              </select>
-            </label>
-
-            <label class="option small">
-              <input type="checkbox" id="notifyCheckbox" checked /> 通知を使う
-            </label>
-
-            <label class="option small">
-              <input type="checkbox" id="beepCheckbox" /> ビープ音
-            </label>
-          </div>
-        </div>
-
-        <div id="countdownOverlay" class="countdown-overlay hidden" aria-hidden="true">
-          <div id="countdownBig" class="countdown-big">3</div>
-          <div class="countdown-hint">撮影まで</div>
-        </div>
-
-        <div class="hint">
-          画面共有を選択後、キャプチャされ自動でダウンロードされます。複数回撮影するには再度ボタンを押してください。
-        </div>
-      </div>
-    </section>
-
-    <!-- ギャラリービュー -->
-    <section id="galleryView" class="view hidden">
-      <div class="gallery-header">
-        <h2>ギャラリー</h2>
-        <div class="gallery-actions">
-          <button id="clearGallery" class="btn-secondary">ギャラリーを消去</button>
-        </div>
-      </div>
-
-      <div id="galleryList" class="gallery-grid" aria-live="polite"></div>
-    </section>
-  </main>
-
-  <!-- 共有用の隠し要素（videoやcanvasを一時的に使う） -->
+  <!-- hidden video to draw frames -->
   <video id="captureVideo" autoplay muted playsinline class="hidden"></video>
 
-  <script src="common/common.js"></script>
-  <script src="js/capture.js"></script>
-  <script src="common/stealth-mode.js"></script>
+  <div id="countdownOverlay" class="countdown-overlay hidden" aria-hidden="true">
+    <div id="countdownBig" class="countdown-big">3</div>
+    <div class="countdown-hint">撮影まで</div>
+  </div>
+
+  <script src="common/common.js" defer></script>
+  <script src="common/stealth-mode.js" defer></script>
+  <script src="js/capture.js" defer></script>
 </body>
 </html>
