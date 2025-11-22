@@ -1,90 +1,49 @@
-/* capture.css - AppHub の index.css と馴染むように調整します */
-
-/* 固定レイアウトを AppHub に合わせる */
-.app-container{ height:100vh; overflow:hidden; }
-.main-container{ display:flex; height:calc(100vh - 64px); }
-.main-content{ padding:24px; overflow:auto; background:var(--bg-secondary); }
-
-/* ビューカード */
-.view-card{
-  max-width:1100px;
-  margin:0 auto;
-  width:100%;
+.container{
+  max-width:760px;
+  margin:40px auto;
+  padding:0 20px;
 }
 
-/* タブ */
-.tabs{ display:flex; gap:8px; margin-bottom:16px; }
-.tab{
-  background:var(--bg-primary);
-  border:1px solid var(--border);
-  padding:8px 12px;
-  border-radius:10px;
-  cursor:pointer;
-  font-weight:600;
-}
-.tab.active{
-  background:linear-gradient(90deg,var(--main),var(--main-hover));
-  color:#fff;
+.title{
+  margin-bottom:24px;
+  font-size:24px;
 }
 
-/* ビュー */
-.view{
-  background:var(--bg-primary);
-  border:1px solid var(--border-light);
-  border-radius:12px;
-  padding:20px;
-  box-shadow:0 6px 18px rgba(15,23,42,0.04);
+.controls > *{
+  margin-right:8px;
+  margin-bottom:8px;
 }
 
-/* キャプチャパネル */
-.capture-panel{ display:flex; flex-direction:column; gap:16px; align-items:center; }
-.primary-actions{ display:flex; gap:12px; }
-.btn-primary.large{ padding:14px 26px; font-size:16px; }
-.btn-secondary.large{ padding:12px 20px; font-size:15px; }
-
-/* オプション */
-.options{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-.options input[type="number"]{ width:70px; margin-left:6px; }
-
-/* カウントダウンオーバーレイ（大きく・中心表示） */
-.countdown-overlay{
-  position:fixed;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  z-index:9999;
-  display:flex;
-  flex-direction:column;
+.timer-config{
+  display:inline-flex;
   align-items:center;
   gap:8px;
-  pointer-events:none;
 }
-.countdown-big{
-  font-size:96px;
-  font-weight:900;
-  color:var(--bg-primary);
-  background:linear-gradient(90deg,var(--main),var(--main-hover));
-  padding:20px 36px;
-  border-radius:16px;
-  box-shadow:0 16px 48px rgba(0,0,0,0.18);
-}
-.countdown-hint{ font-size:16px; color:var(--text-tertiary); }
 
-/* ギャラリー */
-.gallery-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; }
-.gallery-card{
-  background:var(--bg-primary);
+.countdown{
+  font-size:48px;
+  font-weight:700;
+  color:var(--main);
+  text-align:center;
+  margin-top:20px;
+}
+.hidden{
+  display:none;
+}
+
+.result-area{
+  margin-top:32px;
+}
+
+.gallery{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:12px;
+  margin-top:14px;
+}
+
+.gallery img{
+  width:100%;
   border:1px solid var(--border);
-  border-radius:10px;
-  overflow:hidden;
-  cursor:pointer;
-  transition:transform .12s ease,box-shadow .12s;
+  border-radius:6px;
 }
-.gallery-card:hover{ transform:translateY(-6px); box-shadow:0 12px 32px rgba(0,0,0,0.06); }
-.gallery-thumb{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block; }
-.gallery-meta{ padding:10px 12px; display:flex; justify-content:space-between; align-items:center; font-size:13px; color:var(--text-secondary); }
-.meta-res{ font-weight:700; color:var(--text-primary); }
-
-/* small tweaks */
-.hidden{ display:none !important; }
-.hint{ font-size:13px; color:var(--text-secondary); text-align:center; }
