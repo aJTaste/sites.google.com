@@ -10,20 +10,45 @@ onAuthStateChanged(auth,async(user)=>{
     return;
   }
   
-  const userRef=ref(database,`users/${user.uid}`);
-  const snapshot=await get(userRef);
+  // Firebase AuthのUIDからアカウントIDを取得
+  const usersRef=ref(database,'users');
+  const usersSnapshot=await get(usersRef);
   
-  if(snapshot.exists()){
-    const userData=snapshot.val();
-    const userAvatar=document.getElementById('user-avatar');
-    if(userData.iconUrl&&userData.iconUrl!=='default'){
-      userAvatar.src=userData.iconUrl;
+  if(!usersSnapshot.exists()){
+    alert('ユーザーデータが見つかりません');
+    await signOut(auth);
+    window.location.href='login.html';
+    return;
+  }
+  
+  const users=usersSnapshot.val();
+  let currentAccountId=null;
+  let currentUserData=null;
+  
+  // UIDからアカウントIDを検索
+  for(const accountId in users){
+    if(users[accountId].uid===user.uid){
+      currentAccountId=accountId;
+      currentUserData=users[accountId];
+      break;
     }
-    
-    // 管理者パネルへのアクセス権限がある場合、リンクを表示
-    if(checkPermission(userData.role,'view_admin_panel')){
-      addAdminPanelLink();
-    }
+  }
+  
+  if(!currentAccountId||!currentUserData){
+    alert('アカウント情報が見つかりません');
+    await signOut(auth);
+    window.location.href='login.html';
+    return;
+  }
+  
+  const userAvatar=document.getElementById('user-avatar');
+  if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
+    userAvatar.src=currentUserData.iconUrl;
+  }
+  
+  // 管理者パネルへのアクセス権限がある場合、リンクを表示
+  if(checkPermission(currentUserData.role,'view_admin_panel')){
+    addAdminPanelLink();
   }
 });
 

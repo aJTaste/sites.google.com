@@ -9,24 +9,48 @@ onAuthStateChanged(auth,async(user)=>{
     return;
   }
   
-  const userRef=ref(database,`users/${user.uid}`);
-  const snapshot=await get(userRef);
+  // Firebase AuthのUIDからアカウントIDを取得
+  const usersRef=ref(database,'users');
+  const usersSnapshot=await get(usersRef);
   
-  if(snapshot.exists()){
-    const userData=snapshot.val();
-    
-    // プロフィール情報を表示
-    document.getElementById('profile-username').textContent=userData.username;
-    document.getElementById('profile-account-id').textContent=userData.accountId;
-    document.getElementById('profile-created').textContent='登録日: '+new Date(userData.createdAt).toLocaleDateString('ja-JP');
-    
-    // アイコン表示
-    const profileIcon=document.getElementById('profile-icon');
-    const userAvatar=document.getElementById('user-avatar');
-    if(userData.iconUrl&&userData.iconUrl!=='default'){
-      profileIcon.src=userData.iconUrl;
-      userAvatar.src=userData.iconUrl;
+  if(!usersSnapshot.exists()){
+    alert('ユーザーデータが見つかりません');
+    await signOut(auth);
+    window.location.href='login.html';
+    return;
+  }
+  
+  const users=usersSnapshot.val();
+  let currentAccountId=null;
+  let currentUserData=null;
+  
+  // UIDからアカウントIDを検索
+  for(const accountId in users){
+    if(users[accountId].uid===user.uid){
+      currentAccountId=accountId;
+      currentUserData=users[accountId];
+      break;
     }
+  }
+  
+  if(!currentAccountId||!currentUserData){
+    alert('アカウント情報が見つかりません');
+    await signOut(auth);
+    window.location.href='login.html';
+    return;
+  }
+  
+  // プロフィール情報を表示
+  document.getElementById('profile-username').textContent=currentUserData.username;
+  document.getElementById('profile-account-id').textContent=currentUserData.accountId;
+  document.getElementById('profile-created').textContent='登録日: '+new Date(currentUserData.createdAt).toLocaleDateString('ja-JP');
+  
+  // アイコン表示
+  const profileIcon=document.getElementById('profile-icon');
+  const userAvatar=document.getElementById('user-avatar');
+  if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
+    profileIcon.src=currentUserData.iconUrl;
+    userAvatar.src=currentUserData.iconUrl;
   }
 });
 

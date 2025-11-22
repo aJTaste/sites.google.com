@@ -3,10 +3,10 @@ import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1
 import{ref,get,update,onValue}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import{checkPermission,getRoleDisplayName,getRoleBadge}from'../common/permissions.js';
 
-let currentUser=null;
+let currentAccountId=null;
 let currentUserData=null;
 let allUsers=[];
-let selectedUserId=null;
+let selectedAccountId=null;
 
 // ログイン状態チェック
 onAuthStateChanged(auth,async(user)=>{
@@ -15,30 +15,50 @@ onAuthStateChanged(auth,async(user)=>{
     return;
   }
   
-  currentUser=user;
+  // Firebase AuthのUIDからアカウントIDを取得
+  const usersRef=ref(database,'users');
+  const usersSnapshot=await get(usersRef);
   
-  const userRef=ref(database,`users/${user.uid}`);
-  const snapshot=await get(userRef);
-  
-  if(snapshot.exists()){
-    currentUserData=snapshot.val();
-    
-    // 管理者権限チェック
-    if(!checkPermission(currentUserData.role,'view_admin_panel')){
-      alert('このページへのアクセス権限がありません');
-      window.location.href='index.html';
-      return;
-    }
-    
-    // アイコン表示
-    const userAvatar=document.getElementById('user-avatar');
-    if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
-      userAvatar.src=currentUserData.iconUrl;
-    }
-    
-    // ユーザー一覧を読み込み
-    loadUsers();
+  if(!usersSnapshot.exists()){
+    alert('ユーザーデータが見つかりません');
+    await signOut(auth);
+    window.location.href='login.html';
+    return;
   }
+  
+  const users=usersSnapshot.val();
+  
+  // UIDからアカウントIDを検索
+  for(const accountId in users){
+    if(users[accountId].uid===user.uid){
+      currentAccountId=accountId;
+      currentUserData=users[accountId];
+      break;
+    }
+  }
+  
+  if(!currentAccountId||!currentUserData){
+    alert('アカウント情報が見つかりません');
+    await signOut(auth);
+    window.location.href='login.html';
+    return;
+  }
+  
+  // 管理者権限チェック
+  if(!checkPermission(currentUserData.role,'view_admin_panel')){
+    alert('このページへのアクセス権限がありません');
+    window.location.href='index.html';
+    return;
+  }
+  
+  // アイコン表示
+  const userAvatar=document.getElementById('user-avatar');
+  if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
+    userAvatar.src=currentUserData.iconUrl;
+  }
+  
+  // ユーザー一覧を読み込み
+  loadUsers();
 });
 
 // ユーザー一覧を読み込み
@@ -47,9 +67,9 @@ function loadUsers(){
   onValue(usersRef,(snapshot)=>{
     if(snapshot.exists()){
       const users=snapshot.val();
-      allUsers=Object.keys(users).map(uid=>({
-        uid:uid,
-        ...users[uid]
+      allUsers=Object.keys(users).map(accountId=>({
+        accountId:accountId,
+        ...users[accountId]
       }));
       
       displayUsers(allUsers);
@@ -70,7 +90,7 @@ function displayUsers(users){
     const userItem=document.createElement('div');
     userItem.className='user-item';
     
-    const iconUrl=user.iconUrl&&user.iconUrl!=='default'?user.iconUrl:'assets/school.png';
+    const iconUrl=user.iconUrl&&user.iconUrl!=='default'?user.iconUrl:'assets/github-mark.svg';
     const createdDate=new Date(user.createdAt).toLocaleDateString('ja-JP');
     
     userItem.innerHTML=`
@@ -86,7 +106,7 @@ function displayUsers(users){
         <div class="user-item-meta">登録日: ${createdDate}</div>
       </div>
       <div class="user-item-actions">
-        <button class="btn-secondary btn-small" onclick="openRoleModal('${user.uid}')">
+        <button class="btn-secondary btn-small" onclick="openRoleModal('${user.accountId}')">
           権限変更
         </button>
       </div>
@@ -114,11 +134,11 @@ document.getElementById('search-user').addEventListener('input',(e)=>{
 });
 
 // 権限変更モーダルを開く
-window.openRoleModal=function(uid){
-  const user=allUsers.find(u=>u.uid===uid);
+window.openRoleModal=function(accountId){
+  const user=allUsers.find(u=>u.accountId===accountId);
   if(!user)return;
   
-  selectedUserId=uid;
+  selectedAccountId=accountId;
   
   const modal=document.getElementById('role-modal');
   const modalUserIcon=document.getElementById('modal-user-icon');
@@ -126,7 +146,7 @@ window.openRoleModal=function(uid){
   const modalAccountId=document.getElementById('modal-account-id');
   const roleSelect=document.getElementById('role-select');
   
-  const iconUrl=user.iconUrl&&user.iconUrl!=='default'?user.iconUrl:'assets/school.png';
+  const iconUrl=user.iconUrl&&user.iconUrl!=='default'?user.iconUrl:'assets/github-mark.svg';
   modalUserIcon.src=iconUrl;
   modalUsername.textContent=user.username;
   modalAccountId.textContent='@'+user.accountId;
@@ -138,7 +158,7 @@ window.openRoleModal=function(uid){
 // モーダルを閉じる
 function closeModal(){
   document.getElementById('role-modal').classList.remove('show');
-  selectedUserId=null;
+  selectedAccountId=null;
 }
 
 document.getElementById('modal-close').addEventListener('click',closeModal);
@@ -153,13 +173,13 @@ document.getElementById('role-modal').addEventListener('click',(e)=>{
 
 // 権限を保存
 document.getElementById('modal-save').addEventListener('click',async()=>{
-  if(!selectedUserId)return;
+  if(!selectedAccountId)return;
   
   const roleSelect=document.getElementById('role-select');
   const newRole=roleSelect.value;
   
   try{
-    await update(ref(database,`users/${selectedUserId}`),{
+    await update(ref(database,`users/${selectedAccountId}`),{
       role:newRole
     });
     
