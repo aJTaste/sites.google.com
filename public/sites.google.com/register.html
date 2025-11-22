@@ -27,14 +27,26 @@
             <div class="form-layout">
               <div class="form-left">
                 <div class="input-group">
+                  <label for="fullname">氏名（フルネーム）</label>
+                  <input type="text" id="fullname" placeholder="山田 太郎" required>
+                </div>
+                <div class="input-group">
+                  <label for="gmail-user">教育委員会Gmail</label>
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <input type="text" id="gmail-user" placeholder="taro.yamada" style="flex:1;" required>
+                    <span style="color:var(--text-secondary);font-size:14px;">@ita.ed.jp</span>
+                  </div>
+                  <span class="help-text">@ita.ed.jpの前の部分を入力</span>
+                </div>
+                <div class="input-group">
                   <label for="account-id">アカウントID</label>
-                  <input type="text" id="account-id" placeholder="2-20文字の半角英数字記号" minlength="2" maxlength="20" required>
+                  <input type="text" id="account-id" placeholder="2文字以上の半角英数字" minlength="2" maxlength="20" required>
                   <span class="error-message" id="id-error"></span>
                   <span class="help-text" id="id-help"></span>
                 </div>
                 <div class="input-group">
                   <label for="password">パスワード</label>
-                  <input type="password" id="password" placeholder="8-20文字の半角英数字記号" minlength="8" maxlength="20" required>
+                  <input type="password" id="password" placeholder="8文字以上の半角英数字記号" minlength="8" maxlength="20" required>
                 </div>
                 <div class="input-group">
                   <label for="password-confirm">パスワード（確認）</label>
@@ -42,15 +54,16 @@
                   <span class="error-message" id="password-error"></span>
                 </div>
                 <div class="input-group">
-                  <label for="username">ユーザー名</label>
-                  <input type="text" id="username" placeholder="表示名（1-100文字）" maxlength="100" required>
+                  <label for="username">表示名</label>
+                  <input type="text" id="username" placeholder="ニックネームや表示名" required>
+                  <span class="help-text">制限なし</span>
                 </div>
               </div>
               <div class="form-right">
                 <label>アイコン画像</label>
                 <div class="icon-section">
                   <div class="icon-preview">
-                    <img id="icon-preview" src="assets/school.svg" alt="アイコンプレビュー">
+                    <img id="icon-preview" src="assets/github-mark.svg" alt="アイコンプレビュー">
                   </div>
                   <input type="file" id="icon-file" accept="image/*" hidden>
                   <button type="button" class="btn-secondary" id="upload-btn">画像を選択</button>
