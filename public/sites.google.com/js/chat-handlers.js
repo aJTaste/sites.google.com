@@ -10,39 +10,39 @@ import{handleImageFile}from'./chat-utils.js';
 console.log('chat-handlers.js読み込み開始');
 
 // ユーザーを選択
-export async function selectUser(userId){
-  console.log('selectUser()実行:',userId);
-  updateState('selectedUserId',userId);
+export async function selectUser(accountId){
+  console.log('selectUser()実行:',accountId);
+  updateState('selectedAccountId',accountId);
   updateState('selectedChannelId',null);
   
-  await update(ref(database,`users/${state.currentUser.uid}/lastRead`),{
-    [userId]:Date.now()
+  await update(ref(database,`users/${state.currentAccountId}/lastRead`),{
+    [accountId]:Date.now()
   });
   
-  state.unreadCounts[userId]=0;
+  state.unreadCounts[accountId]=0;
   
   displayUsers();
   
   const chatMain=document.getElementById('chat-main');
-  const selectedUser=state.allUsers.find(u=>u.uid===userId);
+  const selectedUser=state.allUsers.find(u=>u.accountId===accountId);
   
   if(!selectedUser){
-    console.error('選択されたユーザーが見つかりません:',userId);
+    console.error('選択されたユーザーが見つかりません:',accountId);
     return;
   }
   
   chatMain.innerHTML=createChatHTML(selectedUser);
   setupChatInput();
-  loadMessages(userId);
+  loadMessages(accountId);
 }
 
 // チャンネルを選択
 export async function selectChannel(channelId){
   console.log('selectChannel()実行:',channelId);
   updateState('selectedChannelId',channelId);
-  updateState('selectedUserId',null);
+  updateState('selectedAccountId',null);
   
-  await update(ref(database,`users/${state.currentUser.uid}/lastRead`),{
+  await update(ref(database,`users/${state.currentAccountId}/lastRead`),{
     [channelId]:Date.now()
   });
   

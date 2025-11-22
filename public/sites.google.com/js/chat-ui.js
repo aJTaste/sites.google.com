@@ -59,7 +59,7 @@ export function displayUsers(){
     state.allUsers.forEach(user=>{
       const dmItem=document.createElement('div');
       dmItem.className='dm-item';
-      if(state.selectedUserId===user.uid){
+      if(state.selectedAccountId===user.accountId){
         dmItem.classList.add('active');
       }
       
@@ -68,7 +68,7 @@ export function displayUsers(){
       const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
       const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(user.lastOnline||user.createdAt)}`;
       
-      const unreadCount=state.unreadCounts[user.uid]||0;
+      const unreadCount=state.unreadCounts[user.accountId]||0;
       const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
       
       dmItem.innerHTML=`
@@ -87,7 +87,7 @@ export function displayUsers(){
       
       dmItem.addEventListener('click',()=>{
         if(window.selectUser){
-          window.selectUser(user.uid);
+          window.selectUser(user.accountId);
         }
       });
       

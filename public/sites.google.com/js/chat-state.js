@@ -10,9 +10,10 @@ export const CHANNELS=[
 // グローバル状態
 export const state={
   currentUser:null,
+  currentAccountId:null,
   currentUserData:null,
   allUsers:[],
-  selectedUserId:null,
+  selectedAccountId:null,
   selectedChannelId:null,
   messageListener:null,
   isSending:false,

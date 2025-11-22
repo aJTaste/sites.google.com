@@ -1,4 +1,4 @@
-// メッセージ表示・送信関連（既読バグ修正版）
+// メッセージ表示・送信関連（アカウントIDベース）
 
 import{database}from'../common/firebase-config.js';
 import{ref,get,set,push,onValue,off,update}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
@@ -6,12 +6,12 @@ import{state,updateState,resetMessageState}from'./chat-state.js';
 import{getDmId,formatMessageTime,escapeHtml,showNotification}from'./chat-utils.js';
 
 // メッセージを読み込み（DM）
-export function loadMessages(userId){
+export function loadMessages(accountId){
   if(state.messageListener){
     off(state.messageListener);
   }
   
-  const dmId=getDmId(state.currentUser.uid,userId);
+  const dmId=getDmId(state.currentAccountId,accountId);
   const messagesRef=ref(database,`dms/${dmId}/messages`);
   
   updateState('messageListener',messagesRef);
@@ -39,8 +39,8 @@ export function loadMessages(userId){
       // 新着メッセージ通知
       if(!isFirstLoad&&messageArray.length>0){
         const latestMsg=messageArray[messageArray.length-1];
-        if(latestMsg.senderId===userId){
-          const sender=state.allUsers.find(u=>u.uid===userId);
+        if(latestMsg.senderId===accountId){
+          const sender=state.allUsers.find(u=>u.accountId===accountId);
           if(sender){
             showNotification(
               `${sender.username}からのメッセージ`,
@@ -53,7 +53,7 @@ export function loadMessages(userId){
       
       // 全メッセージを順番に表示（awaitを使って順番に処理）
       for(const msg of messageArray){
-        await displayMessage(msg,userId);
+        await displayMessage(msg,accountId);
       }
       
       // スクロール位置を調整
@@ -65,8 +65,8 @@ export function loadMessages(userId){
       
       // 既読を更新（チャットを開いている間は常に既読にする）
       if(!isFirstLoad){
-        await update(ref(database,`users/${state.currentUser.uid}/lastRead`),{
-          [userId]:Date.now()
+        await update(ref(database,`users/${state.currentAccountId}/lastRead`),{
+          [accountId]:Date.now()
         });
       }
       
@@ -108,8 +108,8 @@ export function loadChannelMessages(channelId){
       // 新着メッセージ通知
       if(!isFirstLoad&&messageArray.length>0){
         const latestMsg=messageArray[messageArray.length-1];
-        if(latestMsg.senderId!==state.currentUser.uid){
-          const sender=state.allUsers.find(u=>u.uid===latestMsg.senderId);
+        if(latestMsg.senderId!==state.currentAccountId){
+          const sender=state.allUsers.find(u=>u.accountId===latestMsg.senderId);
           const senderName=sender?sender.username:'誰か';
           const channel={name:channelId};
           showNotification(
@@ -134,7 +134,7 @@ export function loadChannelMessages(channelId){
       
       // 既読を更新（チャットを開いている間は常に既読にする）
       if(!isFirstLoad){
-        await update(ref(database,`users/${state.currentUser.uid}/lastRead`),{
+        await update(ref(database,`users/${state.currentAccountId}/lastRead`),{
           [channelId]:Date.now()
         });
       }
@@ -145,17 +145,17 @@ export function loadChannelMessages(channelId){
 }
 
 // メッセージを表示（DM）- 既読状態を後から更新
-async function displayMessage(msg,otherUserId){
+async function displayMessage(msg,otherAccountId){
   const chatMessages=document.getElementById('chat-messages');
   if(!chatMessages)return;
   
-  const isCurrentUser=msg.senderId===state.currentUser.uid;
+  const isCurrentUser=msg.senderId===state.currentAccountId;
   
   let senderData;
   if(isCurrentUser){
     senderData=state.currentUserData;
   }else{
-    senderData=state.allUsers.find(u=>u.uid===msg.senderId);
+    senderData=state.allUsers.find(u=>u.accountId===msg.senderId);
   }
   
   if(!senderData)return;
@@ -163,7 +163,7 @@ async function displayMessage(msg,otherUserId){
   const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/github-mark.svg';
   
   // 操作ボタン（全てのメッセージにリプライ可能、自分のメッセージは編集・削除も）
-  const dmId=getDmId(state.currentUser.uid,otherUserId);
+  const dmId=getDmId(state.currentAccountId,otherAccountId);
   let actionsHtml=`
     <div class="message-actions">
       <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.senderId}')" title="返信">
@@ -211,14 +211,14 @@ async function displayMessage(msg,otherUserId){
   
   // 既読状態を非同期で取得して更新（DOM追加後なので順序に影響しない）
   if(isCurrentUser){
-    updateReadStatus(msg.id,msg.timestamp,otherUserId);
+    updateReadStatus(msg.id,msg.timestamp,otherAccountId);
   }
 }
 
 // 既読状態を更新（非同期・DOM追加後）
-async function updateReadStatus(messageId,timestamp,otherUserId){
+async function updateReadStatus(messageId,timestamp,otherAccountId){
   try{
-    const otherUserRef=ref(database,`users/${otherUserId}/lastRead/${state.currentUser.uid}`);
+    const otherUserRef=ref(database,`users/${otherAccountId}/lastRead/${state.currentAccountId}`);
     const readSnapshot=await get(otherUserRef);
     if(readSnapshot.exists()){
       const lastReadTime=readSnapshot.val();
@@ -240,10 +240,10 @@ function displayChannelMessage(msg){
   if(!chatMessages)return;
   
   let senderData;
-  if(msg.senderId===state.currentUser.uid){
+  if(msg.senderId===state.currentAccountId){
     senderData=state.currentUserData;
   }else{
-    senderData=state.allUsers.find(u=>u.uid===msg.senderId);
+    senderData=state.allUsers.find(u=>u.accountId===msg.senderId);
   }
   
   if(!senderData)return;
@@ -251,7 +251,7 @@ function displayChannelMessage(msg){
   const iconUrl=senderData.iconUrl&&senderData.iconUrl!=='default'?senderData.iconUrl:'assets/github-mark.svg';
   
   // 操作ボタン（全てのメッセージにリプライ可能、自分のメッセージは編集・削除も）
-  const isCurrentUser=msg.senderId===state.currentUser.uid;
+  const isCurrentUser=msg.senderId===state.currentAccountId;
   let actionsHtml=`
     <div class="message-actions">
       <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.senderId}')" title="返信">
@@ -305,7 +305,7 @@ export async function sendMessage(){
   const text=chatInput.value.trim();
   
   if(!text&&!state.selectedImage)return;
-  if(!state.selectedUserId&&!state.selectedChannelId)return;
+  if(!state.selectedAccountId&&!state.selectedChannelId)return;
   
   updateState('isSending',true);
   chatInput.disabled=true;
@@ -326,7 +326,7 @@ export async function sendMessage(){
   
   try{
     const messageData={
-      senderId:state.currentUser.uid,
+      senderId:state.currentAccountId,
       text:messageText,
       timestamp:Date.now()
     };
@@ -343,8 +343,8 @@ export async function sendMessage(){
       };
     }
     
-    if(state.selectedUserId){
-      const dmId=getDmId(state.currentUser.uid,state.selectedUserId);
+    if(state.selectedAccountId){
+      const dmId=getDmId(state.currentAccountId,state.selectedAccountId);
       const messagesRef=ref(database,`dms/${dmId}/messages`);
       const newMessageRef=push(messagesRef);
       
@@ -355,8 +355,8 @@ export async function sendMessage(){
       
       if(!participantsSnapshot.exists()){
         await set(participantsRef,{
-          [state.currentUser.uid]:true,
-          [state.selectedUserId]:true
+          [state.currentAccountId]:true,
+          [state.selectedAccountId]:true
         });
       }
     }else if(state.selectedChannelId){
