@@ -1,116 +1,245 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>スクリーンキャプチャ | AppHub</title>
-  <link rel="stylesheet" href="common/common.css">
-  <link rel="stylesheet" href="css/index.css"><!-- AppHub 共通 -->
-  <link rel="stylesheet" href="css/capture.css">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>スクリーンショット | AppHub</title>
   <link rel="icon" href="assets/favicon1.svg">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      background:#f5f5f5;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      min-height:100vh;
+      padding:20px;
+    }
+    .container{
+      max-width:900px;
+      width:100%;
+      background:#fff;
+      border-radius:12px;
+      box-shadow:0 4px 20px rgba(0,0,0,0.1);
+      padding:30px;
+    }
+    h1{
+      font-size:28px;
+      margin-bottom:10px;
+      color:#333;
+    }
+    .subtitle{
+      color:#666;
+      margin-bottom:30px;
+      font-size:14px;
+    }
+    .btn-group{
+      display:flex;
+      gap:12px;
+      margin-bottom:30px;
+      flex-wrap:wrap;
+    }
+    button{
+      padding:12px 24px;
+      font-size:15px;
+      font-weight:600;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      transition:all 0.2s;
+      font-family:inherit;
+    }
+    .btn-primary{
+      background:#ff6b35;
+      color:#fff;
+    }
+    .btn-primary:hover{
+      background:#e55a2b;
+      transform:translateY(-1px);
+    }
+    .btn-secondary{
+      background:#eee;
+      color:#333;
+    }
+    .btn-secondary:hover{
+      background:#ddd;
+    }
+    #preview{
+      width:100%;
+      border:2px dashed #ddd;
+      border-radius:8px;
+      min-height:300px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color:#999;
+      font-size:14px;
+      overflow:hidden;
+    }
+    #preview img{
+      max-width:100%;
+      height:auto;
+      display:block;
+    }
+    #preview video{
+      max-width:100%;
+      height:auto;
+      display:block;
+    }
+    .info{
+      margin-top:20px;
+      padding:15px;
+      background:#f9f9f9;
+      border-radius:8px;
+      font-size:13px;
+      color:#666;
+      line-height:1.6;
+    }
+    .error{
+      background:#fee;
+      color:#c33;
+      padding:15px;
+      border-radius:8px;
+      margin-bottom:20px;
+      display:none;
+    }
+    .countdown{
+      font-size:48px;
+      font-weight:bold;
+      color:#ff6b35;
+      position:fixed;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      background:rgba(255,255,255,0.95);
+      padding:30px 50px;
+      border-radius:20px;
+      box-shadow:0 10px 40px rgba(0,0,0,0.3);
+      display:none;
+      z-index:9999;
+    }
+  </style>
 </head>
 <body>
-  <div class="app-container">
-    <header class="top-header">
-      <div class="header-left">
-        <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
-        <a href="index.html" style="text-decoration:none;color:inherit;">
-          <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
-        </a>
-        <span class="header-divider">|</span>
-        <span class="page-title" id="page-title">スクリーンキャプチャ</span>
-      </div>
-      <div class="header-right">
-        <button class="icon-btn" id="notification-btn" title="通知">
-          <span class="material-icons">notifications</span>
-        </button>
-        <div class="user-menu">
-          <button class="user-btn" id="user-btn">
-            <img id="user-avatar" src="assets/school.svg" alt="ユーザーアイコン">
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <div class="main-container">
-      <aside class="sidebar" aria-hidden="true">
-        <nav class="sidebar-nav">
-          <a href="index.html" class="nav-item" title="ホーム"><span class="material-icons">home</span></a>
-          <a href="#" class="nav-item" title="HTMLプレビュー"><span class="material-icons">preview</span></a>
-          <a href="chat.html" class="nav-item" title="チャット"><span class="material-icons">chat</span></a>
-          <a href="#" class="nav-item" title="ファイル共有"><span class="material-icons">folder</span></a>
-          <a href="eag.html" class="nav-item" title="Eaglercraft"><span class="material-icons">public</span></a>
-        </nav>
-      </aside>
-
-      <main class="main-content" id="main-content">
-        <section class="view-card">
-          <div class="view-head">
-            <div class="tabs" role="tablist" aria-label="ビュー切替">
-              <button class="tab active" data-target="captureView" role="tab">キャプチャ</button>
-              <button class="tab" data-target="galleryView" role="tab">ギャラリー</button>
-            </div>
-          </div>
-
-          <!-- キャプチャビュー -->
-          <section id="captureView" class="view">
-            <div class="capture-panel">
-              <div class="primary-actions">
-                <button id="nowBtn" class="btn-primary large">今すぐ撮影</button>
-                <button id="timerBtn" class="btn-secondary large">セルフタイマー</button>
-              </div>
-
-              <div class="options">
-                <label>秒数:
-                  <input id="delayInput" type="number" min="1" max="30" value="3">
-                </label>
-                <label>形式:
-                  <select id="formatSelect">
-                    <option value="image/png">PNG（推奨）</option>
-                    <option value="image/webp">WebP（軽量）</option>
-                    <option value="image/jpeg">JPEG</option>
-                  </select>
-                </label>
-                <label class="small">
-                  <input id="useNotification" type="checkbox" checked> 撮影後に通知を出す
-                </label>
-                <label class="small">
-                  <input id="useBeep" type="checkbox"> ビープ音
-                </label>
-              </div>
-
-              <div id="hint" class="hint">
-                画面共有を選択 → 撮影 → 保存ダイアログが開きます。保存に成功したものだけギャラリーに残ります。
-              </div>
-            </div>
-          </section>
-
-          <!-- ギャラリー -->
-          <section id="galleryView" class="view hidden">
-            <div class="gallery-header">
-              <h2>ギャラリー</h2>
-              <div class="gallery-actions">
-                <button id="clearGallery" class="btn-secondary">ギャラリーを消去</button>
-              </div>
-            </div>
-            <div id="galleryList" class="gallery-grid"></div>
-          </section>
-        </section>
-      </main>
+  <div class="countdown" id="countdown">3</div>
+  
+  <div class="container">
+    <h1>📸 スクリーンショット</h1>
+    <p class="subtitle">画面全体または選択範囲をキャプチャ</p>
+    
+    <div class="error" id="error">エラーが発生しました</div>
+    
+    <div class="btn-group">
+      <button class="btn-primary" id="captureScreen">画面全体を撮影</button>
+      <button class="btn-primary" id="captureArea">範囲を選択して撮影</button>
+      <button class="btn-primary" id="captureTimer">3秒後に撮影</button>
+      <button class="btn-secondary" id="download" style="display:none;">ダウンロード</button>
+      <button class="btn-secondary" id="copy" style="display:none;">クリップボードにコピー</button>
+    </div>
+    
+    <div id="preview">
+      スクリーンショットがここに表示されます
+    </div>
+    
+    <div class="info">
+      <strong>💡 使い方</strong><br>
+      • <strong>画面全体を撮影:</strong> 表示されている画面全体をキャプチャ<br>
+      • <strong>範囲を選択:</strong> マウスドラッグで範囲指定（未実装）<br>
+      • <strong>3秒後に撮影:</strong> カウントダウン後に自動撮影（ポーズを取る時に便利）<br>
+      • Chromebookでは画面共有APIを使用します
     </div>
   </div>
 
-  <!-- hidden video to draw frames -->
-  <video id="captureVideo" autoplay muted playsinline class="hidden"></video>
-
-  <div id="countdownOverlay" class="countdown-overlay hidden" aria-hidden="true">
-    <div id="countdownBig" class="countdown-big">3</div>
-    <div class="countdown-hint">撮影まで</div>
-  </div>
-
-  <script src="common/common.js" defer></script>
-  <script src="common/stealth-mode.js" defer></script>
-  <script src="js/capture.js" defer></script>
+  <script>
+    let capturedImage=null;
+    
+    // 画面全体を撮影
+    document.getElementById('captureScreen').addEventListener('click',async()=>{
+      try{
+        const stream=await navigator.mediaDevices.getDisplayMedia({
+          video:{mediaSource:'screen'}
+        });
+        
+        const video=document.createElement('video');
+        video.srcObject=stream;
+        video.play();
+        
+        await new Promise(resolve=>video.onloadedmetadata=resolve);
+        
+        const canvas=document.createElement('canvas');
+        canvas.width=video.videoWidth;
+        canvas.height=video.videoHeight;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(video,0,0);
+        
+        stream.getTracks().forEach(track=>track.stop());
+        
+        capturedImage=canvas.toDataURL('image/png');
+        showPreview(capturedImage);
+      }catch(err){
+        showError('画面キャプチャに失敗しました: '+err.message);
+      }
+    });
+    
+    // 3秒後に撮影
+    document.getElementById('captureTimer').addEventListener('click',async()=>{
+      const countdownEl=document.getElementById('countdown');
+      countdownEl.style.display='block';
+      
+      for(let i=3;i>0;i--){
+        countdownEl.textContent=i;
+        await new Promise(resolve=>setTimeout(resolve,1000));
+      }
+      
+      countdownEl.style.display='none';
+      document.getElementById('captureScreen').click();
+    });
+    
+    // 範囲選択（未実装）
+    document.getElementById('captureArea').addEventListener('click',()=>{
+      showError('この機能は現在開発中です');
+    });
+    
+    // プレビュー表示
+    function showPreview(dataUrl){
+      const preview=document.getElementById('preview');
+      preview.innerHTML=`<img src="${dataUrl}" alt="Screenshot">`;
+      document.getElementById('download').style.display='inline-block';
+      document.getElementById('copy').style.display='inline-block';
+    }
+    
+    // ダウンロード
+    document.getElementById('download').addEventListener('click',()=>{
+      const a=document.createElement('a');
+      const timestamp=new Date().toISOString().replace(/[:.]/g,'-').slice(0,-5);
+      a.href=capturedImage;
+      a.download=`screenshot_${timestamp}.png`;
+      a.click();
+    });
+    
+    // クリップボードにコピー
+    document.getElementById('copy').addEventListener('click',async()=>{
+      try{
+        const blob=await(await fetch(capturedImage)).blob();
+        await navigator.clipboard.write([
+          new ClipboardItem({'image/png':blob})
+        ]);
+        alert('クリップボードにコピーしました！');
+      }catch(err){
+        showError('コピーに失敗しました: '+err.message);
+      }
+    });
+    
+    // エラー表示
+    function showError(msg){
+      const errorEl=document.getElementById('error');
+      errorEl.textContent=msg;
+      errorEl.style.display='block';
+      setTimeout(()=>errorEl.style.display='none',5000);
+    }
+  </script>
+  <script src="common/stealth-mode.js"></script>
 </body>
 </html>
