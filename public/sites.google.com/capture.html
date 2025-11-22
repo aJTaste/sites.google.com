@@ -1,41 +1,88 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>キャプチャ | AppHub</title>
-  <link rel="stylesheet" href="common/common.css">
-  <link rel="stylesheet" href="css/capture.css">
+  <link rel="stylesheet" href="common/common.css" />
+  <link rel="stylesheet" href="css/capture.css" />
 </head>
 <body class="loaded">
+  <header class="app-header">
+    <div class="brand">
+      <h1>AppHub — スクリーンキャプチャ</h1>
+    </div>
+
+    <nav class="tabs" role="tablist" aria-label="ビュー切替">
+      <button class="tab active" data-target="captureView" role="tab">キャプチャ</button>
+      <button class="tab" data-target="galleryView" role="tab">ギャラリー</button>
+    </nav>
+  </header>
+
   <main class="container">
-    <h1 class="title">スクリーンキャプチャ</h1>
+    <!-- キャプチャビュー -->
+    <section id="captureView" class="view">
+      <div class="capture-panel">
+        <div class="controls">
+          <div class="primary-actions">
+            <button id="nowBtn" class="btn-primary large">今すぐ撮影</button>
+            <button id="timerBtn" class="btn-secondary large">セルフタイマー撮影</button>
+          </div>
 
-    <section class="controls">
-      <button id="startCapture" class="btn-primary">画面を選択して共有</button>
+          <div class="options">
+            <label class="option">
+              秒数:
+              <input id="delayInput" type="number" min="1" max="30" value="3" />
+            </label>
 
-      <div class="timer-config">
-        <label>
-          自動キャプチャ（秒）:
-          <input id="delayInput" type="number" min="1" max="30" value="3">
-        </label>
-        <button id="delayCapBtn" class="btn-secondary">カウントダウン撮影</button>
+            <label class="option">
+              形式:
+              <select id="formatSelect">
+                <option value="image/png">PNG（推奨）</option>
+                <option value="image/webp">WebP（軽量）</option>
+                <option value="image/jpeg">JPEG（画質調整可）</option>
+              </select>
+            </label>
+
+            <label class="option small">
+              <input type="checkbox" id="notifyCheckbox" checked /> 通知を使う
+            </label>
+
+            <label class="option small">
+              <input type="checkbox" id="beepCheckbox" /> ビープ音
+            </label>
+          </div>
+        </div>
+
+        <div id="countdownOverlay" class="countdown-overlay hidden" aria-hidden="true">
+          <div id="countdownBig" class="countdown-big">3</div>
+          <div class="countdown-hint">撮影まで</div>
+        </div>
+
+        <div class="hint">
+          画面共有を選択後、キャプチャされ自動でダウンロードされます。複数回撮影するには再度ボタンを押してください。
+        </div>
+      </div>
+    </section>
+
+    <!-- ギャラリービュー -->
+    <section id="galleryView" class="view hidden">
+      <div class="gallery-header">
+        <h2>ギャラリー</h2>
+        <div class="gallery-actions">
+          <button id="clearGallery" class="btn-secondary">ギャラリーを消去</button>
+        </div>
       </div>
 
-      <button id="instantCapBtn" class="btn-secondary" disabled>
-        今すぐ撮影
-      </button>
-    </section>
-
-    <div id="countdown" class="countdown hidden"></div>
-
-    <section class="result-area">
-      <h2 class="subtitle">キャプチャ画像</h2>
-      <div id="gallery" class="gallery"></div>
+      <div id="galleryList" class="gallery-grid" aria-live="polite"></div>
     </section>
   </main>
+
+  <!-- 共有用の隠し要素（videoやcanvasを一時的に使う） -->
+  <video id="captureVideo" autoplay muted playsinline class="hidden"></video>
+
   <script src="common/common.js"></script>
   <script src="js/capture.js"></script>
-      <script src="common/stealth-mode.js"></script>
+  <script src="common/stealth-mode.js"></script>
 </body>
 </html>
