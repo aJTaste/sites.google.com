@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>キャプチャ | AppHub</title>
+  <link rel="stylesheet" href="../common/common.css">
+  <link rel="stylesheet" href="css/capture.css">
+</head>
+<body class="loaded">
+  <main class="container">
+    <h1 class="title">スクリーンキャプチャ</h1>
+
+    <section class="controls">
+      <button id="startCapture" class="btn-primary">画面を選択して共有</button>
+
+      <div class="timer-config">
+        <label>
+          自動キャプチャ（秒）:
+          <input id="delayInput" type="number" min="1" max="30" value="3">
+        </label>
+        <button id="delayCapBtn" class="btn-secondary">カウントダウン撮影</button>
+      </div>
+
+      <button id="instantCapBtn" class="btn-secondary" disabled>
+        今すぐ撮影
+      </button>
+    </section>
+
+    <div id="countdown" class="countdown hidden"></div>
+
+    <section class="result-area">
+      <h2 class="subtitle">キャプチャ画像</h2>
+      <div id="gallery" class="gallery"></div>
+    </section>
+  </main>
+
+  <script src="js/capture.js"></script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+.container{
+  max-width:760px;
+  margin:40px auto;
+  padding:0 20px;
+}
+
+.title{
+  margin-bottom:24px;
+  font-size:24px;
+}
+
+.controls > *{
+  margin-right:8px;
+  margin-bottom:8px;
+}
+
+.timer-config{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+
+.countdown{
+  font-size:48px;
+  font-weight:700;
+  color:var(--main);
+  text-align:center;
+  margin-top:20px;
+}
+.hidden{
+  display:none;
+}
+
+.result-area{
+  margin-top:32px;
+}
+
+.gallery{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:12px;
+  margin-top:14px;
+}
+
+.gallery img{
+  width:100%;
+  border:1px solid var(--border);
+  border-radius:6px;
+}
