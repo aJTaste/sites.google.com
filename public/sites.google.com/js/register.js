@@ -2,6 +2,8 @@ import{auth,database}from'../common/firebase-config.js';
 import{createUserWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import{ref,set,get}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
+console.log('register.js読み込み開始');
+
 // DOM要素取得
 const form=document.getElementById('register-form');
 const fullnameInput=document.getElementById('fullname');
@@ -15,18 +17,23 @@ const iconPreview=document.getElementById('icon-preview');
 const uploadBtn=document.getElementById('upload-btn');
 const defaultBtn=document.getElementById('default-btn');
 
+console.log('DOM要素取得完了');
+
 let iconBase64='';
 
 uploadBtn.addEventListener('click',()=>{
+  console.log('アップロードボタンクリック');
   iconFileInput.click();
 });
 
 defaultBtn.addEventListener('click',()=>{
+  console.log('デフォルトボタンクリック');
   iconPreview.src='assets/github-mark.svg';
   iconBase64='';
 });
 
 iconFileInput.addEventListener('change',(e)=>{
+  console.log('ファイル選択');
   const file=e.target.files[0];
   if(!file)return;
   
@@ -41,6 +48,7 @@ iconFileInput.addEventListener('change',(e)=>{
   reader.onload=(e)=>{
     iconPreview.src=e.target.result;
     iconBase64=e.target.result;
+    console.log('画像読み込み完了');
   };
   reader.readAsDataURL(file);
 });
@@ -64,21 +72,27 @@ accountIdInput.addEventListener('input',async()=>{
     return;
   }
   
-  // 重複チェック
-  const accountRef=ref(database,`users/${accountId}`);
-  const snapshot=await get(accountRef);
-  
-  if(snapshot.exists()){
-    idError.textContent='このIDはすでに使用されています';
-    idHelp.textContent='';
-  }else{
-    idError.textContent='';
-    idHelp.textContent='✓ 使用可能なIDです';
+  try{
+    // 重複チェック
+    const accountRef=ref(database,`users/${accountId}`);
+    const snapshot=await get(accountRef);
+    
+    if(snapshot.exists()){
+      idError.textContent='このIDはすでに使用されています';
+      idHelp.textContent='';
+    }else{
+      idError.textContent='';
+      idHelp.textContent='✓ 使用可能なIDです';
+    }
+  }catch(error){
+    console.error('重複チェックエラー:',error);
+    idError.textContent='チェック中にエラーが発生しました';
   }
 });
 
 form.addEventListener('submit',async(e)=>{
   e.preventDefault();
+  console.log('登録フォーム送信開始');
   
   const fullname=fullnameInput.value.trim();
   const gmailUser=gmailUserInput.value.trim();
@@ -86,6 +100,8 @@ form.addEventListener('submit',async(e)=>{
   const password=passwordInput.value;
   const passwordConfirm=passwordConfirmInput.value;
   const username=usernameInput.value.trim();
+  
+  console.log('入力値:',{fullname,gmailUser,accountId,username});
   
   document.getElementById('id-error').textContent='';
   document.getElementById('password-error').textContent='';
@@ -132,20 +148,34 @@ form.addEventListener('submit',async(e)=>{
     return;
   }
   
+  console.log('バリデーション通過');
+  
   // 重複チェック（最終確認）
-  const accountRef=ref(database,`users/${accountId}`);
-  const snapshot=await get(accountRef);
-  if(snapshot.exists()){
-    document.getElementById('id-error').textContent='このIDはすでに使用されています';
+  try{
+    const accountRef=ref(database,`users/${accountId}`);
+    const snapshot=await get(accountRef);
+    if(snapshot.exists()){
+      document.getElementById('id-error').textContent='このIDはすでに使用されています';
+      return;
+    }
+    
+    console.log('重複チェック通過');
+  }catch(error){
+    console.error('重複チェックエラー:',error);
+    alert('重複チェック中にエラーが発生しました');
     return;
   }
   
   try{
     const email=`${accountId}@ajtaste.jp`;
+    console.log('Firebase認証開始:',email);
     
     // Firebase Authentication でユーザー作成
     const userCredential=await createUserWithEmailAndPassword(auth,email,password);
     const user=userCredential.user;
+    
+    console.log('Firebase認証成功:',user.uid);
+    console.log('データベース保存開始');
     
     // Realtime Database にアカウントIDをキーとして保存
     await set(ref(database,`users/${accountId}`),{
@@ -161,10 +191,14 @@ form.addEventListener('submit',async(e)=>{
       online:false
     });
     
+    console.log('データベース保存成功');
     alert('登録完了！');
     window.location.href='index.html';
   }catch(error){
-    console.error(error);
+    console.error('登録エラー:',error);
+    console.error('エラーコード:',error.code);
+    console.error('エラーメッセージ:',error.message);
+    
     if(error.code==='auth/email-already-in-use'){
       document.getElementById('id-error').textContent='このIDはすでに使用されています';
     }else{
@@ -172,3 +206,5 @@ form.addEventListener('submit',async(e)=>{
     }
   }
 });
+
+console.log('register.js読み込み完了');
