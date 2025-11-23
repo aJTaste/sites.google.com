@@ -1,0 +1,63 @@
+body {
+  background: #f4f6fb;
+  color: #222;
+  font-family: system-ui, -apple-system, "Noto Sans JP";
+  margin: 0;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.keyboard {
+  display: grid;
+  grid-template-columns: repeat(52, 22px);
+  height: 200px;
+  background: #222;
+  padding: 12px;
+  gap: 2px;
+  margin: 10px auto;
+  user-select: none;
+}
+
+.key {
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+
+.key.white {
+  background: white;
+  border: 1px solid #ccc;
+  z-index: 1;
+}
+
+.key.black {
+  background: #000;
+  height: 130px;
+  margin: 0 -12px;
+  z-index: 2;
+}
+
+.key.active {
+  background: #00a0ff;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
