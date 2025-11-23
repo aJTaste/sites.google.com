@@ -148,7 +148,7 @@
 }
 
 .sidebar{
-  width:280px;
+  width:60px;
   background:var(--bg-primary);
   border-right:1px solid var(--border);
   display:flex;
@@ -165,9 +165,10 @@
 .nav-item{
   display:flex;
   align-items:center;
-  gap:12px;
-  padding:10px 12px;
-  margin-bottom:2px;
+  justify-content:center;
+  width:44px;
+  height:44px;
+  margin-bottom:4px;
   border-radius:6px;
   color:var(--text-secondary);
   text-decoration:none;
@@ -179,13 +180,18 @@
   text-decoration:none;
 }
 
-.nav-item .material-icons{
-  font-size:20px;
-  color:var(--text-tertiary);
+.nav-item.active{
+  background:var(--main-light);
+  color:var(--main);
 }
 
-.nav-item span:last-child{
-  font-size:14px;
+.nav-item.active .material-icons{
+  color:var(--main);
+}
+
+.nav-item .material-icons{
+  font-size:24px;
+  color:var(--text-tertiary);
 }
 
 .main-content{
