@@ -1,63 +1,67 @@
-body {
-  background: #f4f6fb;
-  color: #222;
-  font-family: system-ui, -apple-system, "Noto Sans JP";
-  margin: 0;
+/* piano.css — Project-themed piano styles (responsive) */
+.piano-app {
+  max-width: 1180px;
+  margin: 28px auto;
+  background: var(--card-bg, #fff);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 8px 30px rgba(10,30,70,0.06);
+  color: var(--text-color, #111);
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 14px;
-}
+.piano-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.piano-title { margin:0; font-size:18px; }
+.hint { color:#666; font-size:13px; }
 
-.title {
-  font-size: 20px;
-  font-weight: bold;
-}
+.controls { display:flex; align-items:center; gap:10px; }
+.ctrl input[type=range] { width:140px; }
 
-.keyboard {
-  display: grid;
-  grid-template-columns: repeat(52, 22px);
-  height: 200px;
-  background: #222;
-  padding: 12px;
-  gap: 2px;
-  margin: 10px auto;
-  user-select: none;
-}
+.octave-indicator { font-weight:700; background:#f1f5fb; padding:6px 10px; border-radius:8px; }
 
+.keyboard-wrap { margin-top:14px; user-select:none; }
+
+/* row (each row contains a segment of keys) */
+.row { display:flex; gap:6px; margin-bottom:10px; justify-content:center; align-items:flex-end; }
+
+/* base key styles */
 .key {
-  border-radius: 4px;
-  cursor: pointer;
-  position: relative;
+  display:inline-flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding-bottom:6px;
+  border-radius:6px;
+  box-sizing:border-box;
+  min-width:36px;
+  height:88px;
+  border:1px solid #e9f0fb;
+  background:#fff;
+  cursor:pointer;
 }
 
-.key.white {
-  background: white;
-  border: 1px solid #ccc;
-  z-index: 1;
-}
+.key .label { font-size:11px; color:#556; pointer-events:none; }
 
 .key.black {
-  background: #000;
-  height: 130px;
-  margin: 0 -12px;
-  z-index: 2;
+  background:#111;
+  color:#fff;
+  height:64px;
+  min-width:22px;
+  margin-top:0;
+  border-radius:6px;
+  transform: translateY(0);
 }
 
-.key.active {
-  background: #00a0ff;
-}
+/* active states */
+.key.active { box-shadow: 0 6px 18px rgba(11,118,239,0.12); background: linear-gradient(180deg,#e6f7ff,#d6efff); border-color: #0b76ef; }
+.key.black.active { background:#333; box-shadow:0 4px 10px rgba(0,0,0,0.35); }
 
-.controls {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
+/* mapped keys (keyboard-mapped) */
+.key.mapped { outline: 3px solid rgba(11,118,239,0.06); }
 
-label {
-  display: flex;
-  gap: 6px;
-  align-items: center;
+/* highlight keyboard-mapped range with small marker */
+.kbd-highlight { color:#0b76ef; font-weight:700; }
+
+/* responsive */
+@media (max-width:900px){
+  .key{ min-width:28px; height:64px; }
+  .key.black{ height:48px; min-width:18px; }
 }
