@@ -98,15 +98,23 @@
     const midi = midiBase + shift*12;
     const s = active[midi];
     if(!s) return;
+
     const now = ctx.currentTime;
+    
+    // しっかり減衰させる
     s.g.gain.cancelScheduledValues(now);
-    s.gain.exponentialRampToValueAtTime(0.0001, now + 0.4);
-    s.o1.stop(now + 0.45);
-    s.o2.stop(now + 0.45);
+    s.g.gain.setValueAtTime(s.g.gain.value, now);
+    s.g.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+
+    // 一定時間後に停止
+    s.o1.stop(now + 0.30);
+    s.o2.stop(now + 0.30);
+    
     delete active[midi];
     highlightKey(midi, false);
-    recorderPush('off', midi);
+    recorderPush('off', midiBase);
   }
+
 
   function highlightKey(midi, on){
     // find element with dataset midi = midi - shift*12 (we rendered original base midi)
