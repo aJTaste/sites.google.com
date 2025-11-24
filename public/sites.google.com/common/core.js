@@ -74,7 +74,8 @@ export function createSidebar(activePage){
     {id:'chat',icon:'chat',title:'チャット',href:'chat.html'},
     {id:'files',icon:'folder',title:'ファイル共有',href:'#'},
     {id:'piano',icon:'piano',title:'ピアノ',href:'piano.html'},
-    {id:'capture',icon:'screenshot',title:'スクショ',href:'capture.html'}
+    {id:'capture',icon:'screenshot',title:'スクショ',href:'capture.html'},
+    {id:'eagler',icon:'public',title:'Eaglercraft',href:'eag.html'}
   ];
   
   const navHTML=navItems.map(item=>{
