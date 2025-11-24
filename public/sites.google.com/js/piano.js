@@ -1,79 +1,12 @@
-import{auth,database}from'../common/firebase-config.js';
-import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import{ref,get}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{initPage}from'../common/core.js';
 
-// ログイン状態チェック
-onAuthStateChanged(auth,async(user)=>{
-  if(!user){
-    window.location.href='login.html';
-    return;
-  }
-  
-  const usersRef=ref(database,'users');
-  const usersSnapshot=await get(usersRef);
-  
-  if(!usersSnapshot.exists()){
-    alert('ユーザーデータが見つかりません');
-    await signOut(auth);
-    window.location.href='login.html';
-    return;
-  }
-  
-  const users=usersSnapshot.val();
-  let currentUserData=null;
-  
-  for(const accountId in users){
-    if(users[accountId].uid===user.uid){
-      currentUserData=users[accountId];
-      break;
-    }
-  }
-  
-  if(!currentUserData){
-    alert('アカウント情報が見つかりません');
-    await signOut(auth);
-    window.location.href='login.html';
-    return;
-  }
-  
-  const userAvatar=document.getElementById('user-avatar');
-  if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
-    userAvatar.src=currentUserData.iconUrl;
-  }
-});
+// ページ初期化
+await initPage('piano','ピアノ');
 
-// ユーザーメニュー
-const userBtn=document.getElementById('user-btn');
-const userDropdown=document.getElementById('user-dropdown');
-
-userBtn.addEventListener('click',(e)=>{
-  e.stopPropagation();
-  userDropdown.classList.toggle('show');
-});
-
-document.addEventListener('click',()=>{
-  userDropdown.classList.remove('show');
-});
-
-document.getElementById('profile-btn').addEventListener('click',()=>{
-  window.location.href='profile.html';
-});
-
-document.getElementById('settings-btn').addEventListener('click',()=>{
-  window.location.href='settings.html';
-});
-
-document.getElementById('logout-btn').addEventListener('click',async()=>{
-  try{
-    await signOut(auth);
-    window.location.href='login.html';
-  }catch(error){
-    console.error(error);
-    alert('ログアウトに失敗しました');
-  }
-});
-
+// ========================================
 // ピアノ機能
+// ========================================
+
 const AudioContext=window.AudioContext||window.webkitAudioContext;
 const audioContext=new AudioContext();
 const masterGain=audioContext.createGain();
