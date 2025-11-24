@@ -39,7 +39,7 @@ export function createHeader(pageTitle){
       </div>
       <div class="header-right">
         <button class="icon-btn" id="notification-btn" title="通知">
-          <span class="material-symbols-outlined">notifications</span>
+          <span class="material-icons-outlined">notifications</span>
         </button>
         <div class="user-menu">
           <button class="user-btn" id="user-btn">
@@ -47,16 +47,16 @@ export function createHeader(pageTitle){
           </button>
           <div class="user-dropdown" id="user-dropdown">
             <div class="dropdown-item" id="profile-btn">
-              <span class="material-symbols-outlined">person</span>
+              <span class="material-icons-outlined">person</span>
               <span>プロフィール</span>
             </div>
             <div class="dropdown-item" id="settings-btn">
-              <span class="material-symbols-outlined">settings</span>
+              <span class="material-icons-outlined">settings</span>
               <span>設定</span>
             </div>
             <div class="dropdown-divider"></div>
             <div class="dropdown-item" id="logout-btn">
-              <span class="material-symbols-outlined">logout</span>
+              <span class="material-icons-outlined">logout</span>
               <span>ログアウト</span>
             </div>
           </div>
@@ -80,7 +80,7 @@ export function createSidebar(activePage){
     const activeClass=activePage===item.id?'active':'';
     return`
       <a href="${item.href}" class="nav-item ${activeClass}" title="${item.title}">
-        <span class="material-symbols-outlined">${item.icon}</span>
+        <span class="material-icons-outlined">${item.icon}</span>
       </a>
     `;
   }).join('');
