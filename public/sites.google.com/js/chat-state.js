@@ -4,7 +4,7 @@
 export const CHANNELS=[
   {id:'general',name:'連絡',desc:'報連相大事',icon:'campaign'},
   {id:'random',name:'共用チャット',desc:'全員見れます',icon:'chat_bubble'},
-  {id:'tech',name:'to俺',desc:'欲しいツールとかなんでも',icon:'code'}
+  {id:'tech',name:'to管理人',desc:'欲しいツールとかなんでも',icon:'code'}
 ];
 
 // グローバル状態
