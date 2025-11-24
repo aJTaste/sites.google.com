@@ -70,9 +70,7 @@ export function createHeader(pageTitle){
 export function createSidebar(activePage){
   const navItems=[
     {id:'index',icon:'home',title:'ホーム',href:'index.html'},
-    {id:'preview',icon:'preview',title:'HTMLプレビュー',href:'#'},
     {id:'chat',icon:'chat',title:'チャット',href:'chat.html'},
-    {id:'files',icon:'folder',title:'ファイル共有',href:'#'},
     {id:'piano',icon:'piano',title:'ピアノ',href:'piano.html'},
     {id:'capture',icon:'screenshot',title:'スクショ',href:'capture.html'},
     {id:'eagler',icon:'public',title:'Eaglercraft',href:'eag.html'}
