@@ -2,9 +2,9 @@
 
 // 共有チャンネル定義
 export const CHANNELS=[
-  {id:'general',name:'連絡',desc:'連絡です',icon:'campaign'},
+  {id:'general',name:'連絡',desc:'報連相大事',icon:'campaign'},
   {id:'random',name:'共用チャット',desc:'全員見れます',icon:'chat_bubble'},
-  {id:'tech',name:'to俺',desc:'俺へなんかあれば',icon:'code'}
+  {id:'tech',name:'to俺',desc:'欲しいツールとかなんでも',icon:'code'}
 ];
 
 // グローバル状態
