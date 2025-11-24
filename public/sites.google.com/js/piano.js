@@ -149,7 +149,8 @@ function stopNote(note,octave){
   const currentTime=audioContext.currentTime;
   osc.gainNode.gain.cancelScheduledValues(currentTime);
   osc.gainNode.gain.setValueAtTime(osc.gainNode.gain.value,currentTime);
-  osc.gainNode.gain.linearRampToValueAtTime(0,currentTime+0.1);
+  osc.gainNode.gain.linearRampToValueAtTime(0,currentTime+0.00000001);
+
   
   setTimeout(()=>{
     osc.oscillator.stop();
