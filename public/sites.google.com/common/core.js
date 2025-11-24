@@ -72,7 +72,7 @@ export function createSidebar(activePage){
     {id:'index',icon:'home',title:'ホーム',href:'index.html'},
     {id:'chat',icon:'chat',title:'チャット',href:'chat.html'},
     {id:'piano',icon:'piano',title:'ピアノ',href:'piano.html'},
-    {id:'capture',icon:'screenshot',title:'スクショ',href:'capture.html'},
+    {id:'capture',icon:'screenshot_monitor',title:'スクショ',href:'capture.html'},
     {id:'eagler',icon:'public',title:'Eaglercraft',href:'eag.html'}
   ];
   
