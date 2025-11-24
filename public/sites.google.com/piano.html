@@ -1,41 +1,148 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ピアノ — sites.google.com</title>
-
-  <!-- プロジェクト共通と独自スタイル -->
-  <link rel="stylesheet" href="./common/common.css">
-  <link rel="stylesheet" href="./css/piano.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>ピアノ | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/piano.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
 </head>
 <body>
-  <!-- 最小限の header（common に合わせている） -->
-  <main class="piano-app" role="main" aria-label="ピアノツール">
-    <div class="piano-header">
-      <div>
-        <h1 class="piano-title">ピアノ（88鍵）</h1>
-        <div class="hint">クリック / タップ / キーボードで演奏。左右矢印で全体オクターブを変更。</div>
+  <div class="app-container">
+    <header class="top-header">
+      <div class="header-left">
+        <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
+        <a href="index.html" style="text-decoration:none;color:inherit;">
+          <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
+        </a>
+        <span class="header-divider">|</span>
+        <span class="page-title">ピアノ</span>
       </div>
-      <div class="controls">
-        <label class="ctrl">音量
-          <input id="volume" type="range" min="0" max="1" step="0.01" value="0.28" aria-label="音量">
-        </label>
-        <div class="octave-indicator">オクターブシフト: <span id="octaveShift">0</span></div>
-        <button id="recBtn" class="btn">録音</button>
-        <button id="stopBtn" class="btn" disabled>停止</button>
-        <button id="dlBtn" class="btn" disabled>WAVをダウンロード</button>
+      <div class="header-right">
+        <button class="icon-btn" id="notification-btn" title="通知">
+          <span class="material-icons">notifications</span>
+        </button>
+        <div class="user-menu">
+          <button class="user-btn" id="user-btn">
+            <img id="user-avatar" src="assets/github-mark.svg" alt="ユーザーアイコン">
+          </button>
+          <div class="user-dropdown" id="user-dropdown">
+            <div class="dropdown-item" id="profile-btn">
+              <span class="material-icons">person</span>
+              <span>プロフィール</span>
+            </div>
+            <div class="dropdown-item" id="settings-btn">
+              <span class="material-icons">settings</span>
+              <span>設定</span>
+            </div>
+            <div class="dropdown-divider"></div>
+            <div class="dropdown-item" id="logout-btn">
+              <span class="material-icons">logout</span>
+              <span>ログアウト</span>
+            </div>
+          </div>
+        </div>
       </div>
+    </header>
+    <div class="main-container">
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="index.html" class="nav-item" title="ホーム">
+            <span class="material-icons">home</span>
+          </a>
+          <a href="#" class="nav-item" title="HTMLプレビュー">
+            <span class="material-icons">preview</span>
+          </a>
+          <a href="chat.html" class="nav-item" title="チャット">
+            <span class="material-icons">chat</span>
+          </a>
+          <a href="#" class="nav-item" title="ファイル共有">
+            <span class="material-icons">folder</span>
+          </a>
+          <a href="piano.html" class="nav-item active" title="ピアノ">
+            <span class="material-icons">piano</span>
+          </a>
+        </nav>
+      </aside>
+      <main class="main-content">
+        <div class="piano-container">
+          <div class="piano-header">
+            <h1>ピアノ</h1>
+            <p class="piano-description">キーボードまたはマウスで演奏できます</p>
+          </div>
+
+          <div class="piano-controls">
+            <div class="control-group">
+              <label>
+                <span class="material-icons">volume_up</span>
+                音量
+              </label>
+              <input type="range" id="volume" min="0" max="100" value="50">
+              <span id="volume-value">50%</span>
+            </div>
+
+            <div class="control-group">
+              <label>
+                <span class="material-icons">music_note</span>
+                オクターブ
+              </label>
+              <button class="btn-secondary" id="octave-down">
+                <span class="material-icons">remove</span>
+              </button>
+              <span id="octave-display">4</span>
+              <button class="btn-secondary" id="octave-up">
+                <span class="material-icons">add</span>
+              </button>
+            </div>
+
+            <div class="control-group">
+              <button class="btn-primary" id="record-btn">
+                <span class="material-icons">fiber_manual_record</span>
+                録音
+              </button>
+              <button class="btn-secondary" id="stop-btn" disabled>
+                <span class="material-icons">stop</span>
+                停止
+              </button>
+              <button class="btn-secondary" id="download-btn" disabled>
+                <span class="material-icons">download</span>
+                ダウンロード
+              </button>
+            </div>
+          </div>
+
+          <div class="keyboard-guide">
+            <div class="guide-item">
+              <kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><kbd>F</kbd><kbd>G</kbd><kbd>H</kbd><kbd>J</kbd><kbd>K</kbd><kbd>L</kbd>
+              <span>でド〜シまで演奏</span>
+            </div>
+            <div class="guide-item">
+              <kbd>W</kbd><kbd>E</kbd><kbd>T</kbd><kbd>Y</kbd><kbd>U</kbd>
+              <span>で黒鍵</span>
+            </div>
+            <div class="guide-item">
+              <kbd>Z</kbd><kbd>X</kbd>
+              <span>でオクターブ変更</span>
+            </div>
+          </div>
+
+          <div class="piano-keyboard" id="keyboard">
+            <!-- キーボードはJSで生成 -->
+          </div>
+
+          <div class="recording-status" id="recording-status">
+            <span class="material-icons">info</span>
+            <span id="status-text">録音していません</span>
+          </div>
+        </div>
+      </main>
     </div>
+  </div>
 
-    <!-- keyboard area -->
-    <div id="keyboardWrap" class="keyboard-wrap" aria-hidden="false"></div>
-
-    <div class="legend">
-      キーボード操作で演奏可能なキーは <span class="kbd-highlight">青色</span> で表示されています。JIS配列の「ろ」キー位置を利用します。
-    </div>
-  </main>
-
-  <script src="./js/piano.js"></script>
+  <script type="module" src="js/piano.js"></script>
+  <script src="common/stealth-mode.js"></script>
 </body>
 </html>
