@@ -37,3 +37,17 @@ function gnb() {
 
 # Switch & update main quickly
 alias gmain='git checkout main && git pull'
+
+# あるコミットの状態に完全に戻したいとき
+git reset --hard [コミットID]
+# からの
+git push --force-with-lease
+
+function gre() {
+  if [ -z "$1" ]; then
+    echo "Usage: \"commit sha\""
+    return 1
+  fi
+  git reset --hard "$1"
+  git push --force-with-lease
+}
