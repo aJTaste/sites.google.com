@@ -174,3 +174,11 @@ input::placeholder,textarea::placeholder{
   background:#8250df;
   color:#ffffff;
 }
+
+.material-symbols-outlined{
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
