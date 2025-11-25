@@ -1,64 +1,24 @@
-import{auth,database}from'../common/firebase-config.js';
-import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import{initPage}from'../common/core.js';
+import{database}from'../common/core.js';
 import{ref,get,update,onValue}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import{checkPermission,getRoleDisplayName,getRoleBadge}from'../common/permissions.js';
 
-let currentAccountId=null;
-let currentUserData=null;
 let allUsers=[];
 let selectedAccountId=null;
 
-// ログイン状態チェック
-onAuthStateChanged(auth,async(user)=>{
-  if(!user){
-    window.location.href='login.html';
-    return;
-  }
-  
-  // Firebase AuthのUIDからアカウントIDを取得
-  const usersRef=ref(database,'users');
-  const usersSnapshot=await get(usersRef);
-  
-  if(!usersSnapshot.exists()){
-    alert('ユーザーデータが見つかりません');
-    await signOut(auth);
-    window.location.href='login.html';
-    return;
-  }
-  
-  const users=usersSnapshot.val();
-  
-  // UIDからアカウントIDを検索
-  for(const accountId in users){
-    if(users[accountId].uid===user.uid){
-      currentAccountId=accountId;
-      currentUserData=users[accountId];
-      break;
+// ページ初期化（権限チェック付き）
+const userData=await initPage('admin','管理者パネル',{
+  onUserLoaded:(data)=>{
+    // 管理者権限チェック
+    if(!checkPermission(data.role,'view_admin_panel')){
+      alert('このページへのアクセス権限がありません');
+      window.location.href='index.html';
+      return;
     }
+    
+    // ユーザー一覧を読み込み
+    loadUsers();
   }
-  
-  if(!currentAccountId||!currentUserData){
-    alert('アカウント情報が見つかりません');
-    await signOut(auth);
-    window.location.href='login.html';
-    return;
-  }
-  
-  // 管理者権限チェック
-  if(!checkPermission(currentUserData.role,'view_admin_panel')){
-    alert('このページへのアクセス権限がありません');
-    window.location.href='index.html';
-    return;
-  }
-  
-  // アイコン表示
-  const userAvatar=document.getElementById('user-avatar');
-  if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
-    userAvatar.src=currentUserData.iconUrl;
-  }
-  
-  // ユーザー一覧を読み込み
-  loadUsers();
 });
 
 // ユーザー一覧を読み込み
@@ -188,36 +148,5 @@ document.getElementById('modal-save').addEventListener('click',async()=>{
   }catch(error){
     console.error(error);
     alert('権限の変更に失敗しました');
-  }
-});
-
-// ユーザーメニュー
-const userBtn=document.getElementById('user-btn');
-const userDropdown=document.getElementById('user-dropdown');
-
-userBtn.addEventListener('click',(e)=>{
-  e.stopPropagation();
-  userDropdown.classList.toggle('show');
-});
-
-document.addEventListener('click',()=>{
-  userDropdown.classList.remove('show');
-});
-
-document.getElementById('profile-btn').addEventListener('click',()=>{
-  window.location.href='profile.html';
-});
-
-document.getElementById('settings-btn').addEventListener('click',()=>{
-  window.location.href='settings.html';
-});
-
-document.getElementById('logout-btn').addEventListener('click',async()=>{
-  try{
-    await signOut(auth);
-    window.location.href='login.html';
-  }catch(error){
-    console.error(error);
-    alert('ログアウトに失敗しました');
   }
 });

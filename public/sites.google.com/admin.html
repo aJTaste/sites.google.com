@@ -1,124 +1,89 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>管理者パネル | AppHub</title>
-    <link rel="stylesheet" href="common/common.css">
-    <link rel="stylesheet" href="css/admin.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
-    <link rel="icon" href="assets/favicon1.svg">
-    <link rel="apple-touch-icon" href="assets/icon1.svg">
-  </head>
-  <body>
-    <div class="app-container">
-      <header class="top-header">
-        <div class="header-left">
-          <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
-          <a href="index.html" style="text-decoration:none;color:inherit;">
-            <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>管理者パネル | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body>
+  <div class="app-container">
+    <!-- ヘッダー・サイドバーはJSで生成 -->
+    <div class="main-container">
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <a href="index.html" class="nav-item">
+            <span class="material-symbols-outlined">home</span>
+            <span>ホーム</span>
           </a>
-          <span class="header-divider">|</span>
-          <span class="page-title">管理者パネル</span>
-        </div>
-        <div class="header-right">
-          <button class="icon-btn" id="notification-btn" title="通知">
-            <span class="material-symbols-outlined">notifications</span>
-          </button>
-          <div class="user-menu">
-            <button class="user-btn" id="user-btn">
-              <img id="user-avatar" src="assets/github-mark.svg" alt="ユーザーアイコン">
-            </button>
-            <div class="user-dropdown" id="user-dropdown">
-              <div class="dropdown-item" id="profile-btn">
-                <span class="material-symbols-outlined">person</span>
-                <span>プロフィール</span>
-              </div>
-              <div class="dropdown-item" id="settings-btn">
-                <span class="material-symbols-outlined">settings</span>
-                <span>設定</span>
-              </div>
-              <div class="dropdown-divider"></div>
-              <div class="dropdown-item" id="logout-btn">
-                <span class="material-symbols-outlined">logout</span>
-                <span>ログアウト</span>
+          <a href="admin.html" class="nav-item" style="background:var(--main-light);color:var(--main);">
+            <span class="material-symbols-outlined" style="color:var(--main);">admin_panel_settings</span>
+            <span>管理者パネル</span>
+          </a>
+        </nav>
+      </aside>
+      <main class="main-content">
+        <div class="admin-container">
+          <h1>管理者パネル</h1>
+          
+          <section class="admin-section">
+            <div class="section-header">
+              <h2>ユーザー管理</h2>
+              <div class="search-box">
+                <input type="text" id="search-user" placeholder="ユーザー検索...">
+                <span class="material-symbols-outlined">search</span>
               </div>
             </div>
-          </div>
-        </div>
-      </header>
-      <div class="main-container">
-        <aside class="sidebar">
-          <nav class="sidebar-nav">
-            <a href="index.html" class="nav-item">
-              <span class="material-symbols-outlined">home</span>
-              <span>ホーム</span>
-            </a>
-            <a href="admin.html" class="nav-item" style="background:var(--main-light);color:var(--main);">
-              <span class="material-symbols-outlined" style="color:var(--main);">admin_panel_settings</span>
-              <span>管理者パネル</span>
-            </a>
-          </nav>
-        </aside>
-        <main class="main-content">
-          <div class="admin-container">
-            <h1>管理者パネル</h1>
             
-            <section class="admin-section">
-              <div class="section-header">
-                <h2>ユーザー管理</h2>
-                <div class="search-box">
-                  <input type="text" id="search-user" placeholder="ユーザー検索...">
-                  <span class="material-symbols-outlined">search</span>
-                </div>
-              </div>
-              
-              <div class="user-list" id="user-list">
-                <!-- ユーザーはJSで生成 -->
-              </div>
-            </section>
-          </div>
-        </main>
-      </div>
-    </div>
-    
-    <!-- 権限変更モーダル -->
-    <div class="modal" id="role-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>権限を変更</h3>
-          <button class="modal-close" id="modal-close">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="user-info">
-            <img id="modal-user-icon" src="assets/github-mark.svg" alt="アイコン">
-            <div>
-              <div id="modal-username">ユーザー名</div>
-              <div id="modal-account-id">@accountid</div>
+            <div class="user-list" id="user-list">
+              <!-- ユーザーはJSで生成 -->
             </div>
-          </div>
-          <div class="role-select">
-            <label>権限レベル</label>
-            <select id="role-select">
-              <option value="user">一般ユーザー</option>
-              <option value="verified">承認済み（サーバー作成可能）</option>
-              <option value="moderator">準管理者</option>
-              <option value="owner">管理者</option>
-            </select>
-            <span class="help-text">権限を変更すると、即座に反映されます</span>
+          </section>
+        </div>
+      </main>
+    </div>
+  </div>
+  
+  <!-- 権限変更モーダル -->
+  <div class="modal" id="role-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>権限を変更</h3>
+        <button class="modal-close" id="modal-close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="user-info">
+          <img id="modal-user-icon" src="assets/github-mark.svg" alt="アイコン">
+          <div>
+            <div id="modal-username">ユーザー名</div>
+            <div id="modal-account-id">@accountid</div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" id="modal-cancel">キャンセル</button>
-          <button class="btn-primary" id="modal-save">変更を保存</button>
+        <div class="role-select">
+          <label>権限レベル</label>
+          <select id="role-select">
+            <option value="user">一般ユーザー</option>
+            <option value="verified">承認済み（サーバー作成可能）</option>
+            <option value="moderator">準管理者</option>
+            <option value="owner">管理者</option>
+          </select>
+          <span class="help-text">権限を変更すると、即座に反映されます</span>
         </div>
       </div>
+      <div class="modal-footer">
+        <button class="btn-secondary" id="modal-cancel">キャンセル</button>
+        <button class="btn-primary" id="modal-save">変更を保存</button>
+      </div>
     </div>
-    
-    <script src="common/common.js" defer></script>
-    <script type="module" src="js/admin.js"></script>
-    <script src="common/stealth-mode.js"></script>
-  </body>
+  </div>
+
+  <script type="module" src="js/admin.js"></script>
+  <script src="common/stealth-mode.js"></script>
+</body>
 </html>

@@ -1,88 +1,26 @@
-import{auth,database}from'../common/firebase-config.js';
-import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import{ref,get,update}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{initPage}from'../common/core.js';
+import{database}from'../common/core.js';
+import{ref,update}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 
 let currentAccountId=null;
 let currentIconBase64='';
 
-// ログイン状態チェック
-onAuthStateChanged(auth,async(user)=>{
-  if(!user){
-    window.location.href='login.html';
-    return;
-  }
-  
-  // Firebase AuthのUIDからアカウントIDを取得
-  const usersRef=ref(database,'users');
-  const usersSnapshot=await get(usersRef);
-  
-  if(!usersSnapshot.exists()){
-    alert('ユーザーデータが見つかりません');
-    await signOut(auth);
-    window.location.href='login.html';
-    return;
-  }
-  
-  const users=usersSnapshot.val();
-  let userData=null;
-  
-  // UIDからアカウントIDを検索
-  for(const accountId in users){
-    if(users[accountId].uid===user.uid){
-      currentAccountId=accountId;
-      userData=users[accountId];
-      break;
+// ページ初期化
+const userData=await initPage('settings','設定',{
+  onUserLoaded:(data)=>{
+    currentAccountId=data.accountId;
+    
+    // 情報を表示
+    document.getElementById('account-id-display').textContent=data.accountId;
+    document.getElementById('created-date').textContent=new Date(data.createdAt).toLocaleDateString('ja-JP');
+    document.getElementById('username-input').value=data.username;
+    
+    // アイコン表示
+    const iconPreview=document.getElementById('icon-preview');
+    if(data.iconUrl&&data.iconUrl!=='default'){
+      iconPreview.src=data.iconUrl;
+      currentIconBase64=data.iconUrl;
     }
-  }
-  
-  if(!currentAccountId||!userData){
-    alert('アカウント情報が見つかりません');
-    await signOut(auth);
-    window.location.href='login.html';
-    return;
-  }
-  
-  // 情報を表示
-  document.getElementById('account-id-display').textContent=userData.accountId;
-  document.getElementById('created-date').textContent=new Date(userData.createdAt).toLocaleDateString('ja-JP');
-  document.getElementById('username-input').value=userData.username;
-  
-  // アイコン表示
-  const iconPreview=document.getElementById('icon-preview');
-  const userAvatar=document.getElementById('user-avatar');
-  if(userData.iconUrl&&userData.iconUrl!=='default'){
-    iconPreview.src=userData.iconUrl;
-    userAvatar.src=userData.iconUrl;
-    currentIconBase64=userData.iconUrl;
-  }
-});
-
-// ユーザーメニューの開閉
-const userBtn=document.getElementById('user-btn');
-const userDropdown=document.getElementById('user-dropdown');
-
-userBtn.addEventListener('click',(e)=>{
-  e.stopPropagation();
-  userDropdown.classList.toggle('show');
-});
-
-document.addEventListener('click',()=>{
-  userDropdown.classList.remove('show');
-});
-
-// プロフィールページへ
-document.getElementById('profile-btn').addEventListener('click',()=>{
-  window.location.href='profile.html';
-});
-
-// ログアウト
-document.getElementById('logout-btn').addEventListener('click',async()=>{
-  try{
-    await signOut(auth);
-    window.location.href='login.html';
-  }catch(error){
-    console.error(error);
-    alert('ログアウトに失敗しました');
   }
 });
 
