@@ -1,120 +1,62 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>ホーム | AppHub</title>
-    <link rel="stylesheet" href="common/common.css">
-    <link rel="stylesheet" href="css/index.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
-    <link rel="icon" href="assets/favicon1.svg">
-    <link rel="apple-touch-icon" href="assets/icon1.svg">
-  </head>
-  <body>
-    <div class="app-container">
-      <header class="top-header">
-        <div class="header-left">
-          <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
-          <a href="index.html" style="text-decoration:none;color:inherit;">
-            <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
-          </a>
-          <span class="header-divider">|</span>
-          <span class="page-title" id="page-title">ホーム</span>
-        </div>
-        <div class="header-right">
-          <button class="icon-btn" id="notification-btn" title="通知">
-            <span class="material-symbols-outlined">notifications</span>
-          </button>
-          <div class="user-menu">
-            <button class="user-btn" id="user-btn">
-              <img id="user-avatar" src="assets/github-mark.svg" alt="ユーザーアイコン">
-            </button>
-            <div class="user-dropdown" id="user-dropdown">
-              <div class="dropdown-item" id="profile-btn">
-                <span class="material-symbols-outlined">person</span>
-                <span>プロフィール</span>
-              </div>
-              <div class="dropdown-item" id="settings-btn">
-                <span class="material-symbols-outlined">settings</span>
-                <span>設定</span>
-              </div>
-              <div class="dropdown-divider"></div>
-              <div class="dropdown-item" id="logout-btn">
-                <span class="material-symbols-outlined">logout</span>
-                <span>ログアウト</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
-      <div class="main-container">
-        <aside class="sidebar">
-          <nav class="sidebar-nav">
-            <a href="index.html" class="nav-item active" title="ホーム">
-              <span class="material-symbols-outlined">home</span>
-            </a>
-            <a href="#" class="nav-item" title="HTMLプレビュー">
-              <span class="material-symbols-outlined">preview</span>
-            </a>
-            <a href="chat.html" class="nav-item" title="チャット">
-              <span class="material-symbols-outlined">chat</span>
-            </a>
-            <a href="#" class="nav-item" title="ファイル共有">
-              <span class="material-symbols-outlined">folder</span>
-            </a>
-            <a href="eag.html" class="nav-item" title="Eaglercraft">
-              <span class="material-symbols-outlined">public</span>
-            </a>
-          </nav>
-        </aside>
-        <main class="main-content" id="main-content">
-          <div class="welcome-section">
-            <h1>AppHubへようこそ</h1>
-            <p>
-              とある生徒によって制作されたアプリです。
-              <br>すべての機能が無料・無制限で利用できます。
-              <br><a href="https://github.com/aJTaste/sites.google.com">Githubリポジトリ（ソースコード）</a>
-            </p>
-            <div class="app-grid">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>ホーム | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body>
+  <div class="app-container">
+    <!-- ヘッダー・サイドバーはJSで生成 -->
+    <div class="main-container">
+      <main class="main-content">
+        <div class="welcome-section">
+          <h1>AppHubへようこそ</h1>
+          <p>
+            とある生徒によって制作されたアプリです。
+            <br>すべての機能が無料・無制限で利用できます。
+            <br><a href="https://github.com/aJTaste/sites.google.com">Githubリポジトリ（ソースコード）</a>
+          </p>
+          <div class="app-grid">
+            <a href="chat.html" style="text-decoration:none;color:inherit;">
               <div class="app-card">
                 <div class="app-icon">
-                  <span class="material-symbols-outlined">code</span>
+                  <span class="material-symbols-outlined">chat</span>
                 </div>
-                <h3>HTMLプレビュー</h3>
-                <p>AIの生成したHTMLをプレビューできます。</p>
+                <h3>チャット</h3>
+                <p>アプデ盛りのチャットアプリが利用できます。</p>
               </div>
-              <a href="chat.html" style="text-decoration:none;color:inherit;">
-                <div class="app-card">
-                  <div class="app-icon">
-                    <span class="material-symbols-outlined">chat</span>
-                  </div>
-                  <h3>チャット</h3>
-                  <p>アプデ盛りのチャットアプリが利用できます。</p>
-                </div>
-              </a>
+            </a>
+            <a href="piano.html" style="text-decoration:none;color:inherit;">
               <div class="app-card">
                 <div class="app-icon">
-                  <span class="material-symbols-outlined">folder</span>
+                  <span class="material-symbols-outlined">piano</span>
                 </div>
-                <h3>ファイル共有</h3>
-                <p>全形式に対応したファイルが共有できます。</p>
+                <h3>ピアノ</h3>
+                <p>キーボードやマウスで演奏できます。</p>
               </div>
-              <a href="eag.html">
-                <div class="app-card">
-                  <div class="app-icon">
-                    <span class="material-symbols-outlined">public</span>
-                  </div>
-                  <h3>Eaglercraft</h3>
-                  <p>志二中特製サーバー経由でEaglercraftが遊べます。</p>
+            </a>
+            <a href="capture.html" style="text-decoration:none;color:inherit;">
+              <div class="app-card">
+                <div class="app-icon">
+                  <span class="material-symbols-outlined">screenshot</span>
                 </div>
-              </a>
-            </div>
+                <h3>スクリーンショット</h3>
+                <p>画面全体または選択範囲をキャプチャできます。</p>
+              </div>
+            </a>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
-    <script src="common/common.js" defer></script>
-    <script type="module" src="js/index.js"></script>
-    <script src="common/stealth-mode.js"></script>
-  </body>
+  </div>
+
+  <script type="module" src="js/index.js"></script>
+  <script src="common/stealth-mode.js"></script>
+</body>
 </html>
