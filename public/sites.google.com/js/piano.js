@@ -245,7 +245,7 @@ function startRecording(){
   recordedNotes=[];
   recordStartTime=Date.now();
   
-  recordBtn.innerHTML='<span class="material-icons">stop</span>録音中';
+  recordBtn.innerHTML='<span class="material-symbols-outlined">stop</span>録音中';
   stopBtn.disabled=false;
   downloadBtn.disabled=true;
   
@@ -256,7 +256,7 @@ function startRecording(){
 function stopRecording(){
   isRecording=false;
   
-  recordBtn.innerHTML='<span class="material-icons">fiber_manual_record</span>録音';
+  recordBtn.innerHTML='<span class="material-symbols-outlined">fiber_manual_record</span>録音';
   stopBtn.disabled=true;
   downloadBtn.disabled=false;
   

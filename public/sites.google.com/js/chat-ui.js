@@ -23,7 +23,7 @@ export function displayUsers(){
     
     channelItem.innerHTML=`
       <div class="channel-icon">
-        <span class="material-icons">${channel.icon}</span>
+        <span class="material-symbols-outlined">${channel.icon}</span>
       </div>
       <div class="channel-info">
         <div class="channel-name">
@@ -122,27 +122,27 @@ export function createChatHTML(selectedUser){
     <div class="chat-input-container">
       <div class="reply-preview" id="reply-preview">
         <button class="reply-preview-close" id="reply-preview-close">
-          <span class="material-icons">close</span>
+          <span class="material-symbols-outlined">close</span>
         </button>
         <div class="reply-preview-header">返信先:</div>
         <div class="reply-preview-text" id="reply-preview-text"></div>
       </div>
       <div class="image-preview-container" id="image-preview-container">
         <button class="image-preview-close" id="image-preview-close">
-          <span class="material-icons">close</span>
+          <span class="material-symbols-outlined">close</span>
         </button>
         <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
       </div>
       <div class="chat-input-actions">
         <input type="file" id="image-file-input" accept="image/*" hidden>
         <button class="action-btn" id="attach-image-btn" title="画像を添付">
-          <span class="material-icons">image</span>
+          <span class="material-symbols-outlined">image</span>
         </button>
       </div>
       <div class="chat-input-wrapper">
         <textarea class="chat-input" id="chat-input" placeholder="${selectedUser.username} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
-          <span class="material-icons">send</span>
+          <span class="material-symbols-outlined">send</span>
         </button>
       </div>
     </div>
@@ -155,7 +155,7 @@ export function createChannelChatHTML(channel){
     <div class="chat-header">
       <div class="chat-header-user">
         <div class="channel-icon" style="width:36px;height:36px;">
-          <span class="material-icons">${channel.icon}</span>
+          <span class="material-symbols-outlined">${channel.icon}</span>
         </div>
         <div class="chat-header-info">
           <div class="chat-header-name">${channel.name}</div>
@@ -171,27 +171,27 @@ export function createChannelChatHTML(channel){
     <div class="chat-input-container">
       <div class="reply-preview" id="reply-preview">
         <button class="reply-preview-close" id="reply-preview-close">
-          <span class="material-icons">close</span>
+          <span class="material-symbols-outlined">close</span>
         </button>
         <div class="reply-preview-header">返信先:</div>
         <div class="reply-preview-text" id="reply-preview-text"></div>
       </div>
       <div class="image-preview-container" id="image-preview-container">
         <button class="image-preview-close" id="image-preview-close">
-          <span class="material-icons">close</span>
+          <span class="material-symbols-outlined">close</span>
         </button>
         <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
       </div>
       <div class="chat-input-actions">
         <input type="file" id="image-file-input" accept="image/*" hidden>
         <button class="action-btn" id="attach-image-btn" title="画像を添付">
-          <span class="material-icons">image</span>
+          <span class="material-symbols-outlined">image</span>
         </button>
       </div>
       <div class="chat-input-wrapper">
         <textarea class="chat-input" id="chat-input" placeholder="${channel.name} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
-          <span class="material-icons">send</span>
+          <span class="material-symbols-outlined">send</span>
         </button>
       </div>
     </div>

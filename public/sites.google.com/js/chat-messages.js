@@ -167,17 +167,17 @@ async function displayMessage(msg,otherAccountId){
   let actionsHtml=`
     <div class="message-actions">
       <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.senderId}')" title="返信">
-        <span class="material-icons">reply</span>
+        <span class="material-symbols-outlined">reply</span>
       </button>
   `;
   
   if(isCurrentUser){
     actionsHtml+=`
       <button class="message-action-btn" onclick="window.editMessage('${msg.id}','${dmId}','${escapeHtml(msg.text).replace(/'/g,"\\'")}',true)" title="編集">
-        <span class="material-icons">edit</span>
+        <span class="material-symbols-outlined">edit</span>
       </button>
       <button class="message-action-btn delete" onclick="window.deleteMessage('${msg.id}','${dmId}',true)" title="削除">
-        <span class="material-icons">delete</span>
+        <span class="material-symbols-outlined">delete</span>
       </button>
     `;
   }
@@ -255,17 +255,17 @@ function displayChannelMessage(msg){
   let actionsHtml=`
     <div class="message-actions">
       <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.senderId}')" title="返信">
-        <span class="material-icons">reply</span>
+        <span class="material-symbols-outlined">reply</span>
       </button>
   `;
   
   if(isCurrentUser){
     actionsHtml+=`
       <button class="message-action-btn" onclick="window.editMessage('${msg.id}','${state.selectedChannelId}','${escapeHtml(msg.text).replace(/'/g,"\\'")}',false)" title="編集">
-        <span class="material-icons">edit</span>
+        <span class="material-symbols-outlined">edit</span>
       </button>
       <button class="message-action-btn delete" onclick="window.deleteMessage('${msg.id}','${state.selectedChannelId}',false)" title="削除">
-        <span class="material-icons">delete</span>
+        <span class="material-symbols-outlined">delete</span>
       </button>
     `;
   }
