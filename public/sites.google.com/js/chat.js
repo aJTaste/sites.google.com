@@ -1,80 +1,39 @@
 // チャットアプリのメインファイル
 
-import{auth,database}from'../common/firebase-config.js';
-import{onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import{initPage}from'../common/core.js';
+import{database}from'../common/core.js';
 import{ref,get,update,onValue}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
 import{displayUsers}from'./chat-ui.js';
 import'./chat-handlers.js';
 import'./chat-modals.js';
 
-// ログイン状態チェック
-onAuthStateChanged(auth,async(user)=>{
-  if(!user){
-    window.location.href='login.html';
-    return;
-  }
-  
-  updateState('currentUser',user);
-  
-  // Firebase AuthのUIDからアカウントIDを取得
-  const usersRef=ref(database,'users');
-  const usersSnapshot=await get(usersRef);
-  
-  if(!usersSnapshot.exists()){
-    alert('ユーザーデータが見つかりません');
-    await signOut(auth);
-    window.location.href='login.html';
-    return;
-  }
-  
-  const users=usersSnapshot.val();
-  let currentAccountId=null;
-  let currentUserData=null;
-  
-  // UIDからアカウントIDを検索
-  for(const accountId in users){
-    if(users[accountId].uid===user.uid){
-      currentAccountId=accountId;
-      currentUserData=users[accountId];
-      break;
-    }
-  }
-  
-  if(!currentAccountId||!currentUserData){
-    alert('アカウント情報が見つかりません');
-    await signOut(auth);
-    window.location.href='login.html';
-    return;
-  }
-  
-  updateState('currentAccountId',currentAccountId);
-  updateState('currentUserData',currentUserData);
-  
-  const userAvatar=document.getElementById('user-avatar');
-  if(currentUserData.iconUrl&&currentUserData.iconUrl!=='default'){
-    userAvatar.src=currentUserData.iconUrl;
-  }
-  
-  const userRef=ref(database,`users/${currentAccountId}`);
-  await update(userRef,{
-    online:true,
-    lastOnline:Date.now()
-  });
-  
-  window.addEventListener('beforeunload',async()=>{
+// ページ初期化
+const userData=await initPage('chat','チャット',{
+  onUserLoaded:async(data)=>{
+    updateState('currentAccountId',data.accountId);
+    updateState('currentUserData',data);
+    
+    const userRef=ref(database,`users/${data.accountId}`);
     await update(userRef,{
-      online:false,
+      online:true,
       lastOnline:Date.now()
     });
-  });
-  
-  if('Notification'in window&&Notification.permission==='default'){
-    await Notification.requestPermission();
+    
+    window.addEventListener('beforeunload',async()=>{
+      await update(userRef,{
+        online:false,
+        lastOnline:Date.now()
+      });
+    });
+    
+    if('Notification'in window&&Notification.permission==='default'){
+      await Notification.requestPermission();
+    }
+    
+    loadUsers();
+    startLastOnlineUpdateTimer();
   }
-  
-  loadUsers();
-  startLastOnlineUpdateTimer();
 });
 
 // ユーザー一覧を読み込み
@@ -161,56 +120,4 @@ function startLastOnlineUpdateTimer(){
     displayUsers();
   },1000);
   updateState('lastOnlineUpdateInterval',interval);
-}
-
-// ユーザーメニュー
-const userBtn=document.getElementById('user-btn');
-const userDropdown=document.getElementById('user-dropdown');
-
-if(userBtn&&userDropdown){
-  userBtn.addEventListener('click',(e)=>{
-    e.stopPropagation();
-    userDropdown.classList.toggle('show');
-  });
-  
-  document.addEventListener('click',()=>{
-    userDropdown.classList.remove('show');
-  });
-}
-
-const profileBtn=document.getElementById('profile-btn');
-const settingsBtn=document.getElementById('settings-btn');
-const logoutBtn=document.getElementById('logout-btn');
-
-if(profileBtn){
-  profileBtn.addEventListener('click',()=>{
-    window.location.href='profile.html';
-  });
-}
-
-if(settingsBtn){
-  settingsBtn.addEventListener('click',()=>{
-    window.location.href='settings.html';
-  });
-}
-
-if(logoutBtn){
-  logoutBtn.addEventListener('click',async()=>{
-    try{
-      if(state.currentAccountId){
-        await update(ref(database,`users/${state.currentAccountId}`),{
-          online:false,
-          lastOnline:Date.now()
-        });
-      }
-      if(state.lastOnlineUpdateInterval){
-        clearInterval(state.lastOnlineUpdateInterval);
-      }
-      await signOut(auth);
-      window.location.href='login.html';
-    }catch(error){
-      console.error('ERROR:ログアウト失敗',error);
-      alert('ログアウトに失敗しました');
-    }
-  });
 }
