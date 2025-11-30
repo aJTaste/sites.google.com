@@ -6,6 +6,7 @@
 import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
 import{getAuth,onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import{getDatabase,ref,get}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{checkPermission}from'./permissions.js';
 
 const firebaseConfig={
   apiKey:"AIzaSyDM_jJDGjN0mlV6FqBVzZTL5Qx95yaHruc",
@@ -67,13 +68,14 @@ export function createHeader(pageTitle){
 }
 
 // サイドバー生成
-export function createSidebar(activePage){
+export function createSidebar(activePage,userRole){
   const navItems=[
     {id:'index',icon:'home',title:'ホーム',href:'index.html'},
     {id:'chat',icon:'chat',title:'チャット',href:'chat.html'},
     {id:'piano',icon:'piano',title:'ピアノ',href:'piano.html'},
     {id:'capture',icon:'screenshot_monitor',title:'スクショ',href:'capture.html'},
-    {id:'eagler',icon:'public',title:'Eaglercraft',href:'eag.html'}
+    {id:'eagler',icon:'public',title:'Eaglercraft',href:'eag.html'},
+    {id:'admin',icon:'admin_panel_settings',title:'管理者パネル',href:'admin.html'}
   ];
   
   const navHTML=navItems.map(item=>{
@@ -105,25 +107,6 @@ export async function initPage(pageId,pageTitle,options={}){
     onUserLoaded=null
   }=options;
   
-  // UI生成
-  const container=document.querySelector('.app-container')||document.body;
-  const hasHeader=!container.querySelector('.top-header');
-  const hasSidebar=!container.querySelector('.sidebar');
-  
-  if(hasHeader){
-    container.insertAdjacentHTML('afterbegin',createHeader(pageTitle));
-  }
-  
-  if(hasSidebar){
-    const mainContainer=container.querySelector('.main-container');
-    if(mainContainer){
-      mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId));
-    }
-  }
-  
-  // イベントリスナー設定
-  setupHeaderEvents();
-  
   // 認証チェック
   if(requireAuth){
     return new Promise((resolve)=>{
@@ -146,10 +129,39 @@ export async function initPage(pageId,pageTitle,options={}){
           return;
         }
         
+        // UI生成（ユーザーデータ取得後）
+        const container=document.querySelector('.app-container')||document.body;
+        const hasHeader=!container.querySelector('.top-header');
+        const hasSidebar=!container.querySelector('.sidebar');
+        
+        if(hasHeader){
+          container.insertAdjacentHTML('afterbegin',createHeader(pageTitle));
+        }
+        
+        if(hasSidebar){
+          const mainContainer=container.querySelector('.main-container');
+          if(mainContainer){
+            mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,userData.role));
+          }
+        }
+        
+        // イベントリスナー設定
+        setupHeaderEvents();
+        
         // アイコン表示
         const userAvatar=document.getElementById('user-avatar');
         if(userAvatar&&userData.iconUrl&&userData.iconUrl!=='default'){
           userAvatar.src=userData.iconUrl;
+        }
+        
+        // 管理者パネルへのアクセス制御（モデレーター以上のみアクセス可能）
+        if(pageId==='admin'){
+          if(!checkPermission(userData.role,'view_admin_panel')){
+            alert('このページへのアクセス権限がありません');
+            window.location.href='index.html';
+            resolve(null);
+            return;
+          }
         }
         
         // コールバック実行
