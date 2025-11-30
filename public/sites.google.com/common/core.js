@@ -67,7 +67,7 @@ export function createHeader(pageTitle){
   `;
 }
 
-// サイドバー生成
+// サイドバー生成（管理者パネルを常時表示）
 export function createSidebar(activePage,userRole){
   const navItems=[
     {id:'index',icon:'home',title:'ホーム',href:'index.html'},
@@ -166,8 +166,11 @@ export async function initPage(pageId,pageTitle,options={}){
         
         // コールバック実行
         if(onUserLoaded){
-          onUserLoaded(userData);
+          await onUserLoaded(userData);
         }
+        
+        // ✨ ローディング完了 - ページを表示
+        showPage();
         
         resolve(userData);
       });
@@ -175,6 +178,17 @@ export async function initPage(pageId,pageTitle,options={}){
   }
   
   return Promise.resolve(null);
+}
+
+// ========================================
+// ローディング制御
+// ========================================
+
+// ページを表示（フェードイン）
+function showPage(){
+  // body の .page-loading クラスを削除
+  document.body.classList.remove('page-loading');
+  document.body.classList.add('page-loaded');
 }
 
 // ========================================

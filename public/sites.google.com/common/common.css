@@ -25,14 +25,22 @@ body{
   color:var(--text-primary);
   background:var(--bg-secondary);
   min-height:100vh;
-  visibility:visible;
-  opacity:1;
-  transition:opacity 0.2s ease-in-out;
 }
 
-body.loaded{
-  visibility:visible;
+/* ========================================
+   ローディング制御
+   ======================================== */
+
+/* ページ読み込み中は非表示 */
+body.page-loading{
+  opacity:0;
+  overflow:hidden;
+}
+
+/* ページ読み込み完了でフェードイン */
+body.page-loaded{
   opacity:1;
+  transition:opacity 0.3s ease-in-out;
 }
 
 /* リンク */
@@ -138,7 +146,7 @@ input::placeholder,textarea::placeholder{
   to{transform:rotate(360deg);}
 }
 
-/* 権限バッジ */
+/* 権限バッジ（3段階に修正） */
 .role-badge{
   display:inline-flex;
   align-items:center;
@@ -150,28 +158,13 @@ input::placeholder,textarea::placeholder{
   vertical-align:middle;
 }
 
-.role-owner{
+.role-admin{
   background:#ff6b35;
   color:#ffffff;
 }
 
 .role-moderator{
   background:#7c3aed;
-  color:#ffffff;
-}
-
-.role-verified{
-  background:#2da44e;
-  color:#ffffff;
-}
-
-.role-server-owner{
-  background:#0969da;
-  color:#ffffff;
-}
-
-.role-server-mod{
-  background:#8250df;
   color:#ffffff;
 }
 
