@@ -2,14 +2,14 @@
 
 // 権限レベルの定義
 export const ROLES={
-  ADMIN:'admin',
+  owner:'owner',
   MODERATOR:'moderator',
   USER:'user'
 };
 
 // 権限の階層（数値が大きいほど上位）
 const ROLE_HIERARCHY={
-  admin:3,
+  owner:3,
   moderator:2,
   user:1
 };
@@ -42,11 +42,11 @@ export function hasPermission(userRole,requiredRole){
 export function checkPermission(userRole,permission){
   const permissions={
     // 管理者のみ
-    change_user_role:ROLES.ADMIN,
+    change_user_role:ROLES.owner,
     
     // モデレーター以上
-    view_admin_panel:ROLES.MODERATOR,
-    edit_admin_panel:ROLES.MODERATOR,
+    view_owner_panel:ROLES.MODERATOR,
+    edit_owner_panel:ROLES.MODERATOR,
     delete_any_message:ROLES.MODERATOR,
     
     // 全ユーザー
@@ -68,7 +68,7 @@ export function checkPermission(userRole,permission){
  */
 export function getRoleDisplayName(role){
   const names={
-    admin:'管理者',
+    owner:'管理者',
     moderator:'モデレーター',
     user:'ユーザー'
   };
@@ -82,7 +82,7 @@ export function getRoleDisplayName(role){
  */
 export function getRoleBadge(role){
   const badges={
-    admin:'<span class="role-badge role-admin">管理者</span>',
+    owner:'<span class="role-badge role-owner">管理者</span>',
     moderator:'<span class="role-badge role-moderator">モデレーター</span>',
     user:''
   };
