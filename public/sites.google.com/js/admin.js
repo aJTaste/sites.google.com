@@ -5,16 +5,12 @@ import{checkPermission,getRoleDisplayName,getRoleBadge}from'../common/permission
 
 let allUsers=[];
 let selectedAccountId=null;
+let currentUserRole=null;
 
-// ページ初期化（権限チェック付き）
+// ページ初期化（core.jsで権限チェック済み）
 const userData=await initPage('admin','管理者パネル',{
   onUserLoaded:(data)=>{
-    // 管理者権限チェック
-    if(!checkPermission(data.role,'view_admin_panel')){
-      alert('このページへのアクセス権限がありません');
-      window.location.href='index.html';
-      return;
-    }
+    currentUserRole=data.role;
     
     // ユーザー一覧を読み込み
     loadUsers();
@@ -42,8 +38,8 @@ function displayUsers(users){
   const userList=document.getElementById('user-list');
   userList.innerHTML='';
   
-  // 権限順にソート（owner > moderator > verified > user）
-  const roleOrder={owner:4,moderator:3,verified:2,user:1};
+  // 権限順にソート（admin > moderator > user）
+  const roleOrder={admin:3,moderator:2,user:1};
   users.sort((a,b)=>roleOrder[b.role||'user']-roleOrder[a.role||'user']);
   
   users.forEach(user=>{
@@ -52,6 +48,18 @@ function displayUsers(users){
     
     const iconUrl=user.iconUrl&&user.iconUrl!=='default'?user.iconUrl:'assets/github-mark.svg';
     const createdDate=new Date(user.createdAt).toLocaleDateString('ja-JP');
+    
+    // 管理者のみ権限変更ボタンを表示
+    let actionsHTML='';
+    if(checkPermission(currentUserRole,'change_user_role')){
+      actionsHTML=`
+        <div class="user-item-actions">
+          <button class="btn-secondary btn-small" onclick="openRoleModal('${user.accountId}')">
+            権限変更
+          </button>
+        </div>
+      `;
+    }
     
     userItem.innerHTML=`
       <div class="user-item-icon">
@@ -65,11 +73,7 @@ function displayUsers(users){
         <div class="user-item-id">@${user.accountId}</div>
         <div class="user-item-meta">登録日: ${createdDate}</div>
       </div>
-      <div class="user-item-actions">
-        <button class="btn-secondary btn-small" onclick="openRoleModal('${user.accountId}')">
-          権限変更
-        </button>
-      </div>
+      ${actionsHTML}
     `;
     
     userList.appendChild(userItem);
@@ -95,6 +99,12 @@ document.getElementById('search-user').addEventListener('input',(e)=>{
 
 // 権限変更モーダルを開く
 window.openRoleModal=function(accountId){
+  // 管理者のみモーダルを開ける
+  if(!checkPermission(currentUserRole,'change_user_role')){
+    alert('権限変更の権限がありません');
+    return;
+  }
+  
   const user=allUsers.find(u=>u.accountId===accountId);
   if(!user)return;
   
