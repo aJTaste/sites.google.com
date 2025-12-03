@@ -8,28 +8,18 @@ await initPage('proxy','プロキシブラウザ');
 
 const state={
   currentUrl:'',
-  history:[],
-  historyIndex:-1,
-  mode:'allorigins', // allorigins, corsproxy, iframe
-  bookmarks:[]
+  mode:'allorigins' // allorigins or corsproxy
 };
 
 // プロキシサービス定義
 const PROXY_SERVICES={
   allorigins:{
     name:'AllOrigins',
-    url:(target)=>`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`,
-    method:'fetch'
+    url:(target)=>`https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`
   },
   corsproxy:{
     name:'CORS Proxy',
-    url:(target)=>`https://corsproxy.io/?${encodeURIComponent(target)}`,
-    method:'fetch'
-  },
-  iframe:{
-    name:'Direct (iframe)',
-    url:(target)=>target,
-    method:'iframe'
+    url:(target)=>`https://corsproxy.io/?${encodeURIComponent(target)}`
   }
 };
 
@@ -39,16 +29,16 @@ const PROXY_SERVICES={
 
 const urlInput=document.getElementById('url-input');
 const goBtn=document.getElementById('go-btn');
-const backBtn=document.getElementById('back-btn');
-const forwardBtn=document.getElementById('forward-btn');
 const reloadBtn=document.getElementById('reload-btn');
 const homeBtn=document.getElementById('home-btn');
-const bookmarkBtn=document.getElementById('bookmark-btn');
 const fullscreenBtn=document.getElementById('fullscreen-btn');
 const proxyModeBtn=document.getElementById('proxy-mode-btn');
 const browserContent=document.getElementById('browser-content');
-const statusText=document.getElementById('status-text');
 const currentModeText=document.getElementById('current-mode');
+const proxyContainer=document.querySelector('.proxy-container');
+
+// ウェルカム画面のHTML（保存しておく）
+const welcomeHTML=document.querySelector('.welcome-screen').outerHTML;
 
 // ========================================
 // URL読み込み
@@ -65,55 +55,88 @@ async function loadUrl(url){
   state.currentUrl=url;
   urlInput.value=url;
   
-  // 履歴に追加
-  if(state.historyIndex<state.history.length-1){
-    state.history=state.history.slice(0,state.historyIndex+1);
-  }
-  state.history.push(url);
-  state.historyIndex=state.history.length-1;
-  updateNavigationButtons();
-  
   // ローディング表示
   showLoading();
-  updateStatus(`読み込み中: ${url}`);
   
   try{
     const proxy=PROXY_SERVICES[state.mode];
+    const proxyUrl=proxy.url(url);
     
-    if(proxy.method==='iframe'){
-      await loadIframe(url);
-    }else{
-      await loadFetch(proxy.url(url));
+    const response=await fetch(proxyUrl);
+    
+    if(!response.ok){
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
-    updateStatus(`読み込み完了: ${url}`);
+    let html=await response.text();
+    
+    // HTMLを修正（リンククリック対応）
+    html=processHtml(html,url);
+    
+    // sandboxedなiframe内で表示
+    const blob=new Blob([html],{type:'text/html'});
+    const blobUrl=URL.createObjectURL(blob);
+    
+    const iframe=document.createElement('iframe');
+    iframe.className='proxy-iframe';
+    iframe.src=blobUrl;
+    iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
+    
+    browserContent.innerHTML='';
+    browserContent.appendChild(iframe);
+    
+    // iframeのリンククリックを監視
+    iframe.addEventListener('load',()=>{
+      try{
+        const iframeDoc=iframe.contentDocument||iframe.contentWindow.document;
+        
+        // 全リンクにイベントリスナー
+        iframeDoc.addEventListener('click',(e)=>{
+          const link=e.target.closest('a');
+          if(link&&link.href){
+            e.preventDefault();
+            const newUrl=link.href;
+            loadUrl(newUrl);
+          }
+        });
+        
+        // フォーム送信を監視
+        iframeDoc.addEventListener('submit',(e)=>{
+          const form=e.target;
+          if(form.action){
+            e.preventDefault();
+            loadUrl(form.action);
+          }
+        });
+      }catch(err){
+        console.warn('iframe監視エラー:',err);
+      }
+    });
+    
   }catch(error){
     console.error('読み込みエラー:',error);
     showError(url,error.message);
-    updateStatus(`エラー: ${url}`);
   }
 }
 
-// iframe方式で読み込み
-async function loadIframe(url){
-  browserContent.innerHTML=`<iframe class="proxy-iframe" src="${url}"></iframe>`;
-}
-
-// Fetch方式で読み込み
-async function loadFetch(proxyUrl){
-  const response=await fetch(proxyUrl);
-  
-  if(!response.ok){
-    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+// HTMLを処理（相対URLを絶対URLに変換）
+function processHtml(html,baseUrl){
+  try{
+    const base=new URL(baseUrl);
+    const origin=base.origin;
+    
+    // <base>タグを追加
+    html=html.replace(/<head>/i,`<head><base href="${origin}/">`);
+    
+    // 相対パスを絶対パスに変換
+    html=html.replace(/href="\/([^"]*)"/gi,`href="${origin}/$1"`);
+    html=html.replace(/src="\/([^"]*)"/gi,`src="${origin}/$1"`);
+    
+    return html;
+  }catch(e){
+    console.warn('HTML処理エラー:',e);
+    return html;
   }
-  
-  const html=await response.text();
-  
-  // HTMLを表示（sandboxedなiframe内で）
-  const blob=new Blob([html],{type:'text/html'});
-  const blobUrl=URL.createObjectURL(blob);
-  
-  browserContent.innerHTML=`<iframe class="proxy-iframe" src="${blobUrl}" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>`;
 }
 
 // ローディング表示
@@ -154,28 +177,6 @@ function showError(url,message){
 // ナビゲーション
 // ========================================
 
-function goBack(){
-  if(state.historyIndex>0){
-    state.historyIndex--;
-    const url=state.history[state.historyIndex];
-    state.currentUrl=url;
-    urlInput.value=url;
-    loadUrl(url);
-    updateNavigationButtons();
-  }
-}
-
-function goForward(){
-  if(state.historyIndex<state.history.length-1){
-    state.historyIndex++;
-    const url=state.history[state.historyIndex];
-    state.currentUrl=url;
-    urlInput.value=url;
-    loadUrl(url);
-    updateNavigationButtons();
-  }
-}
-
 function reload(){
   if(state.currentUrl){
     loadUrl(state.currentUrl);
@@ -183,16 +184,9 @@ function reload(){
 }
 
 function goHome(){
-  browserContent.innerHTML=document.querySelector('.welcome-screen').outerHTML;
-  setupWelcomeScreen();
+  browserContent.innerHTML=welcomeHTML;
   state.currentUrl='';
   urlInput.value='';
-  updateStatus('ホームページ');
-}
-
-function updateNavigationButtons(){
-  backBtn.disabled=state.historyIndex<=0;
-  forwardBtn.disabled=state.historyIndex>=state.history.length-1;
 }
 
 // ========================================
@@ -206,61 +200,10 @@ function switchProxyMode(){
   state.mode=modes[nextIndex];
   
   currentModeText.textContent=PROXY_SERVICES[state.mode].name;
-  updateStatus(`プロキシモード: ${PROXY_SERVICES[state.mode].name}`);
   
-  // モードボタンの状態更新
-  document.querySelectorAll('.mode-btn').forEach(btn=>{
-    btn.classList.toggle('active',btn.dataset.mode===state.mode);
-  });
-}
-
-// ========================================
-// ステータス更新
-// ========================================
-
-function updateStatus(text){
-  statusText.textContent=text;
-}
-
-// ========================================
-// お気に入り
-// ========================================
-
-function toggleBookmark(){
-  if(!state.currentUrl)return;
-  
-  const exists=state.bookmarks.some(b=>b.url===state.currentUrl);
-  
-  if(exists){
-    state.bookmarks=state.bookmarks.filter(b=>b.url!==state.currentUrl);
-    alert('お気に入りから削除しました');
-  }else{
-    state.bookmarks.push({
-      url:state.currentUrl,
-      title:state.currentUrl
-    });
-    alert('お気に入りに追加しました');
-  }
-  
-  saveBookmarks();
-}
-
-function saveBookmarks(){
-  try{
-    localStorage.setItem('proxy_bookmarks',JSON.stringify(state.bookmarks));
-  }catch(e){
-    console.warn('お気に入りの保存に失敗:',e);
-  }
-}
-
-function loadBookmarks(){
-  try{
-    const saved=localStorage.getItem('proxy_bookmarks');
-    if(saved){
-      state.bookmarks=JSON.parse(saved);
-    }
-  }catch(e){
-    console.warn('お気に入りの読み込みに失敗:',e);
+  // 現在ページ表示中なら再読み込み
+  if(state.currentUrl){
+    loadUrl(state.currentUrl);
   }
 }
 
@@ -269,39 +212,13 @@ function loadBookmarks(){
 // ========================================
 
 function toggleFullscreen(){
-  const container=document.querySelector('.proxy-container');
+  proxyContainer.classList.toggle('is-fullscreen');
   
-  if(!document.fullscreenElement){
-    container.requestFullscreen().catch(err=>{
-      console.error('全画面エラー:',err);
-    });
+  if(proxyContainer.classList.contains('is-fullscreen')){
+    fullscreenBtn.querySelector('.material-symbols-outlined').textContent='fullscreen_exit';
   }else{
-    document.exitFullscreen();
+    fullscreenBtn.querySelector('.material-symbols-outlined').textContent='fullscreen';
   }
-}
-
-// ========================================
-// ウェルカム画面のセットアップ
-// ========================================
-
-function setupWelcomeScreen(){
-  // クイックリンク
-  document.querySelectorAll('.quick-link').forEach(link=>{
-    link.addEventListener('click',()=>{
-      loadUrl(link.dataset.url);
-    });
-  });
-  
-  // モードボタン
-  document.querySelectorAll('.mode-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>{
-      document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      state.mode=btn.dataset.mode;
-      currentModeText.textContent=PROXY_SERVICES[state.mode].name;
-      updateStatus(`プロキシモード: ${PROXY_SERVICES[state.mode].name}`);
-    });
-  });
 }
 
 // ========================================
@@ -320,29 +237,17 @@ goBtn.addEventListener('click',()=>{
 });
 
 // ナビゲーション
-backBtn.addEventListener('click',goBack);
-forwardBtn.addEventListener('click',goForward);
 reloadBtn.addEventListener('click',reload);
 homeBtn.addEventListener('click',goHome);
 
 // ツールバー
-bookmarkBtn.addEventListener('click',toggleBookmark);
 fullscreenBtn.addEventListener('click',toggleFullscreen);
 proxyModeBtn.addEventListener('click',switchProxyMode);
-
-// ブックマークバー
-document.querySelectorAll('.bookmark-item').forEach(item=>{
-  item.addEventListener('click',()=>{
-    loadUrl(item.dataset.url);
-  });
-});
 
 // ========================================
 // 初期化
 // ========================================
 
-loadBookmarks();
-setupWelcomeScreen();
 currentModeText.textContent=PROXY_SERVICES[state.mode].name;
 
 console.log('プロキシブラウザ準備完了！');

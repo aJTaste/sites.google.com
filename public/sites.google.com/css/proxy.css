@@ -18,11 +18,7 @@
   padding:12px 16px;
   background:var(--bg-primary);
   border-bottom:1px solid var(--border);
-}
-
-.nav-buttons{
-  display:flex;
-  gap:4px;
+  flex-wrap:wrap;
 }
 
 .control-btn{
@@ -55,6 +51,7 @@
 
 .url-bar{
   flex:1;
+  min-width:300px;
   display:flex;
   align-items:center;
   gap:8px;
@@ -112,98 +109,37 @@
   font-size:18px;
 }
 
-.toolbar-buttons{
-  display:flex;
-  gap:4px;
-}
-
-/* ========================================
-   ステータスバー
-   ======================================== */
-
-.status-bar{
+.mode-toggle-btn{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  gap:8px;
   padding:8px 16px;
-  background:var(--bg-primary);
-  border-bottom:1px solid var(--border);
-  font-size:13px;
-}
-
-.status-info{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  color:var(--text-secondary);
-}
-
-.status-icon{
-  font-size:16px;
-}
-
-.proxy-indicator{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  padding:4px 12px;
-  background:var(--bg-secondary);
-  border-radius:4px;
-  color:var(--text-secondary);
-  font-size:12px;
-}
-
-#current-mode{
-  font-weight:600;
-  color:var(--main);
-}
-
-/* ========================================
-   お気に入りバー
-   ======================================== */
-
-.bookmarks-bar{
-  display:flex;
-  gap:4px;
-  padding:8px 16px;
-  background:var(--bg-primary);
-  border-bottom:1px solid var(--border);
-  overflow-x:auto;
-}
-
-.bookmarks-bar::-webkit-scrollbar{
-  height:4px;
-}
-
-.bookmarks-bar::-webkit-scrollbar-thumb{
-  background:var(--border);
-  border-radius:2px;
-}
-
-.bookmark-item{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  padding:6px 12px;
-  background:transparent;
-  border:1px solid transparent;
+  background:var(--main-light);
+  border:1px solid var(--main);
   border-radius:6px;
-  color:var(--text-secondary);
+  color:var(--main);
   font-size:13px;
+  font-weight:600;
   cursor:pointer;
-  white-space:nowrap;
   transition:all 0.15s;
 }
 
-.bookmark-item:hover{
-  background:var(--bg-secondary);
-  border-color:var(--border);
-  color:var(--text-primary);
+.mode-toggle-btn:hover{
+  background:var(--main);
+  color:#ffffff;
 }
 
-.bookmark-item .material-symbols-outlined{
-  font-size:16px;
+.mode-toggle-btn .material-symbols-outlined{
+  font-size:18px;
 }
+
+/* ========================================
+   ステータスバー（削除）
+   ======================================== */
+
+/* ========================================
+   お気に入りバー（削除）
+   ======================================== */
 
 /* ========================================
    コンテンツエリア
@@ -253,104 +189,84 @@
   font-size:16px;
   color:var(--text-secondary);
   margin-bottom:32px;
-}
-
-.quick-links{
-  width:100%;
   max-width:600px;
-  margin-bottom:32px;
 }
 
-.quick-links h3{
-  font-size:18px;
-  font-weight:600;
-  margin-bottom:16px;
-  color:var(--text-primary);
-}
-
-.quick-link-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
-  gap:12px;
-}
-
-.quick-link{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:8px;
-  padding:20px;
+.info-box{
+  width:100%;
+  max-width:500px;
+  padding:24px;
   background:var(--bg-primary);
   border:1px solid var(--border);
   border-radius:8px;
-  color:var(--text-secondary);
-  font-size:14px;
-  cursor:pointer;
-  transition:all 0.15s;
+  text-align:left;
+  margin-bottom:24px;
 }
 
-.quick-link:hover{
-  background:var(--main-light);
-  border-color:var(--main);
-  color:var(--main);
-  transform:translateY(-2px);
-  box-shadow:0 4px 12px rgba(0,0,0,0.1);
-}
-
-.quick-link .material-symbols-outlined{
-  font-size:32px;
-}
-
-.proxy-modes{
-  width:100%;
-  max-width:600px;
-}
-
-.proxy-modes h3{
+.info-box h3{
   font-size:18px;
   font-weight:600;
-  margin-bottom:8px;
+  margin-bottom:16px;
   color:var(--text-primary);
 }
 
-.proxy-modes>p{
+.info-box ol{
+  margin-left:20px;
+  color:var(--text-secondary);
+  line-height:1.8;
+}
+
+.info-box li{
+  margin-bottom:8px;
+}
+
+.mode-info{
+  text-align:center;
+  padding:20px;
+  background:var(--main-light);
+  border-radius:8px;
+  max-width:500px;
+}
+
+.mode-info p{
   font-size:14px;
   color:var(--text-secondary);
-  margin-bottom:16px;
+  margin-bottom:8px;
 }
 
-.mode-buttons{
-  display:flex;
-  gap:12px;
-  justify-content:center;
+.mode-info p:last-child{
+  margin-bottom:0;
 }
 
-.mode-btn{
-  padding:10px 20px;
-  font-size:14px;
-  font-weight:600;
-  background:var(--bg-primary);
-  border:2px solid var(--border);
-  border-radius:6px;
-  color:var(--text-secondary);
-  cursor:pointer;
-  transition:all 0.15s;
-}
-
-.mode-btn:hover{
-  border-color:var(--main);
-  color:var(--main);
-}
-
-.mode-btn.active{
+.mode-badge{
+  display:inline-block;
+  padding:4px 12px;
   background:var(--main);
-  border-color:var(--main);
   color:#ffffff;
+  font-weight:600;
+  border-radius:4px;
+  font-size:13px;
 }
 
-/* ========================================
-   iframe表示
-   ======================================== */
+.mode-desc{
+  font-size:12px!important;
+  color:var(--text-tertiary)!important;
+}
+
+/* 全画面時のスタイル */
+.proxy-container.is-fullscreen{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100vw;
+  height:100vh;
+  z-index:9999;
+  background:#ffffff;
+}
+
+.proxy-container.is-fullscreen .browser-content{
+  height:calc(100vh - 60px);
+}
 
 .proxy-iframe{
   position:absolute;
@@ -444,20 +360,13 @@
 
 @media(max-width:768px){
   .browser-controls{
-    flex-wrap:wrap;
     gap:8px;
   }
   .url-bar{
-    order:3;
-    width:100%;
+    min-width:100%;
+    order:10;
   }
-  .bookmarks-bar{
+  .mode-toggle-btn span:last-child{
     display:none;
-  }
-  .quick-link-grid{
-    grid-template-columns:repeat(2,1fr);
-  }
-  .mode-buttons{
-    flex-direction:column;
   }
 }
