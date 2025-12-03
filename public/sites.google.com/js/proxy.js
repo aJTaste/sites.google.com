@@ -211,8 +211,6 @@ function switchProxyMode(){
 // 全画面
 // ========================================
 
-let controlsTimeout=null;
-
 function toggleFullscreen(){
   proxyContainer.classList.toggle('is-fullscreen');
   
@@ -224,32 +222,16 @@ function toggleFullscreen(){
   }
 }
 
-function showControls(){
+function toggleControls(){
   if(!proxyContainer.classList.contains('is-fullscreen'))return;
-  
-  proxyContainer.classList.add('show-controls');
-  
-  // 3秒後に自動で隠す
-  if(controlsTimeout){
-    clearTimeout(controlsTimeout);
-  }
-  controlsTimeout=setTimeout(()=>{
-    proxyContainer.classList.remove('show-controls');
-  },3000);
-}
-
-function hideControls(){
-  proxyContainer.classList.remove('show-controls');
-  if(controlsTimeout){
-    clearTimeout(controlsTimeout);
-  }
+  proxyContainer.classList.toggle('show-controls');
 }
 
 // キーボードイベント
 document.addEventListener('keydown',(e)=>{
-  // 上矢印キーでヘッダー表示
+  // 上矢印キーでヘッダー表示/非表示切替
   if(e.key==='ArrowUp'){
-    showControls();
+    toggleControls();
   }
   // ESCキーで全画面解除
   if(e.key==='Escape'&&proxyContainer.classList.contains('is-fullscreen')){
