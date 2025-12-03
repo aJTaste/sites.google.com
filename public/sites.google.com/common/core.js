@@ -74,7 +74,7 @@ export function createSidebar(activePage,userRole){
     {id:'chat',icon:'chat',title:'チャット',href:'chat.html'},
     {id:'piano',icon:'piano',title:'ピアノ',href:'piano.html'},
     {id:'capture',icon:'screenshot_monitor',title:'スクショ',href:'capture.html'},
-    {id:'eagler',icon:'public',title:'Eaglercraft',href:'eag.html'},
+    {id:'proxy',icon:'vpn_key',title:'プロキシ',href:'proxy.html'},
     {id:'admin',icon:'admin_panel_settings',title:'管理者パネル',href:'admin.html'}
   ];
   
