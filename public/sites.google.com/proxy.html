@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>プロキシブラウザ | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/proxy.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <!-- ヘッダー・サイドバーはJSで生成 -->
+    <div class="main-container">
+      <main class="main-content" style="padding:0;">
+        <div class="proxy-container">
+          <!-- ブラウザコントロール -->
+          <div class="browser-controls">
+            <div class="nav-buttons">
+              <button class="control-btn" id="back-btn" title="戻る" disabled>
+                <span class="material-symbols-outlined">arrow_back</span>
+              </button>
+              <button class="control-btn" id="forward-btn" title="進む" disabled>
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </button>
+              <button class="control-btn" id="reload-btn" title="再読み込み">
+                <span class="material-symbols-outlined">refresh</span>
+              </button>
+              <button class="control-btn" id="home-btn" title="ホーム">
+                <span class="material-symbols-outlined">home</span>
+              </button>
+            </div>
+            
+            <div class="url-bar">
+              <span class="lock-icon material-symbols-outlined">lock</span>
+              <input type="text" id="url-input" placeholder="URLを入力してください（例: https://example.com）" autocomplete="off">
+              <button class="go-btn" id="go-btn">
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </button>
+            </div>
+            
+            <div class="toolbar-buttons">
+              <button class="control-btn" id="bookmark-btn" title="お気に入り">
+                <span class="material-symbols-outlined">bookmark</span>
+              </button>
+              <button class="control-btn" id="fullscreen-btn" title="全画面">
+                <span class="material-symbols-outlined">fullscreen</span>
+              </button>
+              <button class="control-btn" id="proxy-mode-btn" title="プロキシモード切替">
+                <span class="material-symbols-outlined">swap_horiz</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- ステータスバー -->
+          <div class="status-bar" id="status-bar">
+            <div class="status-info">
+              <span class="status-icon material-symbols-outlined">info</span>
+              <span id="status-text">URLを入力してください</span>
+            </div>
+            <div class="proxy-indicator" id="proxy-indicator">
+              モード: <span id="current-mode">AllOrigins</span>
+            </div>
+          </div>
+          
+          <!-- お気に入りバー -->
+          <div class="bookmarks-bar" id="bookmarks-bar">
+            <div class="bookmark-item" data-url="https://www.google.com">
+              <span class="material-symbols-outlined">search</span>
+              <span>Google</span>
+            </div>
+            <div class="bookmark-item" data-url="https://www.youtube.com">
+              <span class="material-symbols-outlined">play_circle</span>
+              <span>YouTube</span>
+            </div>
+            <div class="bookmark-item" data-url="https://github.com">
+              <span class="material-symbols-outlined">code</span>
+              <span>GitHub</span>
+            </div>
+          </div>
+          
+          <!-- コンテンツエリア -->
+          <div class="browser-content" id="browser-content">
+            <div class="welcome-screen">
+              <div class="welcome-icon">
+                <span class="material-symbols-outlined">public</span>
+              </div>
+              <h2>プロキシブラウザ</h2>
+              <p>フィルタリングを回避してWebサイトにアクセスできます</p>
+              <div class="quick-links">
+                <h3>クイックリンク</h3>
+                <div class="quick-link-grid">
+                  <button class="quick-link" data-url="https://www.google.com">
+                    <span class="material-symbols-outlined">search</span>
+                    <span>Google</span>
+                  </button>
+                  <button class="quick-link" data-url="https://www.youtube.com">
+                    <span class="material-symbols-outlined">play_circle</span>
+                    <span>YouTube</span>
+                  </button>
+                  <button class="quick-link" data-url="https://github.com">
+                    <span class="material-symbols-outlined">code</span>
+                    <span>GitHub</span>
+                  </button>
+                  <button class="quick-link" data-url="https://twitter.com">
+                    <span class="material-symbols-outlined">tag</span>
+                    <span>Twitter/X</span>
+                  </button>
+                </div>
+              </div>
+              <div class="proxy-modes">
+                <h3>プロキシモード</h3>
+                <p>読み込みに失敗した場合、モードを切り替えてください</p>
+                <div class="mode-buttons">
+                  <button class="mode-btn active" data-mode="allorigins">AllOrigins</button>
+                  <button class="mode-btn" data-mode="corsproxy">CORS Proxy</button>
+                  <button class="mode-btn" data-mode="iframe">Direct (iframe)</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/proxy.js"></script>
+  <script src="common/stealth-mode.js"></script>
+</body>
+</html>
