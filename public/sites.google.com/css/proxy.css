@@ -264,8 +264,22 @@
   background:#ffffff;
 }
 
+.proxy-container.is-fullscreen .browser-controls{
+  position:absolute;
+  top:-70px;
+  left:0;
+  right:0;
+  transition:top 0.3s ease;
+  z-index:10000;
+  box-shadow:0 2px 8px rgba(0,0,0,0.1);
+}
+
+.proxy-container.is-fullscreen.show-controls .browser-controls{
+  top:0;
+}
+
 .proxy-container.is-fullscreen .browser-content{
-  height:calc(100vh - 60px);
+  height:100vh;
 }
 
 .proxy-iframe{
