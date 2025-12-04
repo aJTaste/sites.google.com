@@ -1,4 +1,3 @@
-import{initPage}from'../common/core.js'; //勝手に追加した。core.jsが接続されていないから画面表示されない
 import{auth}from'../common/firebase-config.js';
 import{signInWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 

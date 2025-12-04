@@ -1,4 +1,3 @@
-import{initPage}from'../common/core.js';
 import{auth,database}from'../common/firebase-config.js';
 import{createUserWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 import{ref,set,get}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
