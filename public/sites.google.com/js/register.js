@@ -208,3 +208,7 @@ form.addEventListener('submit',async(e)=>{
 });
 
 console.log('register.js読み込み完了');
+
+// ローディング完了
+document.body.classList.remove('page-loading');
+document.body.classList.add('page-loaded');

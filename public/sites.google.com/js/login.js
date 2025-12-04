@@ -1,4 +1,3 @@
-import{initPage}from'../common/core.js';
 import{auth}from'../common/firebase-config.js';
 import{signInWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
@@ -22,3 +21,7 @@ form.addEventListener('submit',async(e)=>{
     loginError.textContent='アカウントIDまたはパスワードが間違っています';
   }
 });
+
+// ローディング完了
+document.body.classList.remove('page-loading');
+document.body.classList.add('page-loaded');
