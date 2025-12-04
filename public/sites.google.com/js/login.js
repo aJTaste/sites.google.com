@@ -1,3 +1,4 @@
+import{initPage}from'../common/core.js';
 import{auth}from'../common/firebase-config.js';
 import{signInWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
