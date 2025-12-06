@@ -238,14 +238,14 @@ function showNotification(message,type='success'){
 // ========================================
 
 document.addEventListener('keydown',(e)=>{
-  // Meta + S: スクリーンショット
-  if(e.metaKey&&e.key==='s'){
+  // Meta + S: スクリーンショットにctrlを足した
+  if(e.ctrlKey && e.metaKey&&e.key==='s'){
     e.preventDefault();
     takeScreenshot();
   }
   
-  // Meta + R: 録画開始/停止
-  if(e.metaKey&&e.key==='r'){
+  // Meta + R: 録画開始/停止にctrlを足した
+  if(e.ctrlKey && e.metaKey&&e.key==='r'){
     e.preventDefault();
     if(isRecording){
       stopRecording();
