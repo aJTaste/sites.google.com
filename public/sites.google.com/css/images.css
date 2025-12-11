@@ -9,13 +9,6 @@
   margin-bottom:32px;
 }
 
-.images-header h1{
-  font-size:32px;
-  font-weight:600;
-  margin-bottom:8px;
-  color:var(--text-primary);
-}
-
 .images-description{
   font-size:16px;
   color:var(--text-secondary);
