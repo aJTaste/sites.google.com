@@ -188,8 +188,8 @@ async function startRecording(){
       audio:true
     });
     
-    // 🎬 画面選択モーダルが消えるまで待機（10フレーム ≈ 167ms）
-    await new Promise(resolve=>setTimeout(resolve,167));
+    // 🎬 画面選択モーダルが消えるまで待機
+    await new Promise(resolve=>setTimeout(resolve,100));
     
     mediaRecorder=new MediaRecorder(stream,{
       mimeType:'video/webm;codecs=vp8,opus'
