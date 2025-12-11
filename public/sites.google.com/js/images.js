@@ -12,7 +12,14 @@ const CAPTURE_STORE_NAME='media';
 let db=null;
 let currentFilter='all';
 let allMedia=[];
-let clipboardBlob=null;
+
+// BroadcastChannel（リアルタイム反映用）
+const channel=new BroadcastChannel('apphub-media-updates');
+channel.onmessage=(e)=>{
+  if(e.data.type==='media-updated'){
+    displayMedia();
+  }
+};
 
 async function initDB(){
   return new Promise((resolve,reject)=>{
@@ -254,45 +261,35 @@ document.querySelectorAll('.filter-btn').forEach(btn=>{
 });
 
 // ========================================
-// クリップボード機能
+// クリップボード機能（1ボタンで直接ダウンロード）
 // ========================================
 
-document.getElementById('paste-btn').addEventListener('click',async()=>{
+document.getElementById('clipboard-download-btn').addEventListener('click',async()=>{
   try{
     const items=await navigator.clipboard.read();
     
+    let blob=null;
     for(const item of items){
       if(item.types.includes('image/png')){
-        const blob=await item.getType('image/png');
-        clipboardBlob=blob;
-        
-        const url=URL.createObjectURL(blob);
-        document.getElementById('clipboard-img').src=url;
-        document.getElementById('clipboard-preview').style.display='block';
-        document.getElementById('download-clipboard-btn').disabled=false;
-        
+        blob=await item.getType('image/png');
         break;
       }
     }
-  }catch(error){
-    console.error('クリップボード読み込みエラー:',error);
-    alert('クリップボードから画像を読み込めませんでした');
-  }
-});
-
-document.getElementById('download-clipboard-btn').addEventListener('click',async()=>{
-  if(!clipboardBlob)return;
-  
-  const now=new Date();
-  const y=now.getFullYear();
-  const m=String(now.getMonth()+1).padStart(2,'0');
-  const d=String(now.getDate()).padStart(2,'0');
-  const h=String(now.getHours()).padStart(2,'0');
-  const min=String(now.getMinutes()).padStart(2,'0');
-  const s=String(now.getSeconds()).padStart(2,'0');
-  const filename=`${y}-${m}-${d}_${h}${min}${s}.png`;
-  
-  try{
+    
+    if(!blob){
+      alert('クリップボードに画像がありません');
+      return;
+    }
+    
+    const now=new Date();
+    const y=now.getFullYear();
+    const m=String(now.getMonth()+1).padStart(2,'0');
+    const d=String(now.getDate()).padStart(2,'0');
+    const h=String(now.getHours()).padStart(2,'0');
+    const min=String(now.getMinutes()).padStart(2,'0');
+    const s=String(now.getSeconds()).padStart(2,'0');
+    const filename=`${y}-${m}-${d}_${h}${min}${s}.png`;
+    
     if('showSaveFilePicker' in window){
       const opts={
         suggestedName:filename,
@@ -304,10 +301,10 @@ document.getElementById('download-clipboard-btn').addEventListener('click',async
       
       const handle=await window.showSaveFilePicker(opts);
       const writable=await handle.createWritable();
-      await writable.write(clipboardBlob);
+      await writable.write(blob);
       await writable.close();
     }else{
-      const url=URL.createObjectURL(clipboardBlob);
+      const url=URL.createObjectURL(blob);
       const a=document.createElement('a');
       a.href=url;
       a.download=filename;
@@ -315,9 +312,11 @@ document.getElementById('download-clipboard-btn').addEventListener('click',async
       URL.revokeObjectURL(url);
     }
   }catch(error){
-    if(error.name!=='AbortError'){
-      console.error('ダウンロードエラー:',error);
-      alert('ダウンロードに失敗しました');
+    if(error.name==='AbortError'){
+      console.log('キャンセルされました');
+    }else{
+      console.error('クリップボード読み込みエラー:',error);
+      alert('クリップボードから画像を読み込めませんでした');
     }
   }
 });

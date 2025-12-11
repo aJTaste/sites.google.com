@@ -155,11 +155,14 @@ async function takeScreenshot(){
     const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
     
     // IndexedDBに保存
-    await saveToIndexedDB(blob,'image');
+    const id=await saveToIndexedDB(blob,'image');
     
     // すぐにダウンロード
     const filename=formatFilename(new Date(),'image');
     await downloadBlob(blob,filename);
+    
+    // 他のタブに通知（リアルタイム反映）
+    notifyMediaUpdate();
     
     showNotification('スクリーンショットを保存しました','success');
   }catch(error){
@@ -185,6 +188,9 @@ async function startRecording(){
       audio:true
     });
     
+    // 🎬 画面選択モーダルが消えるまで待機（10フレーム ≈ 167ms）
+    await new Promise(resolve=>setTimeout(resolve,167));
+    
     mediaRecorder=new MediaRecorder(stream,{
       mimeType:'video/webm;codecs=vp8,opus'
     });
@@ -201,11 +207,14 @@ async function startRecording(){
       const blob=new Blob(recordedChunks,{type:'video/webm'});
       
       // IndexedDBに保存
-      await saveToIndexedDB(blob,'video');
+      const id=await saveToIndexedDB(blob,'video');
       
       // すぐにダウンロード
       const filename=formatFilename(new Date(),'video');
       await downloadBlob(blob,filename);
+      
+      // 他のタブに通知（リアルタイム反映）
+      notifyMediaUpdate();
       
       showNotification('録画を保存しました','success');
       
@@ -319,6 +328,13 @@ document.addEventListener('keydown',(e)=>{
 // ========================================
 // 初期化
 // ========================================
+
+// BroadcastChannel（リアルタイム反映用）
+const channel=new BroadcastChannel('apphub-media-updates');
+
+function notifyMediaUpdate(){
+  channel.postMessage({type:'media-updated'});
+}
 
 initDB().then(()=>{
   console.log('📸 Capture Handler 準備完了');

@@ -26,17 +26,10 @@
           <div class="clipboard-section">
             <h2>クリップボード画像</h2>
             <div class="clipboard-actions">
-              <button class="btn-primary" id="paste-btn">
-                <span class="material-symbols-outlined">content_paste</span>
-                <span>クリップボードから貼り付け</span>
-              </button>
-              <button class="btn-secondary" id="download-clipboard-btn" disabled>
+              <button class="btn-primary" id="clipboard-download-btn">
                 <span class="material-symbols-outlined">download</span>
-                <span>ダウンロード</span>
+                <span>クリップボード画像をダウンロード</span>
               </button>
-            </div>
-            <div class="clipboard-preview" id="clipboard-preview" style="display:none;">
-              <img id="clipboard-img" src="" alt="クリップボード画像">
             </div>
           </div>
 
@@ -123,6 +116,5 @@
 
   <script type="module" src="js/images.js"></script>
   <script src="common/stealth-mode.js"></script>
-  <script src="common/capture-handler.js"></script>
 </body>
 </html>
