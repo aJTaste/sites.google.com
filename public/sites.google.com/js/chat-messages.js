@@ -51,9 +51,23 @@ export function loadMessages(accountId){
         }
       }
       
-      // 全メッセージを順番に表示（awaitを使って順番に処理）
+      // 既読状態を一度だけ取得（最適化）
+      let otherUserLastRead=0;
+      if(!isFirstLoad){
+        try{
+          const otherUserRef=ref(database,`users/${accountId}/lastRead/${state.currentAccountId}`);
+          const readSnapshot=await get(otherUserRef);
+          if(readSnapshot.exists()){
+            otherUserLastRead=readSnapshot.val();
+          }
+        }catch(error){
+          console.error('既読状態取得エラー:',error);
+        }
+      }
+      
+      // 全メッセージを順番に表示
       for(const msg of messageArray){
-        await displayMessage(msg,accountId);
+        displayMessage(msg,accountId,otherUserLastRead);
       }
       
       // スクロール位置を調整
@@ -144,8 +158,8 @@ export function loadChannelMessages(channelId){
   });
 }
 
-// メッセージを表示（DM）- 既読状態を後から更新
-async function displayMessage(msg,otherAccountId){
+// メッセージを表示（DM）- 既読状態を引数で受け取る
+function displayMessage(msg,otherAccountId,otherUserLastRead){
   const chatMessages=document.getElementById('chat-messages');
   if(!chatMessages)return;
   
@@ -184,6 +198,12 @@ async function displayMessage(msg,otherAccountId){
   
   actionsHtml+=`</div>`;
   
+  // 既読表示（最適化：引数で受け取った値を使用）
+  let readStatusHtml='';
+  if(isCurrentUser&&otherUserLastRead>0&&msg.timestamp<=otherUserLastRead){
+    readStatusHtml='<span class="message-read">✓ 既読</span>';
+  }
+  
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
@@ -196,7 +216,7 @@ async function displayMessage(msg,otherAccountId){
       <div class="message-header">
         <span class="message-author">${senderData.username}</span>
         <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
-        <span class="message-read-status" data-msg-id="${msg.id}"></span>
+        ${readStatusHtml}
       </div>
       ${msg.replyTo?`<div class="message-reply">返信: ${escapeHtml(msg.replyTo.text).substring(0,50)}...</div>`:''}
       <div class="message-text">${escapeHtml(msg.text)}</div>
@@ -206,32 +226,7 @@ async function displayMessage(msg,otherAccountId){
     ${actionsHtml}
   `;
   
-  // DOMに追加してから既読状態を取得
   chatMessages.appendChild(messageEl);
-  
-  // 既読状態を非同期で取得して更新（DOM追加後なので順序に影響しない）
-  if(isCurrentUser){
-    updateReadStatus(msg.id,msg.timestamp,otherAccountId);
-  }
-}
-
-// 既読状態を更新（非同期・DOM追加後）
-async function updateReadStatus(messageId,timestamp,otherAccountId){
-  try{
-    const otherUserRef=ref(database,`users/${otherAccountId}/lastRead/${state.currentAccountId}`);
-    const readSnapshot=await get(otherUserRef);
-    if(readSnapshot.exists()){
-      const lastReadTime=readSnapshot.val();
-      if(timestamp<=lastReadTime){
-        const statusEl=document.querySelector(`[data-msg-id="${messageId}"]`);
-        if(statusEl){
-          statusEl.innerHTML='<span class="message-read">✓ 既読</span>';
-        }
-      }
-    }
-  }catch(error){
-    console.error('既読状態取得エラー:',error);
-  }
 }
 
 // メッセージを表示（チャンネル）
