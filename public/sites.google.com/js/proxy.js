@@ -8,7 +8,7 @@ await initPage('proxy','プロキシブラウザ');
 
 const state={
   currentUrl:'',
-  mode:'allorigins' // allorigins or corsproxy
+  mode:'corsproxy' // allorigins or corsproxy
 };
 
 // プロキシサービス定義
