@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>SW URL Proxy Test</title>
+</head>
+<body>
+  <h1>Service Worker URL Test</h1>
+
+  <input id="url" style="width:60%">
+  <button id="go">表示</button>
+
+  <hr>
+  <iframe id="view" style="width:100%;height:70vh;"></iframe>
+
+  <script>
+    navigator.serviceWorker.register('./sw.js');
+  </script>
+  <script src="./app.js"></script>
+</body>
+</html>
