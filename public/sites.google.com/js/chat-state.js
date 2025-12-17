@@ -2,9 +2,10 @@
 
 // 共有チャンネル定義
 export const CHANNELS=[
-  {id:'general',name:'連絡',desc:'報連相大事',icon:'campaign'},
-  {id:'random',name:'共用チャット',desc:'全員見れます',icon:'chat_bubble'},
-  {id:'tech',name:'to管理人',desc:'欲しいツールとかなんでも',icon:'code'}
+  {id:'general',name:'連絡',desc:'報連相大事',icon:'campaign',requiredRole:'user'},
+  {id:'random',name:'共用チャット',desc:'全員見れます',icon:'chat_bubble',requiredRole:'user'},
+  {id:'tech',name:'to管理人',desc:'欲しいツールとかなんでも',icon:'code',requiredRole:'user'},
+  {id:'moderators',name:'教育委員会対策課',desc:'モデレーターのみ',icon:'shield',requiredRole:'moderator'}
 ];
 
 // グローバル状態

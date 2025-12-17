@@ -2,7 +2,7 @@
 
 import{database}from'../common/firebase-config.js';
 import{ref,get,set,push,onValue,off,update}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-import{state,updateState,resetMessageState}from'./chat-state.js';
+import{state,updateState,resetMessageState,CHANNELS}from'./chat-state.js';
 import{getDmId,formatMessageTime,escapeHtml,showNotification}from'./chat-utils.js';
 
 // メッセージを読み込み（DM）
@@ -125,9 +125,10 @@ export function loadChannelMessages(channelId){
         if(latestMsg.senderId!==state.currentAccountId){
           const sender=state.allUsers.find(u=>u.accountId===latestMsg.senderId);
           const senderName=sender?sender.username:'誰か';
-          const channel={name:channelId};
+          const channel=CHANNELS.find(c=>c.id===channelId);
+          const channelName=channel?channel.name:channelId;
           showNotification(
-            `${channel.name}: ${senderName}`,
+            `${channelName}: ${senderName}`,
             latestMsg.text||'画像を送信しました',
             sender&&sender.iconUrl&&sender.iconUrl!=='default'?sender.iconUrl:'assets/github-mark.svg'
           );
@@ -280,7 +281,7 @@ function displayChannelMessage(msg){
         <span class="message-author">${senderData.username}</span>
         <span class="message-time">${formatMessageTime(msg.timestamp)}</span>
       </div>
-      ${msg.replyTo?`<div class="message-reply">返信: ${escapeHtml(msg.replyTo.text).substring(0,50)}...</div>`:''}
+      ${msg.replyTo?`<div class="message-reply">返信: ${escapeHtml(msg.replyTo.text).substring(0,100)}...</div>`:''}
       <div class="message-text">${escapeHtml(msg.text)}</div>
       ${msg.imageUrl?`<img class="message-image" src="${msg.imageUrl}" alt="画像" onclick="window.openImageModal('${msg.imageUrl}')">`:''}
       ${msg.editedAt?`<div class="message-edited">(編集済み)</div>`:''}
@@ -291,7 +292,7 @@ function displayChannelMessage(msg){
   chatMessages.appendChild(messageEl);
 }
 
-// メッセージを送信
+// メッセージを送信（二重送信防止を強化）
 export async function sendMessage(){
   if(state.isSending)return;
   
@@ -302,6 +303,7 @@ export async function sendMessage(){
   if(!text&&!state.selectedImage)return;
   if(!state.selectedAccountId&&!state.selectedChannelId)return;
   
+  // 即座にフラグを立てる
   updateState('isSending',true);
   chatInput.disabled=true;
   sendBtn.disabled=true;

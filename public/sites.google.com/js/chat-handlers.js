@@ -6,6 +6,7 @@ import{state,updateState,CHANNELS}from'./chat-state.js';
 import{displayUsers,createChatHTML,createChannelChatHTML}from'./chat-ui.js';
 import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
 import{handleImageFile}from'./chat-utils.js';
+import{canAccessChannel}from'../common/permissions.js';
 
 console.log('chat-handlers.js読み込み開始');
 
@@ -39,6 +40,20 @@ export async function selectUser(accountId){
 // チャンネルを選択
 export async function selectChannel(channelId){
   console.log('selectChannel()実行:',channelId);
+  
+  const channel=CHANNELS.find(c=>c.id===channelId);
+  
+  if(!channel){
+    console.error('選択されたチャンネルが見つかりません:',channelId);
+    return;
+  }
+  
+  // 権限チェック
+  if(!canAccessChannel(state.currentUserData.role,channel.requiredRole)){
+    alert('このチャンネルへのアクセス権限がありません');
+    return;
+  }
+  
   updateState('selectedChannelId',channelId);
   updateState('selectedAccountId',null);
   
@@ -51,13 +66,6 @@ export async function selectChannel(channelId){
   displayUsers();
   
   const chatMain=document.getElementById('chat-main');
-  const channel=CHANNELS.find(c=>c.id===channelId);
-  
-  if(!channel){
-    console.error('選択されたチャンネルが見つかりません:',channelId);
-    return;
-  }
-  
   chatMain.innerHTML=createChannelChatHTML(channel);
   setupChatInput();
   loadChannelMessages(channelId);
@@ -155,6 +163,27 @@ function setupChatInput(){
   }
 }
 
+// エスケープ処理を改善（HTMLエンティティを正しく処理）
+function escapeForAttribute(text){
+  if(!text)return'';
+  return text
+    .replace(/&/g,'&amp;')
+    .replace(/'/g,'&apos;')
+    .replace(/"/g,'&quot;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;');
+}
+
+function unescapeFromAttribute(text){
+  if(!text)return'';
+  return text
+    .replace(/&apos;/g,"'")
+    .replace(/&quot;/g,'"')
+    .replace(/&lt;/g,'<')
+    .replace(/&gt;/g,'>')
+    .replace(/&amp;/g,'&');
+}
+
 // グローバル関数（window経由で呼び出し）
 window.openImageModal=function(imageUrl){
   document.getElementById('image-modal-img').src=imageUrl;
@@ -162,8 +191,8 @@ window.openImageModal=function(imageUrl){
 }
 
 window.replyMessage=function(messageId,text,senderId){
-  updateState('replyToMessage',{id:messageId,text:text,senderId:senderId});
-  document.getElementById('reply-preview-text').textContent=text.substring(0,100);
+  updateState('replyToMessage',{id:messageId,text:unescapeFromAttribute(text),senderId:senderId});
+  document.getElementById('reply-preview-text').textContent=unescapeFromAttribute(text).substring(0,100);
   document.getElementById('reply-preview').classList.add('show');
   document.getElementById('chat-input').focus();
 }
@@ -171,7 +200,7 @@ window.replyMessage=function(messageId,text,senderId){
 window.editMessage=function(messageId,path,text,isDM){
   updateState('editingMessageId',messageId);
   updateState('editingMessagePath',isDM?`dms/${path}/messages/${messageId}`:`channels/${path}/messages/${messageId}`);
-  document.getElementById('edit-textarea').value=text.replace(/&#39;/g,"'");
+  document.getElementById('edit-textarea').value=unescapeFromAttribute(text);
   document.getElementById('edit-modal').classList.add('show');
 }
 

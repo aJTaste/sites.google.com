@@ -48,6 +48,7 @@ export function checkPermission(userRole,permission){
     view_admin_panel:ROLES.MODERATOR,
     edit_admin_panel:ROLES.MODERATOR,
     delete_any_message:ROLES.MODERATOR,
+    access_moderator_channel:ROLES.MODERATOR,
     
     // 全ユーザー
     send_message:ROLES.USER,
@@ -59,6 +60,17 @@ export function checkPermission(userRole,permission){
   if(!requiredRole)return false;
   
   return hasPermission(userRole,requiredRole);
+}
+
+/**
+ * チャンネルアクセス権限チェック
+ * @param {string} userRole - ユーザーのrole
+ * @param {string} channelRequiredRole - チャンネルの必要権限
+ * @returns {boolean} アクセス可能か
+ */
+export function canAccessChannel(userRole,channelRequiredRole){
+  if(!channelRequiredRole)return true;
+  return hasPermission(userRole,channelRequiredRole);
 }
 
 /**

@@ -2,6 +2,7 @@
 
 import{state,CHANNELS}from'./chat-state.js';
 import{formatLastOnline}from'./chat-utils.js';
+import{canAccessChannel}from'../common/permissions.js';
 
 // ユーザー一覧を表示
 export function displayUsers(){
@@ -10,12 +11,22 @@ export function displayUsers(){
   
   dmList.innerHTML='';
   
-  // チャンネルを追加
+  // チャンネルを追加（権限チェック）
   CHANNELS.forEach(channel=>{
+    // 権限チェック
+    if(!canAccessChannel(state.currentUserData.role,channel.requiredRole)){
+      return;
+    }
+    
     const channelItem=document.createElement('div');
     channelItem.className='channel-item';
     if(state.selectedChannelId===channel.id){
       channelItem.classList.add('active');
+    }
+    
+    // モデレーター専用チャンネルのスタイル
+    if(channel.requiredRole==='moderator'){
+      channelItem.classList.add('moderator-only');
     }
     
     const unreadCount=state.unreadCounts[channel.id]||0;

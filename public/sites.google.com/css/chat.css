@@ -773,3 +773,62 @@
     transform:translateX(0);
   }
 }
+/* chat.html 固有のスタイル */
+
+/* ... 既存のスタイルは省略 ... */
+
+/* モデレーター専用チャンネルのスタイル */
+.channel-item.moderator-only{
+  background:linear-gradient(135deg,rgba(124,58,237,0.05),rgba(139,92,246,0.05));
+  border-left:3px solid #7c3aed;
+}
+
+.channel-item.moderator-only:hover{
+  background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(139,92,246,0.1));
+}
+
+.channel-item.moderator-only.active{
+  background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(139,92,246,0.15));
+  border-left-color:#7c3aed;
+}
+
+.channel-item.moderator-only .channel-icon{
+  background:rgba(124,58,237,0.1);
+}
+
+.channel-item.moderator-only .channel-icon .material-symbols-outlined{
+  color:#7c3aed;
+}
+
+/* 画像プレビューのサイズを拡大 */
+.image-preview-container{
+  display:none;
+  padding:16px;
+  background:var(--bg-secondary);
+  border-radius:8px;
+  margin-bottom:12px;
+  position:relative;
+}
+
+.image-preview-container.show{
+  display:block;
+}
+
+.image-preview{
+  max-width:300px;
+  max-height:300px;
+  border-radius:8px;
+  border:1px solid var(--border);
+}
+
+/* リプライプレビューの改善 */
+.reply-preview-text{
+  font-size:13px;
+  color:var(--text-primary);
+  max-height:60px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  display:-webkit-box;
+  -webkit-line-clamp:3;
+  -webkit-box-orient:vertical;
+}
