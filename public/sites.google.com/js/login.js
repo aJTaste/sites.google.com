@@ -1,43 +1,47 @@
 import{supabase}from'../common/supabase-config.js';
 
 const form=document.getElementById('login-form');
-const accountIdInput=document.getElementById('account-id');
+const userIdInput=document.getElementById('user-id');
 const passwordInput=document.getElementById('password');
 const loginError=document.getElementById('login-error');
+const submitBtn=document.getElementById('submit-btn');
 
 form.addEventListener('submit',async(e)=>{
   e.preventDefault();
   
-  const accountId=accountIdInput.value.trim();
+  const userId=userIdInput.value.trim();
   const password=passwordInput.value;
   
-  // メールアドレス形式に変換
-  const email=`${accountId}@apphub.local`;
+  loginError.textContent='';
+  submitBtn.disabled=true;
+  submitBtn.textContent='ログイン中...';
   
   try{
+    // Supabase Authでログイン
     const{data,error}=await supabase.auth.signInWithPassword({
-      email:email,
+      email:`${userId}@ajtaste.local`,
       password:password
     });
     
     if(error)throw error;
     
-    // オンライン状態を更新
-    await supabase
-      .from('profiles')
-      .update({
-        is_online:true,
-        last_online:new Date().toISOString()
-      })
-      .eq('id',data.user.id);
-    
+    // ログイン成功
     window.location.href='index.html';
+    
   }catch(error){
-    console.error(error);
-    loginError.textContent='アカウントIDまたはパスワードが間違っています';
+    console.error('ログインエラー:',error);
+    
+    if(error.message.includes('Invalid login credentials')){
+      loginError.textContent='IDまたはパスワードが間違っています';
+    }else{
+      loginError.textContent='ログインに失敗しました: '+error.message;
+    }
+    
+    submitBtn.disabled=false;
+    submitBtn.textContent='ログイン';
   }
 });
 
-// ローディング完了
+// ページ表示
 document.body.classList.remove('page-loading');
 document.body.classList.add('page-loaded');
