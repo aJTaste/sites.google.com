@@ -1,244 +1,227 @@
 import{supabase,generateRandomColor}from'../common/supabase-config.js';
 
-console.log('register.js読み込み開始');
-
-// DOM要素取得
 const form=document.getElementById('register-form');
-const fullnameInput=document.getElementById('fullname');
-const gmailUserInput=document.getElementById('gmail-user');
-const accountIdInput=document.getElementById('account-id');
+const userIdInput=document.getElementById('user-id');
 const passwordInput=document.getElementById('password');
 const passwordConfirmInput=document.getElementById('password-confirm');
-const usernameInput=document.getElementById('username');
+const displayNameInput=document.getElementById('display-name');
+const lastNameInput=document.getElementById('last-name');
+const firstNameInput=document.getElementById('first-name');
 const iconFileInput=document.getElementById('icon-file');
-const iconPreviewCanvas=document.getElementById('icon-preview');
+const iconPreview=document.getElementById('icon-preview');
 const uploadBtn=document.getElementById('upload-btn');
 const defaultBtn=document.getElementById('default-btn');
+const submitBtn=document.getElementById('submit-btn');
 
-console.log('DOM要素取得完了');
+let selectedFile=null;
+let avatarColor=generateRandomColor();
 
-let iconFile=null;
-const defaultColor=generateRandomColor();
+// アイコンプレビュー初期化
+iconPreview.style.background=avatarColor;
 
-// デフォルトアイコン表示（ランダムカラー円）
-function setDefaultIcon(){
-  const ctx=iconPreviewCanvas.getContext('2d');
-  ctx.clearRect(0,0,120,120);
-  ctx.fillStyle=defaultColor;
-  ctx.beginPath();
-  ctx.arc(60,60,60,0,Math.PI*2);
-  ctx.fill();
-}
-
-// 初期表示
-setDefaultIcon();
-
+// 画像アップロード
 uploadBtn.addEventListener('click',()=>{
-  console.log('アップロードボタンクリック');
   iconFileInput.click();
 });
 
-defaultBtn.addEventListener('click',()=>{
-  console.log('デフォルトボタンクリック');
-  iconFile=null;
-  setDefaultIcon();
-});
-
 iconFileInput.addEventListener('change',(e)=>{
-  console.log('ファイル選択');
   const file=e.target.files[0];
   if(!file)return;
   
+  const iconError=document.getElementById('icon-error');
+  iconError.textContent='';
+  
   if(file.size>500*1024){
-    document.getElementById('icon-error').textContent='画像サイズは500KB以下にしてください';
+    iconError.textContent='画像サイズは500KB以下にしてください';
     return;
   }
   
-  document.getElementById('icon-error').textContent='';
-  
+  selectedFile=file;
   const reader=new FileReader();
   reader.onload=(e)=>{
-    const img=new Image();
-    img.onload=()=>{
-      const ctx=iconPreviewCanvas.getContext('2d');
-      ctx.clearRect(0,0,120,120);
-      ctx.drawImage(img,0,0,120,120);
-      iconFile=file;
-      console.log('画像読み込み完了');
-    };
-    img.src=e.target.result;
+    iconPreview.innerHTML=`<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
   };
   reader.readAsDataURL(file);
 });
 
-// アカウントID重複チェック
-accountIdInput.addEventListener('input',async()=>{
-  const accountId=accountIdInput.value.trim();
+// デフォルトアイコン
+defaultBtn.addEventListener('click',()=>{
+  selectedFile=null;
+  avatarColor=generateRandomColor();
+  iconPreview.style.background=avatarColor;
+  iconPreview.innerHTML='?';
+});
+
+// 表示名入力でプレビュー更新
+displayNameInput.addEventListener('input',()=>{
+  if(!selectedFile){
+    const initial=displayNameInput.value.charAt(0).toUpperCase()||'?';
+    iconPreview.textContent=initial;
+  }
+});
+
+// ID重複チェック
+userIdInput.addEventListener('input',async()=>{
+  const userId=userIdInput.value.trim();
   const idError=document.getElementById('id-error');
-  const idHelp=document.getElementById('id-help');
   
-  if(accountId.length<10){
+  if(userId.length<10){
     idError.textContent='';
-    idHelp.textContent='例: 207d231234';
     return;
   }
   
-  // 207d23 + 4桁数字の形式チェック
-  if(!/^207d23\d{4}$/.test(accountId)){
+  // フォーマットチェック
+  if(!/^207d23\d{4}$/.test(userId)){
     idError.textContent='207d23 + 4桁の数字で入力してください';
-    idHelp.textContent='';
     return;
   }
   
   try{
-    // 重複チェック
     const{data,error}=await supabase
       .from('profiles')
       .select('user_id')
-      .eq('user_id',accountId)
+      .eq('user_id',userId)
       .single();
     
     if(data){
       idError.textContent='このIDはすでに使用されています';
-      idHelp.textContent='';
     }else{
       idError.textContent='';
-      idHelp.textContent='✓ 使用可能なIDです';
+      idError.classList.add('success-message');
+      idError.textContent='✓ 使用可能なIDです';
+      setTimeout(()=>{
+        idError.classList.remove('success-message');
+      },2000);
     }
   }catch(error){
-    if(error.code!=='PGRST116'){
-      console.error('重複チェックエラー:',error);
+    // データが見つからない場合はOK
+    if(error.code==='PGRST116'){
+      idError.textContent='';
     }
   }
 });
 
+// フォーム送信
 form.addEventListener('submit',async(e)=>{
   e.preventDefault();
-  console.log('登録フォーム送信開始');
   
-  const fullname=fullnameInput.value.trim();
-  const gmailUser=gmailUserInput.value.trim();
-  const accountId=accountIdInput.value.trim();
+  const userId=userIdInput.value.trim();
   const password=passwordInput.value;
   const passwordConfirm=passwordConfirmInput.value;
-  const username=usernameInput.value.trim();
+  const displayName=displayNameInput.value.trim();
+  const lastName=lastNameInput.value.trim();
+  const firstName=firstNameInput.value.trim();
   
-  console.log('入力値:',{fullname,gmailUser,accountId,username});
+  const idError=document.getElementById('id-error');
+  const passwordError=document.getElementById('password-error');
   
-  document.getElementById('id-error').textContent='';
-  document.getElementById('password-error').textContent='';
-  document.getElementById('icon-error').textContent='';
+  idError.textContent='';
+  passwordError.textContent='';
   
   // バリデーション
-  if(!fullname){
-    alert('氏名を入力してください');
+  if(!/^207d23\d{4}$/.test(userId)){
+    idError.textContent='207d23 + 4桁の数字で入力してください';
     return;
   }
   
-  if(!gmailUser){
-    alert('教育委員会Gmailを入力してください');
-    return;
-  }
-  
-  if(!/^207d23\d{4}$/.test(accountId)){
-    document.getElementById('id-error').textContent='207d23 + 4桁の数字で入力してください';
-    return;
-  }
-  
-  if(password.length<8||password.length>20){
-    document.getElementById('password-error').textContent='パスワードは8-20文字で入力してください';
-    return;
-  }
-  
-  if(!/^[a-zA-Z0-9!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+$/.test(password)){
-    document.getElementById('password-error').textContent='半角英数字記号のみ使用できます';
+  if(password.length<8){
+    passwordError.textContent='パスワードは8文字以上で入力してください';
     return;
   }
   
   if(password!==passwordConfirm){
-    document.getElementById('password-error').textContent='パスワードが一致しません';
+    passwordError.textContent='パスワードが一致しません';
     return;
   }
   
-  if(!username){
+  if(!displayName){
     alert('表示名を入力してください');
     return;
   }
   
-  console.log('バリデーション通過');
+  submitBtn.disabled=true;
+  submitBtn.textContent='登録中...';
   
   try{
-    // メールアドレス形式に変換（Supabase Auth用）
-    const email=`${accountId}@apphub.local`;
+    // 重複チェック
+    const{data:existing}=await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id',userId)
+      .single();
     
-    console.log('Supabase認証開始:',email);
+    if(existing){
+      idError.textContent='このIDはすでに使用されています';
+      submitBtn.disabled=false;
+      submitBtn.textContent='登録';
+      return;
+    }
     
-    // Supabase Authでユーザー作成
+    // ユーザー作成（メタデータにuser_idを含める）
     const{data:authData,error:authError}=await supabase.auth.signUp({
-      email:email,
+      email:`${userId}@ajtaste.local`,
       password:password,
       options:{
         data:{
-          user_id:accountId,
-          display_name:username,
-          full_name:fullname,
-          gmail_user:gmailUser,
-          avatar_color:defaultColor
+          user_id:userId,
+          display_name:displayName
         }
       }
     });
     
     if(authError)throw authError;
     
-    console.log('Supabase認証成功');
-    
-    // アイコン画像をアップロード
+    // プロフィール更新（トリガーで自動作成されるが、追加情報を更新）
     let avatarUrl=null;
-    if(iconFile){
-      const fileExt=iconFile.name.split('.').pop();
-      const fileName=`${accountId}_${Date.now()}.${fileExt}`;
+    
+    // 画像をアップロード
+    if(selectedFile){
+      const fileExt=selectedFile.name.split('.').pop();
+      const fileName=`${authData.user.id}.${fileExt}`;
       
-      const{data:uploadData,error:uploadError}=await supabase.storage
+      const{error:uploadError}=await supabase.storage
         .from('avatars')
-        .upload(fileName,iconFile);
+        .upload(fileName,selectedFile);
       
       if(uploadError)throw uploadError;
       
-      const{data:{publicUrl}}=supabase.storage
+      const{data:urlData}=supabase.storage
         .from('avatars')
         .getPublicUrl(fileName);
       
-      avatarUrl=publicUrl;
+      avatarUrl=urlData.publicUrl;
     }
     
-    // プロフィール情報を更新
+    // プロフィール更新
     const{error:profileError}=await supabase
       .from('profiles')
       .update({
-        last_name:fullname.split(' ')[0]||fullname,
-        first_name:fullname.split(' ')[1]||'',
-        avatar_color:avatarUrl||defaultColor
+        last_name:lastName,
+        first_name:firstName,
+        avatar_url:avatarUrl,
+        avatar_color:avatarColor
       })
       .eq('id',authData.user.id);
     
     if(profileError)throw profileError;
     
-    console.log('登録完了');
     alert('登録完了！');
     window.location.href='index.html';
+    
   }catch(error){
     console.error('登録エラー:',error);
     
-    if(error.message.includes('duplicate')||error.message.includes('already')){
-      document.getElementById('id-error').textContent='このIDはすでに使用されています';
+    if(error.message.includes('User already registered')){
+      idError.textContent='このIDはすでに使用されています';
     }else{
       alert('登録に失敗しました: '+error.message);
     }
+    
+    submitBtn.disabled=false;
+    submitBtn.textContent='登録';
   }
 });
 
-console.log('register.js読み込み完了');
-
-// ローディング完了
+// ページ表示
 document.body.classList.remove('page-loading');
 document.body.classList.add('page-loaded');
