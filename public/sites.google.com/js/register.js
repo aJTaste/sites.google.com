@@ -11,7 +11,7 @@ const passwordInput=document.getElementById('password');
 const passwordConfirmInput=document.getElementById('password-confirm');
 const usernameInput=document.getElementById('username');
 const iconFileInput=document.getElementById('icon-file');
-const iconPreview=document.getElementById('icon-preview');
+const iconPreviewCanvas=document.getElementById('icon-preview');
 const uploadBtn=document.getElementById('upload-btn');
 const defaultBtn=document.getElementById('default-btn');
 
@@ -22,17 +22,15 @@ const defaultColor=generateRandomColor();
 
 // デフォルトアイコン表示（ランダムカラー円）
 function setDefaultIcon(){
-  const canvas=document.createElement('canvas');
-  canvas.width=200;
-  canvas.height=200;
-  const ctx=canvas.getContext('2d');
+  const ctx=iconPreviewCanvas.getContext('2d');
+  ctx.clearRect(0,0,120,120);
   ctx.fillStyle=defaultColor;
   ctx.beginPath();
-  ctx.arc(100,100,100,0,Math.PI*2);
+  ctx.arc(60,60,60,0,Math.PI*2);
   ctx.fill();
-  iconPreview.src=canvas.toDataURL();
 }
 
+// 初期表示
 setDefaultIcon();
 
 uploadBtn.addEventListener('click',()=>{
@@ -60,9 +58,15 @@ iconFileInput.addEventListener('change',(e)=>{
   
   const reader=new FileReader();
   reader.onload=(e)=>{
-    iconPreview.src=e.target.result;
-    iconFile=file;
-    console.log('画像読み込み完了');
+    const img=new Image();
+    img.onload=()=>{
+      const ctx=iconPreviewCanvas.getContext('2d');
+      ctx.clearRect(0,0,120,120);
+      ctx.drawImage(img,0,0,120,120);
+      iconFile=file;
+      console.log('画像読み込み完了');
+    };
+    img.src=e.target.result;
   };
   reader.readAsDataURL(file);
 });
@@ -73,15 +77,15 @@ accountIdInput.addEventListener('input',async()=>{
   const idError=document.getElementById('id-error');
   const idHelp=document.getElementById('id-help');
   
-  if(accountId.length<9){
+  if(accountId.length<10){
     idError.textContent='';
-    idHelp.textContent='';
+    idHelp.textContent='例: 207d231234';
     return;
   }
   
   // 207d23 + 4桁数字の形式チェック
   if(!/^207d23\d{4}$/.test(accountId)){
-    idError.textContent='207d23 + 4桁の数字で入力してください（例: 207d231234）';
+    idError.textContent='207d23 + 4桁の数字で入力してください';
     idHelp.textContent='';
     return;
   }
@@ -102,7 +106,9 @@ accountIdInput.addEventListener('input',async()=>{
       idHelp.textContent='✓ 使用可能なIDです';
     }
   }catch(error){
-    console.error('重複チェックエラー:',error);
+    if(error.code!=='PGRST116'){
+      console.error('重複チェックエラー:',error);
+    }
   }
 });
 
@@ -165,25 +171,6 @@ form.addEventListener('submit',async(e)=>{
     // メールアドレス形式に変換（Supabase Auth用）
     const email=`${accountId}@apphub.local`;
     
-    // アイコン画像をアップロード
-    let avatarUrl=null;
-    if(iconFile){
-      const fileExt=iconFile.name.split('.').pop();
-      const fileName=`${accountId}_${Date.now()}.${fileExt}`;
-      
-      const{data:uploadData,error:uploadError}=await supabase.storage
-        .from('avatars')
-        .upload(fileName,iconFile);
-      
-      if(uploadError)throw uploadError;
-      
-      const{data:{publicUrl}}=supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-      
-      avatarUrl=publicUrl;
-    }
-    
     console.log('Supabase認証開始:',email);
     
     // Supabase Authでユーザー作成
@@ -205,27 +192,36 @@ form.addEventListener('submit',async(e)=>{
     
     console.log('Supabase認証成功');
     
-    // プロフィール情報を更新（トリガーで自動作成されたレコードを更新）
+    // アイコン画像をアップロード
+    let avatarUrl=null;
+    if(iconFile){
+      const fileExt=iconFile.name.split('.').pop();
+      const fileName=`${accountId}_${Date.now()}.${fileExt}`;
+      
+      const{data:uploadData,error:uploadError}=await supabase.storage
+        .from('avatars')
+        .upload(fileName,iconFile);
+      
+      if(uploadError)throw uploadError;
+      
+      const{data:{publicUrl}}=supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      
+      avatarUrl=publicUrl;
+    }
+    
+    // プロフィール情報を更新
     const{error:profileError}=await supabase
       .from('profiles')
       .update({
         last_name:fullname.split(' ')[0]||fullname,
         first_name:fullname.split(' ')[1]||'',
-        avatar_color:avatarUrl?null:defaultColor
+        avatar_color:avatarUrl||defaultColor
       })
       .eq('id',authData.user.id);
     
     if(profileError)throw profileError;
-    
-    // アバター画像URLを更新
-    if(avatarUrl){
-      const{error:avatarError}=await supabase
-        .from('profiles')
-        .update({avatar_color:avatarUrl})
-        .eq('id',authData.user.id);
-      
-      if(avatarError)throw avatarError;
-    }
     
     console.log('登録完了');
     alert('登録完了！');
