@@ -1,5 +1,4 @@
-import{auth}from'../common/firebase-config.js';
-import{signInWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import{supabase}from'../common/supabase-config.js';
 
 const form=document.getElementById('login-form');
 const accountIdInput=document.getElementById('account-id');
@@ -11,10 +10,27 @@ form.addEventListener('submit',async(e)=>{
   
   const accountId=accountIdInput.value.trim();
   const password=passwordInput.value;
-  const email=`${accountId}@ajtaste.jp`;
+  
+  // メールアドレス形式に変換
+  const email=`${accountId}@apphub.local`;
   
   try{
-    await signInWithEmailAndPassword(auth,email,password);
+    const{data,error}=await supabase.auth.signInWithPassword({
+      email:email,
+      password:password
+    });
+    
+    if(error)throw error;
+    
+    // オンライン状態を更新
+    await supabase
+      .from('profiles')
+      .update({
+        is_online:true,
+        last_online:new Date().toISOString()
+      })
+      .eq('id',data.user.id);
+    
     window.location.href='index.html';
   }catch(error){
     console.error(error);
