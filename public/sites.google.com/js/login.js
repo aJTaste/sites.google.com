@@ -19,7 +19,7 @@ form.addEventListener('submit',async(e)=>{
   try{
     // Supabase Authでログイン
     const{data,error}=await supabase.auth.signInWithPassword({
-      email:`${userId}@ajtaste.local`,
+      email:`${userId}@ajtaste.jp`,
       password:password
     });
     
