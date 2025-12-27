@@ -159,7 +159,7 @@ form.addEventListener('submit',async(e)=>{
     
     // ユーザー作成（メタデータにuser_idを含める）
     const{data:authData,error:authError}=await supabase.auth.signUp({
-      email:`${userId}@ajtaste.local`,
+      email:`${userId}@ajtaste.jp`,
       password:password,
       options:{
         data:{
