@@ -1,6 +1,4 @@
-import{auth,database}from'../common/firebase-config.js';
-import{createUserWithEmailAndPassword}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import{ref,set,get}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{supabase,generateRandomColor}from'../common/supabase-config.js';
 
 console.log('register.js読み込み開始');
 
@@ -19,7 +17,23 @@ const defaultBtn=document.getElementById('default-btn');
 
 console.log('DOM要素取得完了');
 
-let iconBase64='';
+let iconFile=null;
+const defaultColor=generateRandomColor();
+
+// デフォルトアイコン表示（ランダムカラー円）
+function setDefaultIcon(){
+  const canvas=document.createElement('canvas');
+  canvas.width=200;
+  canvas.height=200;
+  const ctx=canvas.getContext('2d');
+  ctx.fillStyle=defaultColor;
+  ctx.beginPath();
+  ctx.arc(100,100,100,0,Math.PI*2);
+  ctx.fill();
+  iconPreview.src=canvas.toDataURL();
+}
+
+setDefaultIcon();
 
 uploadBtn.addEventListener('click',()=>{
   console.log('アップロードボタンクリック');
@@ -28,8 +42,8 @@ uploadBtn.addEventListener('click',()=>{
 
 defaultBtn.addEventListener('click',()=>{
   console.log('デフォルトボタンクリック');
-  iconPreview.src='assets/github-mark.svg';
-  iconBase64='';
+  iconFile=null;
+  setDefaultIcon();
 });
 
 iconFileInput.addEventListener('change',(e)=>{
@@ -47,7 +61,7 @@ iconFileInput.addEventListener('change',(e)=>{
   const reader=new FileReader();
   reader.onload=(e)=>{
     iconPreview.src=e.target.result;
-    iconBase64=e.target.result;
+    iconFile=file;
     console.log('画像読み込み完了');
   };
   reader.readAsDataURL(file);
@@ -59,25 +73,28 @@ accountIdInput.addEventListener('input',async()=>{
   const idError=document.getElementById('id-error');
   const idHelp=document.getElementById('id-help');
   
-  if(accountId.length<2){
+  if(accountId.length<9){
     idError.textContent='';
     idHelp.textContent='';
     return;
   }
   
-  // 半角英数字チェック
-  if(!/^[a-zA-Z0-9]+$/.test(accountId)){
-    idError.textContent='半角英数字のみ使用できます';
+  // 207d23 + 4桁数字の形式チェック
+  if(!/^207d23\d{4}$/.test(accountId)){
+    idError.textContent='207d23 + 4桁の数字で入力してください（例: 207d231234）';
     idHelp.textContent='';
     return;
   }
   
   try{
     // 重複チェック
-    const accountRef=ref(database,`users/${accountId}`);
-    const snapshot=await get(accountRef);
+    const{data,error}=await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id',accountId)
+      .single();
     
-    if(snapshot.exists()){
+    if(data){
       idError.textContent='このIDはすでに使用されています';
       idHelp.textContent='';
     }else{
@@ -86,7 +103,6 @@ accountIdInput.addEventListener('input',async()=>{
     }
   }catch(error){
     console.error('重複チェックエラー:',error);
-    idError.textContent='チェック中にエラーが発生しました';
   }
 });
 
@@ -118,13 +134,8 @@ form.addEventListener('submit',async(e)=>{
     return;
   }
   
-  if(accountId.length<2||accountId.length>20){
-    document.getElementById('id-error').textContent='アカウントIDは2-20文字で入力してください';
-    return;
-  }
-  
-  if(!/^[a-zA-Z0-9]+$/.test(accountId)){
-    document.getElementById('id-error').textContent='半角英数字のみ使用できます';
+  if(!/^207d23\d{4}$/.test(accountId)){
+    document.getElementById('id-error').textContent='207d23 + 4桁の数字で入力してください';
     return;
   }
   
@@ -150,56 +161,79 @@ form.addEventListener('submit',async(e)=>{
   
   console.log('バリデーション通過');
   
-  // 重複チェック（最終確認）
   try{
-    const accountRef=ref(database,`users/${accountId}`);
-    const snapshot=await get(accountRef);
-    if(snapshot.exists()){
-      document.getElementById('id-error').textContent='このIDはすでに使用されています';
-      return;
+    // メールアドレス形式に変換（Supabase Auth用）
+    const email=`${accountId}@apphub.local`;
+    
+    // アイコン画像をアップロード
+    let avatarUrl=null;
+    if(iconFile){
+      const fileExt=iconFile.name.split('.').pop();
+      const fileName=`${accountId}_${Date.now()}.${fileExt}`;
+      
+      const{data:uploadData,error:uploadError}=await supabase.storage
+        .from('avatars')
+        .upload(fileName,iconFile);
+      
+      if(uploadError)throw uploadError;
+      
+      const{data:{publicUrl}}=supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+      
+      avatarUrl=publicUrl;
     }
     
-    console.log('重複チェック通過');
-  }catch(error){
-    console.error('重複チェックエラー:',error);
-    alert('重複チェック中にエラーが発生しました');
-    return;
-  }
-  
-  try{
-    const email=`${accountId}@ajtaste.jp`;
-    console.log('Firebase認証開始:',email);
+    console.log('Supabase認証開始:',email);
     
-    // Firebase Authentication でユーザー作成
-    const userCredential=await createUserWithEmailAndPassword(auth,email,password);
-    const user=userCredential.user;
-    
-    console.log('Firebase認証成功:',user.uid);
-    console.log('データベース保存開始');
-    
-    // Realtime Database にアカウントIDをキーとして保存
-    await set(ref(database,`users/${accountId}`),{
-      uid:user.uid,
-      accountId:accountId,
-      fullname:fullname,
-      gmailUser:gmailUser,
-      username:username,
-      iconUrl:iconBase64||'default',
-      role:'user',
-      createdAt:Date.now(),
-      lastOnline:Date.now(),
-      online:false
+    // Supabase Authでユーザー作成
+    const{data:authData,error:authError}=await supabase.auth.signUp({
+      email:email,
+      password:password,
+      options:{
+        data:{
+          user_id:accountId,
+          display_name:username,
+          full_name:fullname,
+          gmail_user:gmailUser,
+          avatar_color:defaultColor
+        }
+      }
     });
     
-    console.log('データベース保存成功');
+    if(authError)throw authError;
+    
+    console.log('Supabase認証成功');
+    
+    // プロフィール情報を更新（トリガーで自動作成されたレコードを更新）
+    const{error:profileError}=await supabase
+      .from('profiles')
+      .update({
+        last_name:fullname.split(' ')[0]||fullname,
+        first_name:fullname.split(' ')[1]||'',
+        avatar_color:avatarUrl?null:defaultColor
+      })
+      .eq('id',authData.user.id);
+    
+    if(profileError)throw profileError;
+    
+    // アバター画像URLを更新
+    if(avatarUrl){
+      const{error:avatarError}=await supabase
+        .from('profiles')
+        .update({avatar_color:avatarUrl})
+        .eq('id',authData.user.id);
+      
+      if(avatarError)throw avatarError;
+    }
+    
+    console.log('登録完了');
     alert('登録完了！');
     window.location.href='index.html';
   }catch(error){
     console.error('登録エラー:',error);
-    console.error('エラーコード:',error.code);
-    console.error('エラーメッセージ:',error.message);
     
-    if(error.code==='auth/email-already-in-use'){
+    if(error.message.includes('duplicate')||error.message.includes('already')){
       document.getElementById('id-error').textContent='このIDはすでに使用されています';
     }else{
       alert('登録に失敗しました: '+error.message);
