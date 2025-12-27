@@ -1,32 +1,16 @@
 // ========================================
-// AppHub Core - すべてのページで使う共通処理
+// AppHub Core - Supabase版
 // ========================================
 
-// Firebase設定
-import{initializeApp}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-import{getAuth,onAuthStateChanged,signOut}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-import{getDatabase,ref,get}from'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import{supabase}from'./supabase-config.js';
 import{checkPermission}from'./permissions.js';
 
-const firebaseConfig={
-  apiKey:"AIzaSyDM_jJDGjN0mlV6FqBVzZTL5Qx95yaHruc",
-  authDomain:"apphub-ajtaste.firebaseapp.com",
-  databaseURL:"https://apphub-ajtaste-default-rtdb.firebaseio.com/",
-  projectId:"apphub-ajtaste",
-  storageBucket:"apphub-ajtaste.firebasestorage.app",
-  messagingSenderId:"135285241813",
-  appId:"1:135285241813:web:513e2aaa8f8dcd04556f5c"
-};
-
-const app=initializeApp(firebaseConfig);
-export const auth=getAuth(app);
-export const database=getDatabase(app);
+export{supabase};
 
 // ========================================
 // UI生成関数
 // ========================================
 
-// ヘッダー生成
 export function createHeader(pageTitle){
   return`
     <header class="top-header">
@@ -44,7 +28,7 @@ export function createHeader(pageTitle){
         </button>
         <div class="user-menu">
           <button class="user-btn" id="user-btn">
-            <img id="user-avatar" src="assets/github-mark.svg" alt="ユーザーアイコン">
+            <div id="user-avatar" style="width:36px;height:36px;border-radius:50%;background:#FF6B35;"></div>
           </button>
           <div class="user-dropdown" id="user-dropdown">
             <div class="dropdown-item" id="profile-btn">
@@ -67,15 +51,16 @@ export function createHeader(pageTitle){
   `;
 }
 
-// サイドバー生成（管理者パネルを常時表示）
 export function createSidebar(activePage,userRole){
   const navItems=[
     {id:'index',icon:'home',title:'Home',href:'index.html'},
     {id:'chat',icon:'chat',title:'ChatHub',href:'chat.html'},
+    {id:'links',icon:'link',title:'Links',href:'links.html'},
+    {id:'files',icon:'folder',title:'Files',href:'files.html'},
     {id:'proxy',icon:'vpn_key',title:'Proxy',href:'proxy.html'},
     {id:'images',icon:'animated_images',title:'Images',href:'images.html'},
     {id:'piano',icon:'piano',title:'Piano',href:'piano.html'},
-    {id:'admin',icon:'admin_panel_settings',title:'管理者パネル',href:'admin.html'}
+    {id:'db',icon:'database',title:'Database',href:'db.html'}
   ];
   
   const navHTML=navItems.map(item=>{
@@ -107,11 +92,10 @@ export async function initPage(pageId,pageTitle,options={}){
     onUserLoaded=null
   }=options;
   
-  // 認証チェック
   if(requireAuth){
     return new Promise((resolve)=>{
-      onAuthStateChanged(auth,async(user)=>{
-        if(!user){
+      supabase.auth.onAuthStateChange(async(event,session)=>{
+        if(!session){
           if(redirectIfNotAuth){
             window.location.href='login.html';
           }
@@ -120,16 +104,16 @@ export async function initPage(pageId,pageTitle,options={}){
         }
         
         // ユーザーデータ取得
-        const userData=await getUserData(user.uid);
+        const userData=await getUserData(session.user.id);
         if(!userData){
           alert('アカウント情報が見つかりません');
-          await signOut(auth);
+          await supabase.auth.signOut();
           window.location.href='login.html';
           resolve(null);
           return;
         }
         
-        // UI生成（ユーザーデータ取得後）
+        // UI生成
         const container=document.querySelector('.app-container')||document.body;
         const hasHeader=!container.querySelector('.top-header');
         const hasSidebar=!container.querySelector('.sidebar');
@@ -148,14 +132,11 @@ export async function initPage(pageId,pageTitle,options={}){
         // イベントリスナー設定
         setupHeaderEvents();
         
-        // アイコン表示
-        const userAvatar=document.getElementById('user-avatar');
-        if(userAvatar&&userData.iconUrl&&userData.iconUrl!=='default'){
-          userAvatar.src=userData.iconUrl;
-        }
+        // アバター表示
+        updateAvatar(userData);
         
-        // 管理者パネルへのアクセス制御（モデレーター以上のみアクセス可能）
-        if(pageId==='admin'){
+        // db.htmlへのアクセス制御（モデレーター以上のみ）
+        if(pageId==='db'){
           if(!checkPermission(userData.role,'view_admin_panel')){
             alert('このページへのアクセス権限がありません');
             window.location.href='index.html';
@@ -164,14 +145,32 @@ export async function initPage(pageId,pageTitle,options={}){
           }
         }
         
+        // オンライン状態を更新
+        await supabase
+          .from('profiles')
+          .update({
+            is_online:true,
+            last_online:new Date().toISOString()
+          })
+          .eq('id',session.user.id);
+        
+        // ページ離脱時にオフライン状態に
+        window.addEventListener('beforeunload',async()=>{
+          await supabase
+            .from('profiles')
+            .update({
+              is_online:false,
+              last_online:new Date().toISOString()
+            })
+            .eq('id',session.user.id);
+        });
+        
         // コールバック実行
         if(onUserLoaded){
           await onUserLoaded(userData);
         }
         
-        // ✨ ローディング完了 - ページを表示
         showPage();
-        
         resolve(userData);
       });
     });
@@ -180,44 +179,45 @@ export async function initPage(pageId,pageTitle,options={}){
   return Promise.resolve(null);
 }
 
-// ========================================
-// ローディング制御
-// ========================================
-
-// ページを表示（フェードイン）
+// ページを表示
 function showPage(){
-  // body の .page-loading クラスを削除
   document.body.classList.remove('page-loading');
   document.body.classList.add('page-loaded');
 }
 
-// ========================================
-// ユーティリティ関数
-// ========================================
-
 // ユーザーデータ取得
-async function getUserData(uid){
-  const usersRef=ref(database,'users');
-  const snapshot=await get(usersRef);
-  
-  if(!snapshot.exists())return null;
-  
-  const users=snapshot.val();
-  for(const accountId in users){
-    if(users[accountId].uid===uid){
-      return{
-        accountId:accountId,
-        ...users[accountId]
-      };
-    }
+async function getUserData(userId){
+  try{
+    const{data,error}=await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id',userId)
+      .single();
+    
+    if(error)throw error;
+    return data;
+  }catch(error){
+    console.error('ユーザーデータ取得エラー:',error);
+    return null;
   }
+}
+
+// アバター表示更新
+function updateAvatar(userData){
+  const userAvatar=document.getElementById('user-avatar');
+  if(!userAvatar)return;
   
-  return null;
+  if(userData.avatar_color&&userData.avatar_color.startsWith('http')){
+    // 画像URL
+    userAvatar.innerHTML=`<img src="${userData.avatar_color}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  }else{
+    // カラー
+    userAvatar.style.background=userData.avatar_color||'#FF6B35';
+  }
 }
 
 // ヘッダーイベント設定
 function setupHeaderEvents(){
-  // ユーザーメニュー
   const userBtn=document.getElementById('user-btn');
   const userDropdown=document.getElementById('user-dropdown');
   
@@ -232,7 +232,6 @@ function setupHeaderEvents(){
     });
   }
   
-  // プロフィール
   const profileBtn=document.getElementById('profile-btn');
   if(profileBtn){
     profileBtn.addEventListener('click',()=>{
@@ -240,7 +239,6 @@ function setupHeaderEvents(){
     });
   }
   
-  // 設定
   const settingsBtn=document.getElementById('settings-btn');
   if(settingsBtn){
     settingsBtn.addEventListener('click',()=>{
@@ -248,12 +246,11 @@ function setupHeaderEvents(){
     });
   }
   
-  // ログアウト
   const logoutBtn=document.getElementById('logout-btn');
   if(logoutBtn){
     logoutBtn.addEventListener('click',async()=>{
       try{
-        await signOut(auth);
+        await supabase.auth.signOut();
         window.location.href='login.html';
       }catch(error){
         console.error(error);
@@ -263,8 +260,4 @@ function setupHeaderEvents(){
   }
 }
 
-// ========================================
-// エクスポート
-// ========================================
-
-export{getUserData,setupHeaderEvents};
+export{getUserData,setupHeaderEvents,updateAvatar};
