@@ -1,16 +1,16 @@
-// ========================================
 // AppHub Core - Supabase版
-// ========================================
-
 import{supabase}from'./supabase-config.js';
 import{checkPermission}from'./permissions.js';
 
-export{supabase};
+// グローバルな現在のユーザー情報
+let currentUser=null;
+let currentProfile=null;
 
 // ========================================
 // UI生成関数
 // ========================================
 
+// ヘッダー生成
 export function createHeader(pageTitle){
   return`
     <header class="top-header">
@@ -28,7 +28,7 @@ export function createHeader(pageTitle){
         </button>
         <div class="user-menu">
           <button class="user-btn" id="user-btn">
-            <div id="user-avatar" style="width:36px;height:36px;border-radius:50%;background:#FF6B35;"></div>
+            <div id="user-avatar" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#FF6B35;color:#fff;font-weight:600;font-size:14px;">?</div>
           </button>
           <div class="user-dropdown" id="user-dropdown">
             <div class="dropdown-item" id="profile-btn">
@@ -51,6 +51,7 @@ export function createHeader(pageTitle){
   `;
 }
 
+// サイドバー生成
 export function createSidebar(activePage,userRole){
   const navItems=[
     {id:'index',icon:'home',title:'Home',href:'index.html'},
@@ -92,131 +93,145 @@ export async function initPage(pageId,pageTitle,options={}){
     onUserLoaded=null
   }=options;
   
-  if(requireAuth){
-    return new Promise((resolve)=>{
-      supabase.auth.onAuthStateChange(async(event,session)=>{
-        if(!session){
-          if(redirectIfNotAuth){
-            window.location.href='login.html';
-          }
-          resolve(null);
-          return;
-        }
-        
-        // ユーザーデータ取得
-        const userData=await getUserData(session.user.id);
-        if(!userData){
-          alert('アカウント情報が見つかりません');
-          await supabase.auth.signOut();
-          window.location.href='login.html';
-          resolve(null);
-          return;
-        }
-        
-        // UI生成
-        const container=document.querySelector('.app-container')||document.body;
-        const hasHeader=!container.querySelector('.top-header');
-        const hasSidebar=!container.querySelector('.sidebar');
-        
-        if(hasHeader){
-          container.insertAdjacentHTML('afterbegin',createHeader(pageTitle));
-        }
-        
-        if(hasSidebar){
-          const mainContainer=container.querySelector('.main-container');
-          if(mainContainer){
-            mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,userData.role));
-          }
-        }
-        
-        // イベントリスナー設定
-        setupHeaderEvents();
-        
-        // アバター表示
-        updateAvatar(userData);
-        
-        // db.htmlへのアクセス制御（モデレーター以上のみ）
-        if(pageId==='db'){
-          if(!checkPermission(userData.role,'view_admin_panel')){
-            alert('このページへのアクセス権限がありません');
-            window.location.href='index.html';
-            resolve(null);
-            return;
-          }
-        }
-        
-        // オンライン状態を更新
-        await supabase
-          .from('profiles')
-          .update({
-            is_online:true,
-            last_online:new Date().toISOString()
-          })
-          .eq('id',session.user.id);
-        
-        // ページ離脱時にオフライン状態に
-        window.addEventListener('beforeunload',async()=>{
-          await supabase
-            .from('profiles')
-            .update({
-              is_online:false,
-              last_online:new Date().toISOString()
-            })
-            .eq('id',session.user.id);
-        });
-        
-        // コールバック実行
-        if(onUserLoaded){
-          await onUserLoaded(userData);
-        }
-        
-        showPage();
-        resolve(userData);
-      });
-    });
+  if(!requireAuth){
+    showPage();
+    return null;
   }
   
-  return Promise.resolve(null);
+  try{
+    // セッション確認
+    const{data:{session},error}=await supabase.auth.getSession();
+    
+    if(error)throw error;
+    
+    if(!session){
+      if(redirectIfNotAuth){
+        window.location.href='login.html';
+      }
+      return null;
+    }
+    
+    currentUser=session.user;
+    
+    // プロフィール取得
+    const{data:profile,error:profileError}=await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id',currentUser.id)
+      .single();
+    
+    if(profileError){
+      console.error('プロフィール取得エラー:',profileError);
+      alert('アカウント情報の取得に失敗しました');
+      await supabase.auth.signOut();
+      window.location.href='login.html';
+      return null;
+    }
+    
+    currentProfile=profile;
+    
+    // オンライン状態を更新
+    await supabase
+      .from('profiles')
+      .update({
+        is_online:true,
+        last_online:new Date().toISOString()
+      })
+      .eq('id',currentUser.id);
+    
+    // オフライン時の処理
+    window.addEventListener('beforeunload',async()=>{
+      await supabase
+        .from('profiles')
+        .update({
+          is_online:false,
+          last_online:new Date().toISOString()
+        })
+        .eq('id',currentUser.id);
+    });
+    
+    // UI生成
+    const container=document.querySelector('.app-container')||document.body;
+    const hasHeader=!container.querySelector('.top-header');
+    const hasSidebar=!container.querySelector('.sidebar');
+    
+    if(hasHeader){
+      container.insertAdjacentHTML('afterbegin',createHeader(pageTitle));
+    }
+    
+    if(hasSidebar){
+      const mainContainer=container.querySelector('.main-container');
+      if(mainContainer){
+        mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,profile.role));
+      }
+    }
+    
+    // イベントリスナー設定
+    setupHeaderEvents();
+    
+    // アバター表示
+    updateAvatarDisplay();
+    
+    // db.htmlへのアクセス制御（モデレーター以上）
+    if(pageId==='db'){
+      if(!['moderator','admin'].includes(profile.role)){
+        alert('このページへのアクセス権限がありません');
+        window.location.href='index.html';
+        return null;
+      }
+    }
+    
+    // コールバック実行
+    if(onUserLoaded){
+      await onUserLoaded(profile);
+    }
+    
+    // ページ表示
+    showPage();
+    
+    return profile;
+    
+  }catch(error){
+    console.error('初期化エラー:',error);
+    if(redirectIfNotAuth){
+      window.location.href='login.html';
+    }
+    return null;
+  }
 }
 
-// ページを表示
+// ========================================
+// アバター表示更新
+// ========================================
+
+function updateAvatarDisplay(){
+  const userAvatar=document.getElementById('user-avatar');
+  if(!userAvatar||!currentProfile)return;
+  
+  if(currentProfile.avatar_url){
+    // 画像URLがある場合
+    userAvatar.innerHTML=`<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  }else{
+    // デフォルト：イニシャル + 背景色
+    const initial=currentProfile.display_name.charAt(0).toUpperCase();
+    userAvatar.style.background=currentProfile.avatar_color||'#FF6B35';
+    userAvatar.textContent=initial;
+  }
+}
+
+// ========================================
+// ローディング制御
+// ========================================
+
 function showPage(){
   document.body.classList.remove('page-loading');
   document.body.classList.add('page-loaded');
 }
 
-// ユーザーデータ取得
-async function getUserData(userId){
-  try{
-    const{data,error}=await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id',userId)
-      .single();
-    
-    if(error)throw error;
-    return data;
-  }catch(error){
-    console.error('ユーザーデータ取得エラー:',error);
-    return null;
-  }
-}
-
-// アバター表示更新
-function updateAvatar(userData){
-  const userAvatar=document.getElementById('user-avatar');
-  if(!userAvatar)return;
-  
-  if(userData.avatar_color&&userData.avatar_color.startsWith('http')){
-    // 画像URL
-    userAvatar.innerHTML=`<img src="${userData.avatar_color}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-  }else{
-    // カラー
-    userAvatar.style.background=userData.avatar_color||'#FF6B35';
-  }
-}
-
+// ========================================
 // ヘッダーイベント設定
+// ========================================
+
 function setupHeaderEvents(){
   const userBtn=document.getElementById('user-btn');
   const userDropdown=document.getElementById('user-dropdown');
@@ -253,11 +268,25 @@ function setupHeaderEvents(){
         await supabase.auth.signOut();
         window.location.href='login.html';
       }catch(error){
-        console.error(error);
+        console.error('ログアウトエラー:',error);
         alert('ログアウトに失敗しました');
       }
     });
   }
 }
 
-export{getUserData,setupHeaderEvents,updateAvatar};
+// ========================================
+// ユーティリティ関数
+// ========================================
+
+// 現在のユーザー情報を取得
+export function getCurrentUser(){
+  return currentUser;
+}
+
+export function getCurrentProfile(){
+  return currentProfile;
+}
+
+// Supabaseクライアントをエクスポート
+export{supabase};
