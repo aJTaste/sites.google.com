@@ -40,9 +40,9 @@
                 </div>
                 <div class="input-group">
                   <label for="account-id">アカウントID</label>
-                  <input type="text" id="account-id" placeholder="2文字以上の半角英数字" minlength="2" maxlength="20" required>
+                  <input type="text" id="account-id" placeholder="207d23 + 4桁の数字" minlength="10" maxlength="10" required>
                   <span class="error-message" id="id-error"></span>
-                  <span class="help-text" id="id-help"></span>
+                  <span class="help-text" id="id-help">例: 207d231234</span>
                 </div>
                 <div class="input-group">
                   <label for="password">パスワード</label>
@@ -63,7 +63,7 @@
                 <label>アイコン画像</label>
                 <div class="icon-section">
                   <div class="icon-preview">
-                    <img id="icon-preview" src="assets/github-mark.svg" alt="アイコンプレビュー">
+                    <canvas id="icon-preview" width="120" height="120" style="border-radius:50%;"></canvas>
                   </div>
                   <input type="file" id="icon-file" accept="image/*" hidden>
                   <button type="button" class="btn-secondary" id="upload-btn">画像を選択</button>
@@ -81,7 +81,6 @@
         </div>
       </main>
     </div>
-    <script src="common/common.js" defer></script>
     <script type="module" src="js/register.js"></script>
     <script src="common/stealth-mode.js"></script>
   </body>
