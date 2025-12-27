@@ -1,87 +1,82 @@
 <!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
-    <title>新規登録 | AppHub</title>
-    <link rel="stylesheet" href="common/common.css">
-    <link rel="stylesheet" href="css/register.css">
-    <link rel="icon" href="assets/favicon1.svg">
-    <link rel="apple-touch-icon" href="assets/icon1.svg">
-  </head>
-  <body class="page-loading">
-    <div class="auth-container">
-      <header class="auth-header">
-        <div class="header-left">
-          <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
-          <a href="index.html" style="text-decoration:none;color:inherit;">
-            <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
-          </a>
-          <span class="header-divider">|</span>
-          <span class="page-title">新規登録</span>
-        </div>
-      </header>
-      <main class="auth-main">
-        <div class="auth-box">
-          <form id="register-form">
-            <div class="form-layout">
-              <div class="form-left">
-                <div class="input-group">
-                  <label for="fullname">氏名（フルネーム）</label>
-                  <input type="text" id="fullname" placeholder="山田 太郎" required>
-                </div>
-                <div class="input-group">
-                  <label for="gmail-user">教育委員会Gmail</label>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <input type="text" id="gmail-user" placeholder="taro.yamada" style="flex:1;" required>
-                    <span style="color:var(--text-secondary);font-size:14px;">@ita.ed.jp</span>
-                  </div>
-                  <span class="help-text">@ita.ed.jpの前の部分を入力</span>
-                </div>
-                <div class="input-group">
-                  <label for="account-id">アカウントID</label>
-                  <input type="text" id="account-id" placeholder="207d23 + 4桁の数字" minlength="10" maxlength="10" required>
-                  <span class="error-message" id="id-error"></span>
-                  <span class="help-text" id="id-help">例: 207d231234</span>
-                </div>
-                <div class="input-group">
-                  <label for="password">パスワード</label>
-                  <input type="password" id="password" placeholder="8文字以上の半角英数字記号" minlength="8" maxlength="20" required>
-                </div>
-                <div class="input-group">
-                  <label for="password-confirm">パスワード（確認）</label>
-                  <input type="password" id="password-confirm" placeholder="もう一度入力してください" required>
-                  <span class="error-message" id="password-error"></span>
-                </div>
-                <div class="input-group">
-                  <label for="username">表示名</label>
-                  <input type="text" id="username" placeholder="ニックネームや表示名" required>
-                  <span class="help-text">制限なし</span>
-                </div>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>新規登録 | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/register.css">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body class="page-loading">
+  <div class="auth-container">
+    <header class="auth-header">
+      <div class="header-left">
+        <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
+        <a href="index.html" style="text-decoration:none;color:inherit;">
+          <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
+        </a>
+        <span class="header-divider">|</span>
+        <span class="page-title">新規登録</span>
+      </div>
+    </header>
+    <main class="auth-main">
+      <div class="auth-box">
+        <form id="register-form">
+          <div class="form-layout">
+            <div class="form-left">
+              <div class="input-group">
+                <label for="user-id">教育委員会メールID</label>
+                <input type="text" id="user-id" placeholder="207d23XXXX" pattern="207d23\d{4}" required>
+                <span class="help-text">207d23 + 4桁の数字</span>
+                <span class="error-message" id="id-error"></span>
               </div>
-              <div class="form-right">
-                <label>アイコン画像</label>
-                <div class="icon-section">
-                  <div class="icon-preview">
-                    <canvas id="icon-preview" width="120" height="120" style="border-radius:50%;"></canvas>
-                  </div>
-                  <input type="file" id="icon-file" accept="image/*" hidden>
-                  <button type="button" class="btn-secondary" id="upload-btn">画像を選択</button>
-                  <button type="button" class="btn-secondary" id="default-btn">デフォルト</button>
-                  <span class="help-text">500KB以下</span>
-                  <span class="error-message" id="icon-error"></span>
-                </div>
+              <div class="input-group">
+                <label for="password">パスワード</label>
+                <input type="password" id="password" placeholder="8文字以上" minlength="8" required>
+              </div>
+              <div class="input-group">
+                <label for="password-confirm">パスワード（確認）</label>
+                <input type="password" id="password-confirm" placeholder="もう一度入力" required>
+                <span class="error-message" id="password-error"></span>
+              </div>
+              <div class="input-group">
+                <label for="display-name">表示名</label>
+                <input type="text" id="display-name" placeholder="ニックネームや表示名" required>
+              </div>
+              <div class="input-group">
+                <label for="last-name">姓</label>
+                <input type="text" id="last-name" placeholder="山田">
+              </div>
+              <div class="input-group">
+                <label for="first-name">名</label>
+                <input type="text" id="first-name" placeholder="太郎">
               </div>
             </div>
-            <button type="submit" class="btn-primary btn-full">登録</button>
-          </form>
-          <div class="auth-footer">
-            すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a>
+            <div class="form-right">
+              <label>アイコン</label>
+              <div class="icon-section">
+                <div class="icon-preview" id="icon-preview" style="display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:600;color:#fff;background:#FF6B35;">
+                  ?
+                </div>
+                <input type="file" id="icon-file" accept="image/*" hidden>
+                <button type="button" class="btn-secondary" id="upload-btn">画像を選択</button>
+                <button type="button" class="btn-secondary" id="default-btn">デフォルト</button>
+                <span class="help-text">500KB以下</span>
+                <span class="error-message" id="icon-error"></span>
+              </div>
+            </div>
           </div>
+          <button type="submit" class="btn-primary btn-full" id="submit-btn">登録</button>
+        </form>
+        <div class="auth-footer">
+          すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a>
         </div>
-      </main>
-    </div>
-    <script type="module" src="js/register.js"></script>
-    <script src="common/stealth-mode.js"></script>
-  </body>
+      </div>
+    </main>
+  </div>
+  <script type="module" src="js/register.js"></script>
+  <script src="common/stealth-mode.js"></script>
+</body>
 </html>
