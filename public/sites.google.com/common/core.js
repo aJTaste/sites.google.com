@@ -31,10 +31,6 @@ export function createHeader(pageTitle){
             <div id="user-avatar" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#FF6B35;color:#fff;font-weight:600;font-size:14px;">?</div>
           </button>
           <div class="user-dropdown" id="user-dropdown">
-            <div class="dropdown-item" id="profile-btn">
-              <span class="material-symbols-outlined">person</span>
-              <span>プロフィール</span>
-            </div>
             <div class="dropdown-item" id="settings-btn">
               <span class="material-symbols-outlined">settings</span>
               <span>設定</span>
