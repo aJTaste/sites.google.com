@@ -22,32 +22,47 @@
             <h2>アカウント情報</h2>
             <div class="info-grid">
               <div class="info-item">
-                <span class="info-label">アカウントID</span>
-                <span class="info-value" id="account-id-display">読み込み中...</span>
+                <span class="info-label">ユーザーID</span>
+                <span class="info-value" id="user-id-display">読み込み中...</span>
               </div>
               <div class="info-item">
                 <span class="info-label">作成日</span>
                 <span class="info-value" id="created-date">読み込み中...</span>
               </div>
+              <div class="info-item">
+                <span class="info-label">権限</span>
+                <span class="info-value" id="user-role">読み込み中...</span>
+              </div>
             </div>
           </section>
 
           <section class="settings-section">
-            <h2>ユーザー名</h2>
+            <h2>表示名</h2>
             <div class="setting-item">
-              <input type="text" id="username-input" placeholder="ユーザー名" maxlength="100">
-              <button class="btn-primary" id="username-save-btn">保存</button>
+              <input type="text" id="display-name-input" placeholder="表示名" maxlength="100">
+              <button class="btn-primary" id="display-name-save-btn">保存</button>
             </div>
             <span class="help-text">1-100文字まで</span>
-            <span class="error-message" id="username-error"></span>
-            <span class="success-message" id="username-success"></span>
+            <span class="error-message" id="display-name-error"></span>
+            <span class="success-message" id="display-name-success"></span>
+          </section>
+
+          <section class="settings-section">
+            <h2>姓名</h2>
+            <div class="setting-item">
+              <input type="text" id="last-name-input" placeholder="姓" style="flex:1;">
+              <input type="text" id="first-name-input" placeholder="名" style="flex:1;">
+              <button class="btn-primary" id="name-save-btn">保存</button>
+            </div>
+            <span class="error-message" id="name-error"></span>
+            <span class="success-message" id="name-success"></span>
           </section>
 
           <section class="settings-section">
             <h2>アイコン画像</h2>
             <div class="icon-setting">
-              <div class="icon-preview-large">
-                <img id="icon-preview" src="assets/github-mark.svg" alt="アイコンプレビュー">
+              <div class="icon-preview-large" id="icon-preview">
+                <!-- JSで生成 -->
               </div>
               <div class="icon-controls-vertical">
                 <input type="file" id="icon-file" accept="image/*" hidden>
