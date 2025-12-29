@@ -1,134 +1,56 @@
-// チャットアプリのメインファイル（Supabase版）
+// チャットアプリのメインファイル（段階的デバッグ）
 
-import{initPage,supabase}from'../common/core.js';
-import{state,updateState,CHANNELS}from'./chat-state.js';
-import{displayUsers}from'./chat-ui.js';
-import'./chat-handlers.js';
-import'./chat-modals.js';
+alert('Step 1: chat.js読み込み開始');
 
-// ページ初期化
-const profile=await initPage('chat','チャット');
-
-if(profile){
-  updateState('currentUserId',profile.id);
-  updateState('currentProfile',profile);
+try{
+  // Step 2: core.jsインポート
+  const{initPage,supabase}=await import('../common/core.js');
+  alert('Step 2: core.js OK');
   
-  // 通知権限リクエスト
-  if('Notification'in window&&Notification.permission==='default'){
-    await Notification.requestPermission();
-  }
+  // Step 3: chat-state.jsインポート
+  const stateModule=await import('./chat-state.js');
+  alert('Step 3: chat-state.js OK');
+  const{state,updateState,CHANNELS}=stateModule;
   
-  // ユーザー一覧を読み込み
-  await loadUsers();
+  // Step 4: chat-ui.jsインポート
+  const uiModule=await import('./chat-ui.js');
+  alert('Step 4: chat-ui.js OK');
+  const{displayUsers}=uiModule;
   
-  // リアルタイム更新を開始
-  subscribeToUsers();
-}
-
-// ユーザー一覧を読み込み
-async function loadUsers(){
-  try{
+  // Step 5: chat-handlers.jsインポート
+  await import('./chat-handlers.js');
+  alert('Step 5: chat-handlers.js OK');
+  
+  // Step 6: chat-modals.jsインポート
+  await import('./chat-modals.js');
+  alert('Step 6: chat-modals.js OK');
+  
+  // Step 7: ページ初期化
+  const profile=await initPage('chat','チャット');
+  alert('Step 7: initPage OK - '+profile.display_name);
+  
+  if(profile){
+    updateState('currentUserId',profile.id);
+    updateState('currentProfile',profile);
+    alert('Step 8: 状態更新 OK');
+    
+    // ユーザー一覧を読み込み
     const{data:users,error}=await supabase
       .from('profiles')
       .select('*')
-      .neq('id',state.currentUserId)
-      .order('last_online',{ascending:false});
+      .neq('id',profile.id);
     
     if(error)throw error;
     
     updateState('allUsers',users||[]);
-    
-    // 未読件数を計算
-    await calculateUnreadCounts();
+    alert('Step 9: ユーザー読み込み OK - '+users.length+'人');
     
     // 表示
     displayUsers();
-  }catch(error){
-    console.error('ユーザー読み込みエラー:',error);
-    alert('ユーザー読み込みエラー: '+error.message);
-  }
-}
-
-// ユーザーのリアルタイム更新を購読
-function subscribeToUsers(){
-  // 既存の購読を解除
-  if(state.userSubscription){
-    supabase.removeChannel(state.userSubscription);
+    alert('Step 10: 表示完了！');
   }
   
-  // プロフィール更新を購読
-  const subscription=supabase
-    .channel('profiles-changes')
-    .on('postgres_changes',{
-      event:'*',
-      schema:'public',
-      table:'profiles'
-    },()=>{
-      loadUsers();
-    })
-    .subscribe();
-  
-  updateState('userSubscription',subscription);
-}
-
-// 未読件数を計算
-async function calculateUnreadCounts(){
-  const unreadCounts={};
-  
-  try{
-    // 自分の既読状態を取得
-    const{data:readStatuses,error:readError}=await supabase
-      .from('read_status')
-      .select('*')
-      .eq('user_id',state.currentUserId);
-    
-    if(readError)throw readError;
-    
-    const readMap={};
-    (readStatuses||[]).forEach(rs=>{
-      readMap[rs.target_id]=new Date(rs.last_read_at).getTime();
-    });
-    
-    // DM の未読
-    for(const user of state.allUsers){
-      const dmId=[state.currentUserId,user.id].sort().join('_');
-      
-      const{data:messages,error:msgError}=await supabase
-        .from('dm_messages')
-        .select('sender_id,created_at')
-        .eq('dm_id',dmId)
-        .order('created_at',{ascending:false});
-      
-      if(msgError)throw msgError;
-      
-      const lastRead=readMap[user.id]||0;
-      const unread=(messages||[]).filter(m=>
-        m.sender_id===user.id&&new Date(m.created_at).getTime()>lastRead
-      ).length;
-      
-      unreadCounts[user.id]=unread;
-    }
-    
-    // チャンネルの未読
-    for(const channel of CHANNELS){
-      const{data:messages,error:msgError}=await supabase
-        .from('channel_messages')
-        .select('sender_id,created_at')
-        .eq('channel_id',channel.id)
-        .order('created_at',{ascending:false});
-      
-      if(msgError)throw msgError;
-      
-      const lastRead=readMap[channel.id]||0;
-      const unread=(messages||[]).filter(m=>
-        m.sender_id!==state.currentUserId&&new Date(m.created_at).getTime()>lastRead
-      ).length;
-      
-      unreadCounts[channel.id]=unread;
-    }
-    
-    state.unreadCounts=unreadCounts;
-  }catch(error){
-    console.error('未読計算エラー:',error);
-  }
+}catch(error){
+  alert('エラー: '+error.message);
+  console.error(error);
 }
