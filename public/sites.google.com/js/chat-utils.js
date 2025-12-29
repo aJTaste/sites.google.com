@@ -1,4 +1,16 @@
-// ユーティリティ関数
+// チャット機能のユーティリティ関数
+
+// DM IDを生成（UUID同士をソートして結合）
+export function getDmId(userId1,userId2){
+  return[userId1,userId2].sort().join('_');
+}
+
+// 通知権限をリクエスト
+export async function requestNotificationPermission(){
+  if('Notification'in window&&Notification.permission==='default'){
+    await Notification.requestPermission();
+  }
+}
 
 // 時刻フォーマット（秒単位）
 export function formatMessageTime(timestamp){
@@ -16,7 +28,7 @@ export function formatMessageTime(timestamp){
   }
 }
 
-// 最終ログイン時刻フォーマット
+// 最終ログイン時刻フォーマット（リアルタイム更新対応）
 export function formatLastOnline(timestamp){
   if(!timestamp)return '不明';
   
@@ -39,7 +51,6 @@ export function formatLastOnline(timestamp){
 
 // HTMLエスケープ + URLリンク化
 export function escapeHtml(text){
-  if(!text)return'';
   const div=document.createElement('div');
   div.textContent=text;
   let escaped=div.innerHTML;
@@ -74,12 +85,9 @@ export function handleImageFile(file,callback){
     return;
   }
   
-  callback(file);
-}
-
-// 通知権限をリクエスト
-export async function requestNotificationPermission(){
-  if('Notification'in window&&Notification.permission==='default'){
-    await Notification.requestPermission();
-  }
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+    callback(e.target.result);
+  };
+  reader.readAsDataURL(file);
 }

@@ -1,24 +1,25 @@
-// UI描画関連
-import{CHANNELS}from'./chat-supabase.js';
-import{formatMessageTime,formatLastOnline,escapeHtml}from'./chat-utils.js';
+// UI表示関連の関数（Supabase版）
+
+import{state,CHANNELS}from'./chat-state.js';
+import{formatLastOnline}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
 
-// ユーザー一覧とチャンネル一覧を表示
-export function displayUserList(allUsers,unreadCounts,currentProfile,selectedUserId,selectedChannelId){
+// ユーザー一覧を表示
+export function displayUsers(){
   const dmList=document.getElementById('dm-list');
   if(!dmList)return;
   
   dmList.innerHTML='';
   
-  // チャンネルを追加
+  // チャンネルを追加（権限チェック）
   CHANNELS.forEach(channel=>{
-    if(!canAccessChannel(currentProfile.role,channel.requiredRole)){
+    if(!canAccessChannel(state.currentProfile.role,channel.requiredRole)){
       return;
     }
     
     const channelItem=document.createElement('div');
     channelItem.className='channel-item';
-    if(selectedChannelId===channel.id){
+    if(state.selectedChannelId===channel.id){
       channelItem.classList.add('active');
     }
     
@@ -26,7 +27,7 @@ export function displayUserList(allUsers,unreadCounts,currentProfile,selectedUse
       channelItem.classList.add('moderator-only');
     }
     
-    const unreadCount=unreadCounts[channel.id]||0;
+    const unreadCount=state.unreadCounts[channel.id]||0;
     const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
     
     channelItem.innerHTML=`
@@ -42,7 +43,12 @@ export function displayUserList(allUsers,unreadCounts,currentProfile,selectedUse
       </div>
     `;
     
-    channelItem.dataset.channelId=channel.id;
+    channelItem.addEventListener('click',()=>{
+      if(window.selectChannel){
+        window.selectChannel(channel.id);
+      }
+    });
+    
     dmList.appendChild(channelItem);
   });
   
@@ -52,51 +58,70 @@ export function displayUserList(allUsers,unreadCounts,currentProfile,selectedUse
   dmList.appendChild(divider);
   
   // ユーザー一覧
-  allUsers.forEach(user=>{
-    if(user.id===currentProfile.id)return;
-    
-    const dmItem=document.createElement('div');
-    dmItem.className='dm-item';
-    if(selectedUserId===user.id){
-      dmItem.classList.add('active');
-    }
-    
-    const avatarHtml=user.avatar_url
-      ?`<img src="${user.avatar_url}" alt="${user.display_name}">`
-      :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${user.avatar_color};color:#fff;font-weight:600;font-size:16px;">${user.display_name.charAt(0).toUpperCase()}</div>`;
-    
-    const onlineIndicator=user.is_online?'<div class="online-indicator"></div>':'';
-    const statusText=user.is_online?'オンライン':`最終: ${formatLastOnline(user.last_online)}`;
-    
-    const unreadCount=unreadCounts[user.id]||0;
-    const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
-    
-    dmItem.innerHTML=`
-      <div class="dm-item-avatar">
-        ${avatarHtml}
-        ${onlineIndicator}
-      </div>
-      <div class="dm-item-info">
-        <div class="dm-item-name">
-          ${user.display_name}
-          ${unreadBadge}
+  if(state.allUsers&&state.allUsers.length>0){
+    state.allUsers.forEach(user=>{
+      const dmItem=document.createElement('div');
+      dmItem.className='dm-item';
+      if(state.selectedUserId===user.id){
+        dmItem.classList.add('active');
+      }
+      
+      const isOnline=user.is_online||false;
+      const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
+      const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(user.last_online)}`;
+      
+      const unreadCount=state.unreadCounts[user.id]||0;
+      const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
+      
+      // アイコン表示
+      let avatarHtml='';
+      if(user.avatar_url){
+        avatarHtml=`<img src="${user.avatar_url}" alt="${user.display_name}">`;
+      }else{
+        const initial=user.display_name.charAt(0).toUpperCase();
+        const color=user.avatar_color||'#FF6B35';
+        avatarHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
+      }
+      
+      dmItem.innerHTML=`
+        <div class="dm-item-avatar">
+          ${avatarHtml}
+          ${onlineIndicator}
         </div>
-        <div class="dm-item-status">${statusText}</div>
-      </div>
-    `;
-    
-    dmItem.dataset.userId=user.id;
-    dmList.appendChild(dmItem);
-  });
+        <div class="dm-item-info">
+          <div class="dm-item-name">
+            ${user.display_name}
+            ${unreadBadge}
+          </div>
+          <div class="dm-item-status">${statusText}</div>
+        </div>
+      `;
+      
+      dmItem.addEventListener('click',()=>{
+        if(window.selectUser){
+          window.selectUser(user.id);
+        }
+      });
+      
+      dmList.appendChild(dmItem);
+    });
+  }
 }
 
-// チャット画面のヘッダーを生成（DM）
-export function createChatHeaderHtml(user){
-  const avatarHtml=user.avatar_url
-    ?`<img src="${user.avatar_url}" alt="${user.display_name}">`
-    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${user.avatar_color};color:#fff;font-weight:600;font-size:16px;">${user.display_name.charAt(0).toUpperCase()}</div>`;
+// チャット画面のHTMLを生成（DM）
+export function createChatHTML(selectedUser){
+  const isOnline=selectedUser.is_online||false;
+  const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(selectedUser.last_online)}`;
   
-  const statusText=user.is_online?'オンライン':`最終: ${formatLastOnline(user.last_online)}`;
+  // アイコン表示
+  let avatarHtml='';
+  if(selectedUser.avatar_url){
+    avatarHtml=`<img src="${selectedUser.avatar_url}" alt="${selectedUser.display_name}">`;
+  }else{
+    const initial=selectedUser.display_name.charAt(0).toUpperCase();
+    const color=selectedUser.avatar_color||'#FF6B35';
+    avatarHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:18px;border-radius:50%;">${initial}</div>`;
+  }
   
   return`
     <div class="chat-header">
@@ -105,34 +130,16 @@ export function createChatHeaderHtml(user){
           ${avatarHtml}
         </div>
         <div class="chat-header-info">
-          <div class="chat-header-name">${user.display_name}</div>
-          <div class="chat-header-status">${statusText}</div>
+          <div class="chat-header-name">${selectedUser.display_name}</div>
+          <div class="chat-header-status" id="chat-header-status">${statusText}</div>
         </div>
       </div>
     </div>
-  `;
-}
-
-// チャット画面のヘッダーを生成（チャンネル）
-export function createChannelHeaderHtml(channel){
-  return`
-    <div class="chat-header">
-      <div class="chat-header-user">
-        <div class="channel-icon" style="width:36px;height:36px;">
-          <span class="material-symbols-outlined">${channel.icon}</span>
-        </div>
-        <div class="chat-header-info">
-          <div class="chat-header-name">${channel.name}</div>
-          <div class="chat-header-status" id="typing-indicator">${channel.desc}</div>
-        </div>
+    <div class="chat-messages" id="chat-messages">
+      <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-tertiary);font-size:14px;">
+        メッセージを読み込み中...
       </div>
     </div>
-  `;
-}
-
-// 入力欄のHTMLを生成
-export function createInputAreaHtml(placeholder){
-  return`
     <div class="chat-input-container">
       <div class="reply-preview" id="reply-preview">
         <button class="reply-preview-close" id="reply-preview-close">
@@ -154,7 +161,7 @@ export function createInputAreaHtml(placeholder){
         </button>
       </div>
       <div class="chat-input-wrapper">
-        <textarea class="chat-input" id="chat-input" placeholder="${placeholder}" rows="1"></textarea>
+        <textarea class="chat-input" id="chat-input" placeholder="${selectedUser.display_name} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
         </button>
@@ -163,58 +170,51 @@ export function createInputAreaHtml(placeholder){
   `;
 }
 
-// メッセージを表示
-export function displayMessage(message,allUsers,currentUserId,isDm){
-  const sender=allUsers.find(u=>u.id===message.sender_id);
-  if(!sender)return null;
-  
-  const isCurrentUser=message.sender_id===currentUserId;
-  
-  const avatarHtml=sender.avatar_url
-    ?`<img src="${sender.avatar_url}" alt="${sender.display_name}">`
-    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${sender.avatar_color};color:#fff;font-weight:600;font-size:16px;">${sender.display_name.charAt(0).toUpperCase()}</div>`;
-  
-  // 操作ボタン
-  let actionsHtml=`
-    <div class="message-actions">
-      <button class="message-action-btn reply-btn" data-message-id="${message.id}" data-text="${escapeHtml(message.text||'').replace(/"/g,'&quot;')}" title="返信">
-        <span class="material-symbols-outlined">reply</span>
-      </button>
-  `;
-  
-  if(isCurrentUser){
-    actionsHtml+=`
-      <button class="message-action-btn edit-btn" data-message-id="${message.id}" data-text="${escapeHtml(message.text||'').replace(/"/g,'&quot;')}" data-is-dm="${isDm}" title="編集">
-        <span class="material-symbols-outlined">edit</span>
-      </button>
-      <button class="message-action-btn delete delete-btn" data-message-id="${message.id}" data-is-dm="${isDm}" title="削除">
-        <span class="material-symbols-outlined">delete</span>
-      </button>
-    `;
-  }
-  
-  actionsHtml+=`</div>`;
-  
-  const messageEl=document.createElement('div');
-  messageEl.className='message';
-  messageEl.dataset.messageId=message.id;
-  
-  messageEl.innerHTML=`
-    <div class="message-avatar">
-      ${avatarHtml}
-    </div>
-    <div class="message-content">
-      <div class="message-header">
-        <span class="message-author">${sender.display_name}</span>
-        <span class="message-time">${formatMessageTime(message.created_at)}</span>
+// チャット画面のHTMLを生成（チャンネル）
+export function createChannelChatHTML(channel){
+  return`
+    <div class="chat-header">
+      <div class="chat-header-user">
+        <div class="channel-icon" style="width:36px;height:36px;">
+          <span class="material-symbols-outlined">${channel.icon}</span>
+        </div>
+        <div class="chat-header-info">
+          <div class="chat-header-name">${channel.name}</div>
+          <div class="chat-header-status">${channel.desc}</div>
+        </div>
       </div>
-      ${message.reply_to?`<div class="message-reply">返信: ${escapeHtml((message.reply_to.text||'').substring(0,100))}...</div>`:''}
-      <div class="message-text">${escapeHtml(message.text||'')}</div>
-      ${message.image_url?`<img class="message-image" src="${message.image_url}" alt="画像" data-image-url="${message.image_url}">`:''}
-      ${message.edited_at?`<div class="message-edited">(編集済み)</div>`:''}
     </div>
-    ${actionsHtml}
+    <div class="chat-messages" id="chat-messages">
+      <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-tertiary);font-size:14px;">
+        メッセージを読み込み中...
+      </div>
+    </div>
+    <div class="chat-input-container">
+      <div class="reply-preview" id="reply-preview">
+        <button class="reply-preview-close" id="reply-preview-close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        <div class="reply-preview-header">返信先:</div>
+        <div class="reply-preview-text" id="reply-preview-text"></div>
+      </div>
+      <div class="image-preview-container" id="image-preview-container">
+        <button class="image-preview-close" id="image-preview-close">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
+      </div>
+      <div class="chat-input-actions">
+        <input type="file" id="image-file-input" accept="image/*" hidden>
+        <button class="action-btn" id="attach-image-btn" title="画像を添付">
+          <span class="material-symbols-outlined">image</span>
+        </button>
+      </div>
+      <div class="chat-input-wrapper">
+        <textarea class="chat-input" id="chat-input" placeholder="${channel.name} にメッセージを送信" rows="1"></textarea>
+        <button class="send-btn" id="send-btn">
+          <span class="material-symbols-outlined">send</span>
+        </button>
+      </div>
+    </div>
   `;
-  
-  return messageEl;
 }
