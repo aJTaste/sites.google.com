@@ -16,34 +16,22 @@ export function loadMessages(userId){
   // 初回ロード
   loadDMMessagesOnce(dmId,userId);
   
-  // リアルタイム購読
+  // リアルタイム購読（フィルターなしで全体を監視）
   const subscription=supabase
     .channel(`dm-${dmId}`)
     .on('postgres_changes',{
       event:'*',
       schema:'public',
-      table:'dm_messages',
-      filter:`dm_id=eq.${dmId}`
+      table:'dm_messages'
     },(payload)=>{
-      console.log('DMメッセージ変更検知:',payload);
-      loadDMMessagesOnce(dmId,userId);
-    })
-    .subscribe((status)=>{
-      console.log('DM購読状態:',status);
-      if(status==='SUBSCRIBED'){
-        console.log('DMリアルタイム購読成功');
+      // このDMに関連するメッセージのみ処理
+      if(payload.new&&payload.new.dm_id===dmId){
+        loadDMMessagesOnce(dmId,userId);
       }
-    });
+    })
+    .subscribe();
   
   updateState('messageSubscription',subscription);
-  
-  // フォールバック: 5秒ごとにポーリング
-  if(state.pollingInterval){
-    clearInterval(state.pollingInterval);
-  }
-  state.pollingInterval=setInterval(()=>{
-    loadDMMessagesOnce(dmId,userId);
-  },5000);
   
   // 入力中状態を購読
   subscribeToTyping(userId);
@@ -58,7 +46,11 @@ async function loadDMMessagesOnce(dmId,userId){
       .eq('dm_id',dmId)
       .order('created_at',{ascending:true});
     
-    if(error)throw error;
+    if(error){
+      console.error('DM読み込みエラー:',error);
+      alert('メッセージ読み込みエラー: '+error.message);
+      throw error;
+    }
     
     const chatMessages=document.getElementById('chat-messages');
     if(!chatMessages)return;
@@ -69,7 +61,12 @@ async function loadDMMessagesOnce(dmId,userId){
     
     if(messages&&messages.length>0){
       for(const msg of messages){
-        await displayDMMessage(msg,userId);
+        try{
+          await displayDMMessage(msg,userId);
+        }catch(displayError){
+          console.error('メッセージ表示エラー:',displayError);
+          // エラーが出ても続行
+        }
       }
       
       if(wasAtBottom){
@@ -86,6 +83,8 @@ async function loadDMMessagesOnce(dmId,userId){
           target_id:userId,
           last_read_at:new Date().toISOString()
         });
+    }else{
+      chatMessages.innerHTML='<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-tertiary);font-size:14px;">まだメッセージがありません</div>';
     }
   }catch(error){
     console.error('DM読み込みエラー:',error);
@@ -102,34 +101,22 @@ export function loadChannelMessages(channelId){
   // 初回ロード
   loadChannelMessagesOnce(channelId);
   
-  // リアルタイム購読
+  // リアルタイム購読（フィルターなしで全体を監視）
   const subscription=supabase
     .channel(`channel-${channelId}`)
     .on('postgres_changes',{
       event:'*',
       schema:'public',
-      table:'channel_messages',
-      filter:`channel_id=eq.${channelId}`
+      table:'channel_messages'
     },(payload)=>{
-      console.log('チャンネルメッセージ変更検知:',payload);
-      loadChannelMessagesOnce(channelId);
-    })
-    .subscribe((status)=>{
-      console.log('チャンネル購読状態:',status);
-      if(status==='SUBSCRIBED'){
-        console.log('チャンネルリアルタイム購読成功');
+      // このチャンネルに関連するメッセージのみ処理
+      if(payload.new&&payload.new.channel_id===channelId){
+        loadChannelMessagesOnce(channelId);
       }
-    });
+    })
+    .subscribe();
   
   updateState('messageSubscription',subscription);
-  
-  // フォールバック: 5秒ごとにポーリング
-  if(state.pollingInterval){
-    clearInterval(state.pollingInterval);
-  }
-  state.pollingInterval=setInterval(()=>{
-    loadChannelMessagesOnce(channelId);
-  },5000);
   
   // 入力中状態を購読
   subscribeToTyping(channelId);
@@ -189,10 +176,11 @@ function subscribeToTyping(targetId){
     .on('postgres_changes',{
       event:'*',
       schema:'public',
-      table:'typing_status',
-      filter:`target_id=eq.${targetId}`
-    },async()=>{
-      await updateTypingDisplay(targetId);
+      table:'typing_status'
+    },(payload)=>{
+      if(payload.new&&payload.new.target_id===targetId){
+        updateTypingDisplay(targetId);
+      }
     })
     .subscribe();
   
