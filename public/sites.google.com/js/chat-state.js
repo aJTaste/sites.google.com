@@ -18,6 +18,7 @@ export const state={
   messageSubscription:null,
   typingSubscription:null,
   userSubscription:null,
+  pollingInterval:null,
   isSending:false,
   unreadCounts:{},
   selectedImage:null,

@@ -24,12 +24,26 @@ export function loadMessages(userId){
       schema:'public',
       table:'dm_messages',
       filter:`dm_id=eq.${dmId}`
-    },()=>{
+    },(payload)=>{
+      console.log('DMメッセージ変更検知:',payload);
       loadDMMessagesOnce(dmId,userId);
     })
-    .subscribe();
+    .subscribe((status)=>{
+      console.log('DM購読状態:',status);
+      if(status==='SUBSCRIBED'){
+        console.log('DMリアルタイム購読成功');
+      }
+    });
   
   updateState('messageSubscription',subscription);
+  
+  // フォールバック: 5秒ごとにポーリング
+  if(state.pollingInterval){
+    clearInterval(state.pollingInterval);
+  }
+  state.pollingInterval=setInterval(()=>{
+    loadDMMessagesOnce(dmId,userId);
+  },5000);
   
   // 入力中状態を購読
   subscribeToTyping(userId);
@@ -96,12 +110,26 @@ export function loadChannelMessages(channelId){
       schema:'public',
       table:'channel_messages',
       filter:`channel_id=eq.${channelId}`
-    },()=>{
+    },(payload)=>{
+      console.log('チャンネルメッセージ変更検知:',payload);
       loadChannelMessagesOnce(channelId);
     })
-    .subscribe();
+    .subscribe((status)=>{
+      console.log('チャンネル購読状態:',status);
+      if(status==='SUBSCRIBED'){
+        console.log('チャンネルリアルタイム購読成功');
+      }
+    });
   
   updateState('messageSubscription',subscription);
+  
+  // フォールバック: 5秒ごとにポーリング
+  if(state.pollingInterval){
+    clearInterval(state.pollingInterval);
+  }
+  state.pollingInterval=setInterval(()=>{
+    loadChannelMessagesOnce(channelId);
+  },5000);
   
   // 入力中状態を購読
   subscribeToTyping(channelId);
