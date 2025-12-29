@@ -1,106 +1,25 @@
-// モーダル管理（Supabase版）
+// モーダル管理（シンプル版）
 
-import{supabase}from'../common/core.js';
-import{state}from'./chat-state.js';
+console.log('chat-modals.js読み込み成功');
 
-// モーダルのセットアップ
 document.addEventListener('DOMContentLoaded',()=>{
+  console.log('モーダル初期化');
+  
   // 画像拡大モーダル
   const imageModal=document.getElementById('image-modal');
   const imageModalClose=document.getElementById('image-modal-close');
   
-  imageModalClose.addEventListener('click',()=>{
-    imageModal.classList.remove('show');
-  });
-  
-  imageModal.addEventListener('click',(e)=>{
-    if(e.target===imageModal){
+  if(imageModalClose){
+    imageModalClose.addEventListener('click',()=>{
       imageModal.classList.remove('show');
-    }
-  });
+    });
+  }
   
-  // 編集モーダル
-  const editModal=document.getElementById('edit-modal');
-  const editModalClose=document.getElementById('edit-modal-close');
-  const editCancel=document.getElementById('edit-cancel');
-  const editSave=document.getElementById('edit-save');
-  
-  editModalClose.addEventListener('click',()=>{
-    editModal.classList.remove('show');
-  });
-  
-  editCancel.addEventListener('click',()=>{
-    editModal.classList.remove('show');
-  });
-  
-  editModal.addEventListener('click',(e)=>{
-    if(e.target===editModal){
-      editModal.classList.remove('show');
-    }
-  });
-  
-  editSave.addEventListener('click',async()=>{
-    const newText=document.getElementById('edit-textarea').value.trim();
-    if(!newText){
-      alert('メッセージを入力してください');
-      return;
-    }
-    
-    try{
-      const table=state.editingIsDM?'dm_messages':'channel_messages';
-      
-      const{error}=await supabase
-        .from(table)
-        .update({
-          text:newText,
-          edited_at:new Date().toISOString()
-        })
-        .eq('id',state.editingMessageId);
-      
-      if(error)throw error;
-      
-      editModal.classList.remove('show');
-    }catch(error){
-      console.error('編集エラー:',error);
-      alert('編集に失敗しました');
-    }
-  });
-  
-  // 削除モーダル
-  const deleteModal=document.getElementById('delete-modal');
-  const deleteModalClose=document.getElementById('delete-modal-close');
-  const deleteCancel=document.getElementById('delete-cancel');
-  const deleteConfirm=document.getElementById('delete-confirm');
-  
-  deleteModalClose.addEventListener('click',()=>{
-    deleteModal.classList.remove('show');
-  });
-  
-  deleteCancel.addEventListener('click',()=>{
-    deleteModal.classList.remove('show');
-  });
-  
-  deleteModal.addEventListener('click',(e)=>{
-    if(e.target===deleteModal){
-      deleteModal.classList.remove('show');
-    }
-  });
-  
-  deleteConfirm.addEventListener('click',async()=>{
-    try{
-      const table=state.editingIsDM?'dm_messages':'channel_messages';
-      
-      const{error}=await supabase
-        .from(table)
-        .delete()
-        .eq('id',state.editingMessageId);
-      
-      if(error)throw error;
-      
-      deleteModal.classList.remove('show');
-    }catch(error){
-      console.error('削除エラー:',error);
-      alert('削除に失敗しました');
-    }
-  });
+  if(imageModal){
+    imageModal.addEventListener('click',(e)=>{
+      if(e.target===imageModal){
+        imageModal.classList.remove('show');
+      }
+    });
+  }
 });
