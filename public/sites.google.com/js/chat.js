@@ -6,11 +6,18 @@ import{displayUsers}from'./chat-ui.js';
 import'./chat-handlers.js';
 import'./chat-modals.js';
 
+// エラー表示用
+function showError(msg){
+  document.body.innerHTML+=`<div style="position:fixed;top:80px;right:20px;background:#fff;border:2px solid red;padding:20px;max-width:500px;z-index:9999;"><strong>エラー:</strong><br>${msg}</div>`;
+}
+
+try{
 // ページ初期化
 await initPage('chat','チャット',{
   onUserLoaded:async(profile)=>{
-    updateState('currentUserId',profile.id);
-    updateState('currentProfile',profile);
+    try{
+      updateState('currentUserId',profile.id);
+      updateState('currentProfile',profile);
     
     // オンライン状態は既にcore.jsで更新済み
     
@@ -24,8 +31,16 @@ await initPage('chat','チャット',{
     
     // リアルタイム更新を開始
     subscribeToUsers();
+    }catch(error){
+      showError('初期化エラー: '+error.message);
+      console.error(error);
+    }
   }
 });
+}catch(error){
+  showError('ページ読み込みエラー: '+error.message);
+  console.error(error);
+}
 
 // ユーザー一覧を読み込み
 async function loadUsers(){
@@ -46,6 +61,7 @@ async function loadUsers(){
     // 表示
     displayUsers();
   }catch(error){
+    showError('ユーザー読み込みエラー: '+error.message);
     console.error('ユーザー読み込みエラー:',error);
   }
 }
