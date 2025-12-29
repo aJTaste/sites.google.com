@@ -1,4 +1,4 @@
-// チャットアプリのメインファイル（シンプル版）
+// チャットアプリのメインファイル（Supabase版）
 
 import{initPage,supabase}from'../common/core.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
@@ -6,20 +6,26 @@ import{displayUsers}from'./chat-ui.js';
 import'./chat-handlers.js';
 import'./chat-modals.js';
 
-console.log('chat.js読み込み開始');
-
 // ページ初期化
-const profile=await initPage('chat','チャット');
-
-if(profile){
-  console.log('プロフィール取得成功:',profile.display_name);
-  
-  updateState('currentUserId',profile.id);
-  updateState('currentProfile',profile);
-  
-  // ユーザー一覧を読み込み
-  await loadUsers();
-}
+await initPage('chat','チャット',{
+  onUserLoaded:async(profile)=>{
+    updateState('currentUserId',profile.id);
+    updateState('currentProfile',profile);
+    
+    // オンライン状態は既にcore.jsで更新済み
+    
+    // 通知権限リクエスト
+    if('Notification'in window&&Notification.permission==='default'){
+      await Notification.requestPermission();
+    }
+    
+    // ユーザー一覧を読み込み
+    loadUsers();
+    
+    // リアルタイム更新を開始
+    subscribeToUsers();
+  }
+});
 
 // ユーザー一覧を読み込み
 async function loadUsers(){
@@ -32,17 +38,98 @@ async function loadUsers(){
     
     if(error)throw error;
     
-    console.log('ユーザー読み込み成功:',users.length,'人');
-    
     updateState('allUsers',users||[]);
-    state.unreadCounts={};
+    
+    // 未読件数を計算
+    await calculateUnreadCounts();
     
     // 表示
     displayUsers();
-    
-    console.log('表示完了');
   }catch(error){
     console.error('ユーザー読み込みエラー:',error);
-    alert('ユーザー読み込みエラー: '+error.message);
+  }
+}
+
+// ユーザーのリアルタイム更新を購読
+function subscribeToUsers(){
+  // 既存の購読を解除
+  if(state.userSubscription){
+    supabase.removeChannel(state.userSubscription);
+  }
+  
+  // プロフィール更新を購読
+  const subscription=supabase
+    .channel('profiles-changes')
+    .on('postgres_changes',{
+      event:'*',
+      schema:'public',
+      table:'profiles'
+    },()=>{
+      loadUsers();
+    })
+    .subscribe();
+  
+  updateState('userSubscription',subscription);
+}
+
+// 未読件数を計算
+async function calculateUnreadCounts(){
+  const unreadCounts={};
+  
+  try{
+    // 自分の既読状態を取得
+    const{data:readStatuses,error:readError}=await supabase
+      .from('read_status')
+      .select('*')
+      .eq('user_id',state.currentUserId);
+    
+    if(readError)throw readError;
+    
+    const readMap={};
+    (readStatuses||[]).forEach(rs=>{
+      readMap[rs.target_id]=new Date(rs.last_read_at).getTime();
+    });
+    
+    // DM の未読
+    for(const user of state.allUsers){
+      const dmId=[state.currentUserId,user.id].sort().join('_');
+      
+      const{data:messages,error:msgError}=await supabase
+        .from('dm_messages')
+        .select('sender_id,created_at')
+        .eq('dm_id',dmId)
+        .order('created_at',{ascending:false});
+      
+      if(msgError)throw msgError;
+      
+      const lastRead=readMap[user.id]||0;
+      const unread=(messages||[]).filter(m=>
+        m.sender_id===user.id&&new Date(m.created_at).getTime()>lastRead
+      ).length;
+      
+      unreadCounts[user.id]=unread;
+    }
+    
+    // チャンネルの未読
+    for(const channel of CHANNELS){
+      const{data:messages,error:msgError}=await supabase
+        .from('channel_messages')
+        .select('sender_id,created_at')
+        .eq('channel_id',channel.id)
+        .order('created_at',{ascending:false});
+      
+      if(msgError)throw msgError;
+      
+      const lastRead=readMap[channel.id]||0;
+      const unread=(messages||[]).filter(m=>
+        m.sender_id!==state.currentUserId&&new Date(m.created_at).getTime()>lastRead
+      ).length;
+      
+      unreadCounts[channel.id]=unread;
+    }
+    
+    state.unreadCounts=unreadCounts;
+  }catch(error){
+    console.error('未読計算エラー:',error);
   }
 }
