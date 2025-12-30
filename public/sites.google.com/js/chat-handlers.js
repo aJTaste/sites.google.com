@@ -7,6 +7,9 @@ import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
 import{handleImageFile}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
 
+console.log('chat-handlers.js読み込み完了');
+console.log('loadMessages関数:',typeof loadMessages);
+
 // ユーザーを選択
 export async function selectUser(userId){
   alert('selectUser呼び出し: '+userId);

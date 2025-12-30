@@ -45,12 +45,16 @@ export async function loadMessages(userId){
 
 // DMメッセージを一度だけ読み込み
 async function loadDMMessagesOnce(dmId,userId){
+  alert('★loadDMMessagesOnce関数開始');
   try{
+    alert('★Supabaseクエリ前');
     const{data:messages,error}=await supabase
       .from('dm_messages')
       .select('*')
       .eq('dm_id',dmId)
       .order('created_at',{ascending:true});
+    
+    alert('★Supabaseクエリ後');
     
     // デバッグ用
     console.log('DM読み込み:',{dmId,messages,error});
