@@ -5,20 +5,21 @@ import{state,updateState,resetMessageState}from'./chat-state.js';
 import{getDmId,formatMessageTime,escapeHtml,showNotification}from'./chat-utils.js';
 
 // メッセージを読み込み（DM）
-export function loadMessages(userId){
+export async function loadMessages(userId){
   alert('loadMessages開始: '+userId);
   
   // 既存の購読を解除
   if(state.messageSubscription){
-    supabase.removeChannel(state.messageSubscription);
+    await supabase.removeChannel(state.messageSubscription);
+    updateState('messageSubscription',null);
   }
   
   const dmId=getDmId(state.currentUserId,userId);
   alert('dmId生成: '+dmId);
   
-  // 初回ロード
+  // 初回ロード（awaitで待機）
   alert('loadDMMessagesOnce呼び出し前');
-  loadDMMessagesOnce(dmId,userId);
+  await loadDMMessagesOnce(dmId,userId);
   alert('loadDMMessagesOnce呼び出し後');
   
   // リアルタイム購読（フィルターなしで全体を監視）
@@ -105,14 +106,15 @@ async function loadDMMessagesOnce(dmId,userId){
 }
 
 // チャンネルメッセージを読み込み
-export function loadChannelMessages(channelId){
+export async function loadChannelMessages(channelId){
   // 既存の購読を解除
   if(state.messageSubscription){
-    supabase.removeChannel(state.messageSubscription);
+    await supabase.removeChannel(state.messageSubscription);
+    updateState('messageSubscription',null);
   }
   
   // 初回ロード
-  loadChannelMessagesOnce(channelId);
+  await loadChannelMessagesOnce(channelId);
   
   // リアルタイム購読（フィルターなしで全体を監視）
   const subscription=supabase

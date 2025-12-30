@@ -9,6 +9,8 @@ import{canAccessChannel}from'../common/permissions.js';
 
 // ユーザーを選択
 export async function selectUser(userId){
+  alert('selectUser呼び出し: '+userId);
+  
   updateState('selectedUserId',userId);
   updateState('selectedChannelId',null);
   
@@ -28,13 +30,19 @@ export async function selectUser(userId){
   const selectedUser=state.allUsers.find(u=>u.id===userId);
   
   if(!selectedUser){
+    alert('エラー: ユーザーが見つかりません '+userId);
     console.error('選択されたユーザーが見つかりません:',userId);
     return;
   }
   
+  alert('ユーザー情報取得成功: '+selectedUser.display_name);
+  
   chatMain.innerHTML=createChatHTML(selectedUser);
   setupChatInput();
-  loadMessages(userId);
+  
+  alert('loadMessages呼び出し前');
+  await loadMessages(userId);
+  alert('loadMessages呼び出し後');
 }
 
 // チャンネルを選択
@@ -69,7 +77,7 @@ export async function selectChannel(channelId){
   const chatMain=document.getElementById('chat-main');
   chatMain.innerHTML=createChannelChatHTML(channel);
   setupChatInput();
-  loadChannelMessages(channelId);
+  await loadChannelMessages(channelId);
 }
 
 // window経由で関数を公開
