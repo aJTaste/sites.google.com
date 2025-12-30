@@ -46,26 +46,33 @@ async function loadDMMessagesOnce(dmId,userId){
       .eq('dm_id',dmId)
       .order('created_at',{ascending:true});
     
+    // デバッグ用
+    console.log('DM読み込み:',{dmId,messages,error});
+    
     if(error){
       console.error('DM読み込みエラー:',error);
-      alert('メッセージ読み込みエラー: '+error.message);
+      alert('メッセージ読み込みエラー: '+JSON.stringify(error));
       throw error;
     }
     
     const chatMessages=document.getElementById('chat-messages');
-    if(!chatMessages)return;
+    if(!chatMessages){
+      alert('chat-messages要素が見つかりません');
+      return;
+    }
     
     const wasAtBottom=chatMessages.scrollHeight-chatMessages.scrollTop<=chatMessages.clientHeight+50;
     
     chatMessages.innerHTML='';
     
     if(messages&&messages.length>0){
+      alert(`${messages.length}件のメッセージを表示します`);
       for(const msg of messages){
         try{
           await displayDMMessage(msg,userId);
         }catch(displayError){
           console.error('メッセージ表示エラー:',displayError);
-          // エラーが出ても続行
+          alert('表示エラー: '+displayError.message);
         }
       }
       
@@ -88,6 +95,7 @@ async function loadDMMessagesOnce(dmId,userId){
     }
   }catch(error){
     console.error('DM読み込みエラー:',error);
+    alert('DM読み込み例外: '+error.message);
   }
 }
 
