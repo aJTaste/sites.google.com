@@ -1,6 +1,6 @@
-// チャット機能のユーティリティ関数
+// チャット機能のユーティリティ関数（Supabase版）
 
-// DM IDを生成（UUID同士をソートして結合）
+// DM IDを生成（user_id同士をソートして結合）
 export function getDmId(userId1,userId2){
   return[userId1,userId2].sort().join('_');
 }
@@ -51,6 +51,7 @@ export function formatLastOnline(timestamp){
 
 // HTMLエスケープ + URLリンク化
 export function escapeHtml(text){
+  if(!text)return '';
   const div=document.createElement('div');
   div.textContent=text;
   let escaped=div.innerHTML;

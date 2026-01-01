@@ -5,201 +5,248 @@ import{state,updateState,resetMessageState}from'./chat-state.js';
 import{getDmId,formatMessageTime,escapeHtml,showNotification}from'./chat-utils.js';
 
 // メッセージを読み込み（DM）
-export async function loadMessages(userId){
-  alert('loadMessages開始: '+userId);
-  
+export async function loadMessages(targetUserId){
   // 既存の購読を解除
   if(state.messageSubscription){
     await supabase.removeChannel(state.messageSubscription);
-    updateState('messageSubscription',null);
+  }
+  if(state.typingSubscription){
+    await supabase.removeChannel(state.typingSubscription);
   }
   
-  const dmId=getDmId(state.currentUserId,userId);
-  alert('dmId生成: '+dmId);
+  const dmId=getDmId(state.currentProfile.user_id,targetUserId);
   
-  // 初回ロード（awaitで待機）
-  alert('loadDMMessagesOnce呼び出し前');
-  await loadDMMessagesOnce(dmId,userId);
-  alert('loadDMMessagesOnce呼び出し後');
-  
-  // リアルタイム購読（フィルターなしで全体を監視）
-  const subscription=supabase
-    .channel(`dm-${dmId}`)
-    .on('postgres_changes',{
-      event:'*',
-      schema:'public',
-      table:'dm_messages'
-    },(payload)=>{
-      // このDMに関連するメッセージのみ処理
-      if(payload.new&&payload.new.dm_id===dmId){
-        loadDMMessagesOnce(dmId,userId);
-      }
-    })
-    .subscribe();
-  
-  updateState('messageSubscription',subscription);
-  
-  // 入力中状態を購読
-  subscribeToTyping(userId);
-}
-
-// DMメッセージを一度だけ読み込み
-async function loadDMMessagesOnce(dmId,userId){
-  alert('★loadDMMessagesOnce関数開始');
   try{
-    alert('★Supabaseクエリ前');
+    // メッセージ取得
     const{data:messages,error}=await supabase
       .from('dm_messages')
-      .select('*')
+      .select(`
+        *,
+        sender:sender_id(id,user_id,display_name,avatar_url,avatar_color)
+      `)
       .eq('dm_id',dmId)
       .order('created_at',{ascending:true});
     
-    alert('★Supabaseクエリ後');
+    if(error)throw error;
     
-    // デバッグ用
-    console.log('DM読み込み:',{dmId,messages,error});
+    // 表示
+    displayMessages(messages||[],targetUserId,true);
     
-    if(error){
-      console.error('DM読み込みエラー:',error);
-      alert('メッセージ読み込みエラー: '+JSON.stringify(error));
-      throw error;
-    }
+    // リアルタイム購読
+    subscribeToMessages(dmId,targetUserId,true);
+    subscribeToTyping(targetUserId);
     
-    const chatMessages=document.getElementById('chat-messages');
-    if(!chatMessages){
-      alert('chat-messages要素が見つかりません');
-      return;
-    }
+    // 既読を更新
+    await updateReadStatus(targetUserId);
     
-    const wasAtBottom=chatMessages.scrollHeight-chatMessages.scrollTop<=chatMessages.clientHeight+50;
-    
-    chatMessages.innerHTML='';
-    
-    if(messages&&messages.length>0){
-      alert(`${messages.length}件のメッセージを表示します`);
-      for(const msg of messages){
-        try{
-          await displayDMMessage(msg,userId);
-        }catch(displayError){
-          console.error('メッセージ表示エラー:',displayError);
-          alert('表示エラー: '+displayError.message);
-        }
-      }
-      
-      if(wasAtBottom){
-        setTimeout(()=>{
-          chatMessages.scrollTop=chatMessages.scrollHeight;
-        },10);
-      }
-      
-      // 既読を更新
-      await supabase
-        .from('read_status')
-        .upsert({
-          user_id:state.currentUserId,
-          target_id:userId,
-          last_read_at:new Date().toISOString()
-        });
-    }else{
-      chatMessages.innerHTML='<div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-tertiary);font-size:14px;">まだメッセージがありません</div>';
-    }
   }catch(error){
-    console.error('DM読み込みエラー:',error);
-    alert('DM読み込み例外: '+error.message);
+    console.error('メッセージ読み込みエラー:',error);
   }
 }
 
-// チャンネルメッセージを読み込み
+// メッセージを読み込み（チャンネル）
 export async function loadChannelMessages(channelId){
   // 既存の購読を解除
   if(state.messageSubscription){
     await supabase.removeChannel(state.messageSubscription);
-    updateState('messageSubscription',null);
+  }
+  if(state.typingSubscription){
+    await supabase.removeChannel(state.typingSubscription);
   }
   
-  // 初回ロード
-  await loadChannelMessagesOnce(channelId);
-  
-  // リアルタイム購読（フィルターなしで全体を監視）
-  const subscription=supabase
-    .channel(`channel-${channelId}`)
-    .on('postgres_changes',{
-      event:'*',
-      schema:'public',
-      table:'channel_messages'
-    },(payload)=>{
-      // このチャンネルに関連するメッセージのみ処理
-      if(payload.new&&payload.new.channel_id===channelId){
-        loadChannelMessagesOnce(channelId);
-      }
-    })
-    .subscribe();
-  
-  updateState('messageSubscription',subscription);
-  
-  // 入力中状態を購読
-  subscribeToTyping(channelId);
-}
-
-// チャンネルメッセージを一度だけ読み込み
-async function loadChannelMessagesOnce(channelId){
   try{
+    // メッセージ取得
     const{data:messages,error}=await supabase
       .from('channel_messages')
-      .select('*')
+      .select(`
+        *,
+        sender:sender_id(id,user_id,display_name,avatar_url,avatar_color)
+      `)
       .eq('channel_id',channelId)
       .order('created_at',{ascending:true});
     
     if(error)throw error;
     
-    const chatMessages=document.getElementById('chat-messages');
-    if(!chatMessages)return;
+    // 表示
+    displayMessages(messages||[],channelId,false);
     
-    const wasAtBottom=chatMessages.scrollHeight-chatMessages.scrollTop<=chatMessages.clientHeight+50;
+    // リアルタイム購読
+    subscribeToMessages(channelId,channelId,false);
+    subscribeToTyping(channelId);
     
-    chatMessages.innerHTML='';
+    // 既読を更新
+    await updateReadStatus(channelId);
     
-    if(messages&&messages.length>0){
-      for(const msg of messages){
-        await displayChannelMessage(msg);
-      }
-      
-      if(wasAtBottom){
-        setTimeout(()=>{
-          chatMessages.scrollTop=chatMessages.scrollHeight;
-        },10);
-      }
-      
-      // 既読を更新
-      await supabase
-        .from('read_status')
-        .upsert({
-          user_id:state.currentUserId,
-          target_id:channelId,
-          last_read_at:new Date().toISOString()
-        });
-    }
   }catch(error){
-    console.error('チャンネル読み込みエラー:',error);
+    console.error('メッセージ読み込みエラー:',error);
   }
 }
 
-// 入力中状態を購読
-function subscribeToTyping(targetId){
-  if(state.typingSubscription){
-    supabase.removeChannel(state.typingSubscription);
+// メッセージ表示
+function displayMessages(messages,targetId,isDM){
+  const chatMessages=document.getElementById('chat-messages');
+  if(!chatMessages)return;
+  
+  chatMessages.innerHTML='';
+  
+  messages.forEach(msg=>{
+    displayMessage(msg,targetId,isDM);
+  });
+  
+  // スクロール
+  setTimeout(()=>{
+    chatMessages.scrollTop=chatMessages.scrollHeight;
+  },10);
+}
+
+// 単一メッセージ表示
+function displayMessage(msg,targetId,isDM){
+  const chatMessages=document.getElementById('chat-messages');
+  if(!chatMessages)return;
+  
+  const isCurrentUser=msg.sender_id===state.currentProfile.id;
+  const sender=msg.sender||state.currentProfile;
+  
+  // アイコン表示
+  let iconHtml='';
+  if(sender.avatar_url){
+    iconHtml=`<img src="${sender.avatar_url}" alt="${sender.display_name}">`;
+  }else{
+    const initial=sender.display_name.charAt(0).toUpperCase();
+    const color=sender.avatar_color||'#FF6B35';
+    iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
   }
   
+  // 操作ボタン
+  const pathId=isDM?getDmId(state.currentProfile.user_id,targetId):targetId;
+  let actionsHtml=`
+    <div class="message-actions">
+      <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text).replace(/'/g,"\\'")}','${msg.sender_id}')" title="返信">
+        <span class="material-symbols-outlined">reply</span>
+      </button>
+  `;
+  
+  if(isCurrentUser){
+    actionsHtml+=`
+      <button class="message-action-btn" onclick="window.editMessage('${msg.id}','${pathId}','${escapeHtml(msg.text).replace(/'/g,"\\'")}',${isDM})" title="編集">
+        <span class="material-symbols-outlined">edit</span>
+      </button>
+      <button class="message-action-btn delete" onclick="window.deleteMessage('${msg.id}','${pathId}',${isDM})" title="削除">
+        <span class="material-symbols-outlined">delete</span>
+      </button>
+    `;
+  }
+  
+  actionsHtml+=`</div>`;
+  
+  const messageEl=document.createElement('div');
+  messageEl.className='message';
+  messageEl.setAttribute('data-message-id',msg.id);
+  messageEl.innerHTML=`
+    <div class="message-avatar">
+      ${iconHtml}
+    </div>
+    <div class="message-content">
+      <div class="message-header">
+        <span class="message-author">${sender.display_name}</span>
+        <span class="message-time">${formatMessageTime(msg.created_at)}</span>
+      </div>
+      ${msg.reply_to_text?`<div class="message-reply">返信: ${escapeHtml(msg.reply_to_text).substring(0,100)}...</div>`:''}
+      <div class="message-text">${escapeHtml(msg.text)}</div>
+      ${msg.image_url?`<img class="message-image" src="${msg.image_url}" alt="画像" onclick="window.openImageModal('${msg.image_url}')">`:''}
+      ${msg.edited_at?`<div class="message-edited">(編集済み)</div>`:''}
+    </div>
+    ${actionsHtml}
+  `;
+  
+  chatMessages.appendChild(messageEl);
+}
+
+// リアルタイム購読（メッセージ）
+function subscribeToMessages(id,targetId,isDM){
+  const tableName=isDM?'dm_messages':'channel_messages';
+  const filterColumn=isDM?'dm_id':'channel_id';
+  
+  const subscription=supabase
+    .channel(`${tableName}-${id}`)
+    .on('postgres_changes',{
+      event:'INSERT',
+      schema:'public',
+      table:tableName,
+      filter:`${filterColumn}=eq.${id}`
+    },async(payload)=>{
+      // 送信者情報を取得
+      const{data:sender}=await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id',payload.new.sender_id)
+        .single();
+      
+      payload.new.sender=sender;
+      displayMessage(payload.new,targetId,isDM);
+      
+      // 通知
+      if(payload.new.sender_id!==state.currentProfile.id){
+        showNotification(
+          sender.display_name,
+          payload.new.text||'画像を送信しました',
+          sender.avatar_url
+        );
+      }
+      
+      // スクロール
+      const chatMessages=document.getElementById('chat-messages');
+      if(chatMessages){
+        chatMessages.scrollTop=chatMessages.scrollHeight;
+      }
+      
+      // 既読更新
+      await updateReadStatus(targetId);
+    })
+    .on('postgres_changes',{
+      event:'UPDATE',
+      schema:'public',
+      table:tableName,
+      filter:`${filterColumn}=eq.${id}`
+    },async(payload)=>{
+      const msgEl=document.querySelector(`[data-message-id="${payload.new.id}"]`);
+      if(msgEl){
+        const{data:sender}=await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id',payload.new.sender_id)
+          .single();
+        
+        payload.new.sender=sender;
+        msgEl.outerHTML='';
+        displayMessage(payload.new,targetId,isDM);
+      }
+    })
+    .on('postgres_changes',{
+      event:'DELETE',
+      schema:'public',
+      table:tableName,
+      filter:`${filterColumn}=eq.${id}`
+    },(payload)=>{
+      const msgEl=document.querySelector(`[data-message-id="${payload.old.id}"]`);
+      if(msgEl)msgEl.remove();
+    })
+    .subscribe();
+  
+  updateState('messageSubscription',subscription);
+}
+
+// リアルタイム購読（入力中）
+function subscribeToTyping(targetId){
   const subscription=supabase
     .channel(`typing-${targetId}`)
     .on('postgres_changes',{
       event:'*',
       schema:'public',
-      table:'typing_status'
-    },(payload)=>{
-      if(payload.new&&payload.new.target_id===targetId){
-        updateTypingDisplay(targetId);
-      }
+      table:'typing_status',
+      filter:`target_id=eq.${targetId}`
+    },async()=>{
+      await updateTypingIndicator(targetId);
     })
     .subscribe();
   
@@ -207,178 +254,45 @@ function subscribeToTyping(targetId){
 }
 
 // 入力中表示を更新
-async function updateTypingDisplay(targetId){
+async function updateTypingIndicator(targetId){
   try{
-    const{data:typingUsers,error}=await supabase
+    const{data:typingUsers}=await supabase
       .from('typing_status')
-      .select('user_id,is_typing')
+      .select('user_id,profiles(display_name)')
       .eq('target_id',targetId)
       .eq('is_typing',true)
-      .neq('user_id',state.currentUserId);
+      .neq('user_id',state.currentProfile.id);
     
-    if(error)throw error;
+    const typingIndicator=document.getElementById('typing-indicator');
+    const typingText=document.getElementById('typing-text');
     
-    const statusEl=document.getElementById('chat-header-status');
-    if(!statusEl)return;
+    if(!typingIndicator||!typingText)return;
     
     if(typingUsers&&typingUsers.length>0){
-      // ユーザー名を取得
-      const userIds=typingUsers.map(t=>t.user_id);
-      const{data:profiles}=await supabase
-        .from('profiles')
-        .select('id,display_name')
-        .in('id',userIds);
-      
-      const names=(profiles||[]).map(p=>p.display_name).join(', ');
-      statusEl.textContent=`${names} が入力中...`;
+      const names=typingUsers.map(u=>u.profiles.display_name).join(', ');
+      typingText.textContent=`${names} が入力中...`;
+      typingIndicator.style.display='block';
     }else{
-      // 元の状態に戻す
-      if(state.selectedUserId){
-        const user=state.allUsers.find(u=>u.id===state.selectedUserId);
-        if(user){
-          const isOnline=user.is_online||false;
-          statusEl.textContent=isOnline?'オンライン':`最終: ${formatLastOnline(user.last_online)}`;
-        }
-      }
+      typingIndicator.style.display='none';
     }
   }catch(error){
     console.error('入力中表示エラー:',error);
   }
 }
 
-// DMメッセージを表示
-async function displayDMMessage(msg,otherUserId){
-  const chatMessages=document.getElementById('chat-messages');
-  if(!chatMessages)return;
-  
-  const isCurrentUser=msg.sender_id===state.currentUserId;
-  
-  let senderData;
-  if(isCurrentUser){
-    senderData=state.currentProfile;
-  }else{
-    senderData=state.allUsers.find(u=>u.id===msg.sender_id);
+// 既読状態を更新
+async function updateReadStatus(targetId){
+  try{
+    await supabase
+      .from('read_status')
+      .upsert({
+        user_id:state.currentProfile.id,
+        target_id:targetId,
+        last_read_at:new Date().toISOString()
+      });
+  }catch(error){
+    console.error('既読更新エラー:',error);
   }
-  
-  if(!senderData)return;
-  
-  // アイコン表示
-  let avatarHtml='';
-  if(senderData.avatar_url){
-    avatarHtml=`<img src="${senderData.avatar_url}" alt="${senderData.display_name}">`;
-  }else{
-    const initial=senderData.display_name.charAt(0).toUpperCase();
-    const color=senderData.avatar_color||'#FF6B35';
-    avatarHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${initial}</div>`;
-  }
-  
-  let actionsHtml=`
-    <div class="message-actions">
-      <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text||'').replace(/'/g,"\\'")}','${msg.sender_id}')" title="返信">
-        <span class="material-symbols-outlined">reply</span>
-      </button>
-  `;
-  
-  if(isCurrentUser){
-    actionsHtml+=`
-      <button class="message-action-btn" onclick="window.editMessage('${msg.id}','${escapeHtml(msg.text||'').replace(/'/g,"\\'")}',true)" title="編集">
-        <span class="material-symbols-outlined">edit</span>
-      </button>
-      <button class="message-action-btn delete" onclick="window.deleteMessage('${msg.id}',true)" title="削除">
-        <span class="material-symbols-outlined">delete</span>
-      </button>
-    `;
-  }
-  
-  actionsHtml+=`</div>`;
-  
-  const messageEl=document.createElement('div');
-  messageEl.className='message';
-  messageEl.innerHTML=`
-    <div class="message-avatar">
-      ${avatarHtml}
-    </div>
-    <div class="message-content">
-      <div class="message-header">
-        <span class="message-author">${senderData.display_name}</span>
-        <span class="message-time">${formatMessageTime(msg.created_at)}</span>
-      </div>
-      ${msg.reply_to?`<div class="message-reply">返信: ${escapeHtml(msg.reply_to.text||'').substring(0,100)}...</div>`:''}
-      ${msg.text?`<div class="message-text">${escapeHtml(msg.text)}</div>`:''}
-      ${msg.image_url?`<img class="message-image" src="${msg.image_url}" alt="画像" onclick="window.openImageModal('${msg.image_url}')">`:''}
-      ${msg.edited_at?`<div class="message-edited">(編集済み)</div>`:''}
-    </div>
-    ${actionsHtml}
-  `;
-  
-  chatMessages.appendChild(messageEl);
-}
-
-// チャンネルメッセージを表示
-async function displayChannelMessage(msg){
-  const chatMessages=document.getElementById('chat-messages');
-  if(!chatMessages)return;
-  
-  let senderData;
-  if(msg.sender_id===state.currentUserId){
-    senderData=state.currentProfile;
-  }else{
-    senderData=state.allUsers.find(u=>u.id===msg.sender_id);
-  }
-  
-  if(!senderData)return;
-  
-  // アイコン表示
-  let avatarHtml='';
-  if(senderData.avatar_url){
-    avatarHtml=`<img src="${senderData.avatar_url}" alt="${senderData.display_name}">`;
-  }else{
-    const initial=senderData.display_name.charAt(0).toUpperCase();
-    const color=senderData.avatar_color||'#FF6B35';
-    avatarHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${initial}</div>`;
-  }
-  
-  const isCurrentUser=msg.sender_id===state.currentUserId;
-  let actionsHtml=`
-    <div class="message-actions">
-      <button class="message-action-btn" onclick="window.replyMessage('${msg.id}','${escapeHtml(msg.text||'').replace(/'/g,"\\'")}','${msg.sender_id}')" title="返信">
-        <span class="material-symbols-outlined">reply</span>
-      </button>
-  `;
-  
-  if(isCurrentUser){
-    actionsHtml+=`
-      <button class="message-action-btn" onclick="window.editMessage('${msg.id}','${escapeHtml(msg.text||'').replace(/'/g,"\\'")}',false)" title="編集">
-        <span class="material-symbols-outlined">edit</span>
-      </button>
-      <button class="message-action-btn delete" onclick="window.deleteMessage('${msg.id}',false)" title="削除">
-        <span class="material-symbols-outlined">delete</span>
-      </button>
-    `;
-  }
-  
-  actionsHtml+=`</div>`;
-  
-  const messageEl=document.createElement('div');
-  messageEl.className='message';
-  messageEl.innerHTML=`
-    <div class="message-avatar">
-      ${avatarHtml}
-    </div>
-    <div class="message-content">
-      <div class="message-header">
-        <span class="message-author">${senderData.display_name}</span>
-        <span class="message-time">${formatMessageTime(msg.created_at)}</span>
-      </div>
-      ${msg.reply_to?`<div class="message-reply">返信: ${escapeHtml(msg.reply_to.text||'').substring(0,100)}...</div>`:''}
-      ${msg.text?`<div class="message-text">${escapeHtml(msg.text)}</div>`:''}
-      ${msg.image_url?`<img class="message-image" src="${msg.image_url}" alt="画像" onclick="window.openImageModal('${msg.image_url}')">`:''}
-      ${msg.edited_at?`<div class="message-edited">(編集済み)</div>`:''}
-    </div>
-    ${actionsHtml}
-  `;
-  
-  chatMessages.appendChild(messageEl);
 }
 
 // メッセージを送信
@@ -414,15 +328,8 @@ export async function sendMessage(){
     
     // 画像をアップロード
     if(messageImage){
-      const base64Data=messageImage.split(',')[1];
-      const binary=atob(base64Data);
-      const array=new Uint8Array(binary.length);
-      for(let i=0;i<binary.length;i++){
-        array[i]=binary.charCodeAt(i);
-      }
-      const blob=new Blob([array],{type:'image/png'});
-      
-      const fileName=`${Date.now()}.png`;
+      const fileName=`${Date.now()}_${Math.random().toString(36).substr(2,9)}.png`;
+      const blob=await fetch(messageImage).then(r=>r.blob());
       
       const{error:uploadError}=await supabase.storage
         .from('chat-images')
@@ -438,38 +345,37 @@ export async function sendMessage(){
     }
     
     const messageData={
-      sender_id:state.currentUserId,
+      sender_id:state.currentProfile.id,
       text:messageText,
       image_url:imageUrl,
       created_at:new Date().toISOString()
     };
     
     if(messageReply){
-      messageData.reply_to={
-        message_id:messageReply.id,
-        text:messageReply.text,
-        sender_id:messageReply.senderId
-      };
+      messageData.reply_to_id=messageReply.id;
+      messageData.reply_to_text=messageReply.text;
+      messageData.reply_to_sender_id=messageReply.senderId;
     }
     
     if(state.selectedUserId){
-      const dmId=getDmId(state.currentUserId,state.selectedUserId);
+      const targetUser=state.allUsers.find(u=>u.user_id===state.selectedUserId);
+      const dmId=getDmId(state.currentProfile.user_id,state.selectedUserId);
       messageData.dm_id=dmId;
       
-      const{error}=await supabase
+      await supabase
         .from('dm_messages')
-        .insert([messageData]);
-      
-      if(error)throw error;
+        .insert(messageData);
     }else if(state.selectedChannelId){
       messageData.channel_id=state.selectedChannelId;
       
-      const{error}=await supabase
+      await supabase
         .from('channel_messages')
-        .insert([messageData]);
-      
-      if(error)throw error;
+        .insert(messageData);
     }
+    
+    // 入力中状態をクリア
+    await clearTypingStatus();
+    
   }catch(error){
     console.error('送信エラー:',error);
     alert('送信に失敗しました');
@@ -479,5 +385,37 @@ export async function sendMessage(){
     chatInput.disabled=false;
     sendBtn.disabled=false;
     chatInput.focus();
+  }
+}
+
+// 入力中状態を送信
+export async function sendTypingStatus(targetId,isTyping){
+  try{
+    await supabase
+      .from('typing_status')
+      .upsert({
+        user_id:state.currentProfile.id,
+        target_id:targetId,
+        is_typing:isTyping,
+        updated_at:new Date().toISOString()
+      });
+  }catch(error){
+    console.error('入力中状態送信エラー:',error);
+  }
+}
+
+// 入力中状態をクリア
+async function clearTypingStatus(){
+  const targetId=state.selectedUserId||state.selectedChannelId;
+  if(!targetId)return;
+  
+  try{
+    await supabase
+      .from('typing_status')
+      .delete()
+      .eq('user_id',state.currentProfile.id)
+      .eq('target_id',targetId);
+  }catch(error){
+    console.error('入力中状態クリアエラー:',error);
   }
 }

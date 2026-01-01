@@ -13,6 +13,7 @@ export function displayUsers(){
   
   // チャンネルを追加（権限チェック）
   CHANNELS.forEach(channel=>{
+    // 権限チェック
     if(!canAccessChannel(state.currentProfile.role,channel.requiredRole)){
       return;
     }
@@ -23,6 +24,7 @@ export function displayUsers(){
       channelItem.classList.add('active');
     }
     
+    // モデレーター専用チャンネルのスタイル
     if(channel.requiredRole==='moderator'){
       channelItem.classList.add('moderator-only');
     }
@@ -57,12 +59,12 @@ export function displayUsers(){
   divider.style.cssText='height:1px;background:var(--border);margin:8px 0;';
   dmList.appendChild(divider);
   
-  // ユーザー一覧
+  // ユーザー一覧（最終ログイン時刻でソート済み）
   if(state.allUsers&&state.allUsers.length>0){
     state.allUsers.forEach(user=>{
       const dmItem=document.createElement('div');
       dmItem.className='dm-item';
-      if(state.selectedUserId===user.id){
+      if(state.selectedUserId===user.user_id){
         dmItem.classList.add('active');
       }
       
@@ -70,22 +72,22 @@ export function displayUsers(){
       const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
       const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(user.last_online)}`;
       
-      const unreadCount=state.unreadCounts[user.id]||0;
-      const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
-      
       // アイコン表示
-      let avatarHtml='';
+      let iconHtml='';
       if(user.avatar_url){
-        avatarHtml=`<img src="${user.avatar_url}" alt="${user.display_name}">`;
+        iconHtml=`<img src="${user.avatar_url}" alt="${user.display_name}">`;
       }else{
         const initial=user.display_name.charAt(0).toUpperCase();
         const color=user.avatar_color||'#FF6B35';
-        avatarHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
+        iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
       }
+      
+      const unreadCount=state.unreadCounts[user.user_id]||0;
+      const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
       
       dmItem.innerHTML=`
         <div class="dm-item-avatar">
-          ${avatarHtml}
+          ${iconHtml}
           ${onlineIndicator}
         </div>
         <div class="dm-item-info">
@@ -99,7 +101,7 @@ export function displayUsers(){
       
       dmItem.addEventListener('click',()=>{
         if(window.selectUser){
-          window.selectUser(user.id);
+          window.selectUser(user.user_id);
         }
       });
       
@@ -114,20 +116,20 @@ export function createChatHTML(selectedUser){
   const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(selectedUser.last_online)}`;
   
   // アイコン表示
-  let avatarHtml='';
+  let iconHtml='';
   if(selectedUser.avatar_url){
-    avatarHtml=`<img src="${selectedUser.avatar_url}" alt="${selectedUser.display_name}">`;
+    iconHtml=`<img src="${selectedUser.avatar_url}" alt="${selectedUser.display_name}">`;
   }else{
     const initial=selectedUser.display_name.charAt(0).toUpperCase();
     const color=selectedUser.avatar_color||'#FF6B35';
-    avatarHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:18px;border-radius:50%;">${initial}</div>`;
+    iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
   }
   
   return`
     <div class="chat-header">
       <div class="chat-header-user">
         <div class="chat-header-avatar">
-          ${avatarHtml}
+          ${iconHtml}
         </div>
         <div class="chat-header-info">
           <div class="chat-header-name">${selectedUser.display_name}</div>
@@ -166,6 +168,9 @@ export function createChatHTML(selectedUser){
           <span class="material-symbols-outlined">send</span>
         </button>
       </div>
+      <div class="typing-indicator" id="typing-indicator" style="display:none;padding:8px 0;font-size:12px;color:var(--text-tertiary);">
+        <span id="typing-text"></span>
+      </div>
     </div>
   `;
 }
@@ -175,7 +180,7 @@ export function createChannelChatHTML(channel){
   return`
     <div class="chat-header">
       <div class="chat-header-user">
-        <div class="channel-icon" style="width:36px;height:36px;">
+        <div class="channel-icon" style="width:36px;height:36px;background:var(--bg-secondary);border-radius:50%;display:flex;align-items:center;justify-content:center;">
           <span class="material-symbols-outlined">${channel.icon}</span>
         </div>
         <div class="chat-header-info">
@@ -214,6 +219,9 @@ export function createChannelChatHTML(channel){
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
         </button>
+      </div>
+      <div class="typing-indicator" id="typing-indicator" style="display:none;padding:8px 0;font-size:12px;color:var(--text-tertiary);">
+        <span id="typing-text"></span>
       </div>
     </div>
   `;

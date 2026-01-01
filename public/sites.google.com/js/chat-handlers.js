@@ -3,53 +3,37 @@
 import{supabase}from'../common/core.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
 import{displayUsers,createChatHTML,createChannelChatHTML}from'./chat-ui.js';
-import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
+import{loadMessages,loadChannelMessages,sendMessage,sendTypingStatus}from'./chat-messages.js';
 import{handleImageFile}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
 
-console.log('chat-handlers.js読み込み完了');
-console.log('loadMessages関数:',typeof loadMessages);
+console.log('chat-handlers.js読み込み開始');
 
 // ユーザーを選択
-export async function selectUser(userId){
-  alert('selectUser呼び出し: '+userId);
-  
-  updateState('selectedUserId',userId);
+export async function selectUser(targetUserId){
+  console.log('selectUser()実行:',targetUserId);
+  updateState('selectedUserId',targetUserId);
   updateState('selectedChannelId',null);
   
-  // 既読を更新
-  await supabase
-    .from('read_status')
-    .upsert({
-      user_id:state.currentUserId,
-      target_id:userId,
-      last_read_at:new Date().toISOString()
-    });
-  
-  state.unreadCounts[userId]=0;
   displayUsers();
   
   const chatMain=document.getElementById('chat-main');
-  const selectedUser=state.allUsers.find(u=>u.id===userId);
+  const selectedUser=state.allUsers.find(u=>u.user_id===targetUserId);
   
   if(!selectedUser){
-    alert('エラー: ユーザーが見つかりません '+userId);
-    console.error('選択されたユーザーが見つかりません:',userId);
+    console.error('選択されたユーザーが見つかりません:',targetUserId);
     return;
   }
   
-  alert('ユーザー情報取得成功: '+selectedUser.display_name);
-  
   chatMain.innerHTML=createChatHTML(selectedUser);
   setupChatInput();
-  
-  alert('loadMessages呼び出し前');
-  await loadMessages(userId);
-  alert('loadMessages呼び出し後');
+  loadMessages(targetUserId);
 }
 
 // チャンネルを選択
 export async function selectChannel(channelId){
+  console.log('selectChannel()実行:',channelId);
+  
   const channel=CHANNELS.find(c=>c.id===channelId);
   
   if(!channel){
@@ -57,6 +41,7 @@ export async function selectChannel(channelId){
     return;
   }
   
+  // 権限チェック
   if(!canAccessChannel(state.currentProfile.role,channel.requiredRole)){
     alert('このチャンネルへのアクセス権限がありません');
     return;
@@ -65,22 +50,12 @@ export async function selectChannel(channelId){
   updateState('selectedChannelId',channelId);
   updateState('selectedUserId',null);
   
-  // 既読を更新
-  await supabase
-    .from('read_status')
-    .upsert({
-      user_id:state.currentUserId,
-      target_id:channelId,
-      last_read_at:new Date().toISOString()
-    });
-  
-  state.unreadCounts[channelId]=0;
   displayUsers();
   
   const chatMain=document.getElementById('chat-main');
   chatMain.innerHTML=createChannelChatHTML(channel);
   setupChatInput();
-  await loadChannelMessages(channelId);
+  loadChannelMessages(channelId);
 }
 
 // window経由で関数を公開
@@ -90,29 +65,28 @@ window.selectChannel=selectChannel;
 // チャット入力のセットアップ
 function setupChatInput(){
   const chatInput=document.getElementById('chat-input');
-  if(!chatInput)return;
+  if(!chatInput){
+    console.error('chat-inputが見つかりません');
+    return;
+  }
   
+  // 高さ自動調整
   chatInput.addEventListener('input',()=>{
     chatInput.style.height='auto';
     chatInput.style.height=Math.min(chatInput.scrollHeight,120)+'px';
     
     // 入力中状態を送信
-    updateTypingStatus(true);
+    handleTyping();
   });
   
+  // Enterで送信
   chatInput.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'&&!e.shiftKey){
       e.preventDefault();
       if(!state.isSending){
         sendMessage();
-        updateTypingStatus(false);
       }
     }
-  });
-  
-  // 入力停止を検知
-  chatInput.addEventListener('blur',()=>{
-    updateTypingStatus(false);
   });
   
   // クリップボードから画像を貼り付け
@@ -132,12 +106,12 @@ function setupChatInput(){
     }
   });
   
+  // 送信ボタン
   const sendBtn=document.getElementById('send-btn');
   if(sendBtn){
     sendBtn.addEventListener('click',()=>{
       if(!state.isSending){
         sendMessage();
-        updateTypingStatus(false);
       }
     });
   }
@@ -182,55 +156,25 @@ function setupChatInput(){
   }
 }
 
-// 入力中状態を更新
-async function updateTypingStatus(isTyping){
+// 入力中状態を処理
+function handleTyping(){
+  const targetId=state.selectedUserId||state.selectedChannelId;
+  if(!targetId)return;
+  
+  // 既存のタイムアウトをクリア
   if(state.typingTimeout){
     clearTimeout(state.typingTimeout);
   }
   
-  const targetId=state.selectedUserId||state.selectedChannelId;
-  if(!targetId)return;
+  // 入力中状態を送信
+  sendTypingStatus(targetId,true);
   
-  try{
-    await supabase
-      .from('typing_status')
-      .upsert({
-        user_id:state.currentUserId,
-        target_id:targetId,
-        is_typing:isTyping,
-        updated_at:new Date().toISOString()
-      });
-    
-    // 3秒後に自動的にfalseにする
-    if(isTyping){
-      state.typingTimeout=setTimeout(()=>{
-        updateTypingStatus(false);
-      },3000);
-    }
-  }catch(error){
-    console.error('入力中状態更新エラー:',error);
-  }
-}
-
-// エスケープ処理
-function escapeForAttribute(text){
-  if(!text)return'';
-  return text
-    .replace(/&/g,'&amp;')
-    .replace(/'/g,'&apos;')
-    .replace(/"/g,'&quot;')
-    .replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;');
-}
-
-function unescapeFromAttribute(text){
-  if(!text)return'';
-  return text
-    .replace(/&apos;/g,"'")
-    .replace(/&quot;/g,'"')
-    .replace(/&lt;/g,'<')
-    .replace(/&gt;/g,'>')
-    .replace(/&amp;/g,'&');
+  // 3秒後に入力中状態をクリア
+  const timeout=setTimeout(()=>{
+    sendTypingStatus(targetId,false);
+  },3000);
+  
+  updateState('typingTimeout',timeout);
 }
 
 // グローバル関数
@@ -240,21 +184,49 @@ window.openImageModal=function(imageUrl){
 }
 
 window.replyMessage=function(messageId,text,senderId){
-  updateState('replyToMessage',{id:messageId,text:unescapeFromAttribute(text),senderId:senderId});
-  document.getElementById('reply-preview-text').textContent=unescapeFromAttribute(text).substring(0,100);
+  updateState('replyToMessage',{id:messageId,text:text,senderId:senderId});
+  document.getElementById('reply-preview-text').textContent=text.substring(0,100);
   document.getElementById('reply-preview').classList.add('show');
   document.getElementById('chat-input').focus();
 }
 
-window.editMessage=function(messageId,text,isDM){
-  updateState('editingMessageId',messageId);
-  updateState('editingIsDM',isDM);
-  document.getElementById('edit-textarea').value=unescapeFromAttribute(text);
-  document.getElementById('edit-modal').classList.add('show');
+window.editMessage=async function(messageId,pathId,text,isDM){
+  const newText=prompt('メッセージを編集',text);
+  if(!newText||newText===text)return;
+  
+  try{
+    const tableName=isDM?'dm_messages':'channel_messages';
+    const filterColumn=isDM?'dm_id':'channel_id';
+    
+    await supabase
+      .from(tableName)
+      .update({
+        text:newText,
+        edited_at:new Date().toISOString()
+      })
+      .eq('id',messageId);
+    
+  }catch(error){
+    console.error('編集エラー:',error);
+    alert('編集に失敗しました');
+  }
 }
 
-window.deleteMessage=function(messageId,isDM){
-  updateState('editingMessageId',messageId);
-  updateState('editingIsDM',isDM);
-  document.getElementById('delete-modal').classList.add('show');
+window.deleteMessage=async function(messageId,pathId,isDM){
+  if(!confirm('このメッセージを削除しますか？'))return;
+  
+  try{
+    const tableName=isDM?'dm_messages':'channel_messages';
+    
+    await supabase
+      .from(tableName)
+      .delete()
+      .eq('id',messageId);
+    
+  }catch(error){
+    console.error('削除エラー:',error);
+    alert('削除に失敗しました');
+  }
 }
+
+console.log('chat-handlers.js読み込み完了');

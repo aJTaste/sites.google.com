@@ -1,4 +1,4 @@
-// チャットアプリの状態管理
+// チャットアプリの状態管理（Supabase版）
 
 // 共有チャンネル定義
 export const CHANNELS=[
@@ -10,20 +10,21 @@ export const CHANNELS=[
 
 // グローバル状態
 export const state={
-  currentUserId:null,
+  currentUser:null,
   currentProfile:null,
   allUsers:[],
   selectedUserId:null,
   selectedChannelId:null,
   messageSubscription:null,
   typingSubscription:null,
-  userSubscription:null,
-  pollingInterval:null,
+  profilesSubscription:null,
   isSending:false,
   unreadCounts:{},
+  lastOnlineUpdateInterval:null,
   selectedImage:null,
   replyToMessage:null,
   editingMessageId:null,
+  editingMessagePath:null,
   typingTimeout:null
 };
 
