@@ -81,6 +81,23 @@
     </div>
     
     <script type="module" src="js/chat.js"></script>
+    <script>
+      // モーダルを閉じる
+      document.addEventListener('DOMContentLoaded',()=>{
+        const modal=document.getElementById('image-modal');
+        const closeBtn=document.getElementById('image-modal-close');
+        
+        closeBtn.addEventListener('click',()=>{
+          modal.classList.remove('show');
+        });
+        
+        modal.addEventListener('click',(e)=>{
+          if(e.target===modal){
+            modal.classList.remove('show');
+          }
+        });
+      });
+    </script>
     <script src="common/stealth-mode.js"></script>
     <script src="common/capture-handler.js"></script>
   </body>

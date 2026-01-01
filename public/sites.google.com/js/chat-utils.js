@@ -1,15 +1,8 @@
-// チャット機能のユーティリティ関数（Supabase版）
+// チャットユーティリティ（Supabase版）
 
-// DM IDを生成（user_id同士をソートして結合）
+// DM IDを生成（user_id同士をアルファベット順で結合）
 export function getDmId(userId1,userId2){
   return[userId1,userId2].sort().join('_');
-}
-
-// 通知権限をリクエスト
-export async function requestNotificationPermission(){
-  if('Notification'in window&&Notification.permission==='default'){
-    await Notification.requestPermission();
-  }
 }
 
 // 時刻フォーマット（秒単位）
@@ -28,7 +21,7 @@ export function formatMessageTime(timestamp){
   }
 }
 
-// 最終ログイン時刻フォーマット（リアルタイム更新対応）
+// 最終ログイン時刻フォーマット
 export function formatLastOnline(timestamp){
   if(!timestamp)return '不明';
   
@@ -51,7 +44,6 @@ export function formatLastOnline(timestamp){
 
 // HTMLエスケープ + URLリンク化
 export function escapeHtml(text){
-  if(!text)return '';
   const div=document.createElement('div');
   div.textContent=text;
   let escaped=div.innerHTML;
@@ -74,21 +66,9 @@ export function showNotification(title,body,icon){
   }
 }
 
-// 画像ファイルを処理
-export function handleImageFile(file,callback){
-  if(!file.type.startsWith('image/')){
-    alert('画像ファイルを選択してください');
-    return;
+// 通知権限をリクエスト
+export async function requestNotificationPermission(){
+  if('Notification'in window&&Notification.permission==='default'){
+    await Notification.requestPermission();
   }
-  
-  if(file.size>2*1024*1024){
-    alert('画像サイズは2MB以下にしてください');
-    return;
-  }
-  
-  const reader=new FileReader();
-  reader.onload=(e)=>{
-    callback(e.target.result);
-  };
-  reader.readAsDataURL(file);
 }
