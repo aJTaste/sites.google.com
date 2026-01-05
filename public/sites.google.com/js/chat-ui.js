@@ -1,4 +1,5 @@
-// チャットUI表示（Supabase版）
+// UI表示関連の関数
+
 import{state,CHANNELS}from'./chat-state.js';
 import{formatLastOnline}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
@@ -10,7 +11,7 @@ export function displayUsers(){
   
   dmList.innerHTML='';
   
-  // チャンネルを追加
+  // チャンネルを追加（権限チェック）
   CHANNELS.forEach(channel=>{
     // 権限チェック
     if(!canAccessChannel(state.currentProfile.role,channel.requiredRole)){
@@ -23,6 +24,7 @@ export function displayUsers(){
       channelItem.classList.add('active');
     }
     
+    // モデレーター専用チャンネルのスタイル
     if(channel.requiredRole==='moderator'){
       channelItem.classList.add('moderator-only');
     }
@@ -57,42 +59,41 @@ export function displayUsers(){
   divider.style.cssText='height:1px;background:var(--border);margin:8px 0;';
   dmList.appendChild(divider);
   
-  // DM一覧を表示（オンライン→オフライン、最終DM時刻順）
+  // 最終ログイン時刻でソート（新しい順）
   if(state.allUsers&&state.allUsers.length>0){
-    // オンラインユーザーとオフラインユーザーを分ける
-    const onlineUsers=state.allUsers.filter(u=>u.is_online);
-    const offlineUsers=state.allUsers.filter(u=>!u.is_online);
+    state.allUsers.sort((a,b)=>{
+      const aTime=new Date(a.last_online||a.created_at).getTime();
+      const bTime=new Date(b.last_online||b.created_at).getTime();
+      return bTime-aTime;
+    });
     
-    // 両方とも最終オンライン時刻でソート
-    const sortedUsers=[...onlineUsers,...offlineUsers];
-    
-    sortedUsers.forEach(user=>{
+    state.allUsers.forEach(user=>{
       const dmItem=document.createElement('div');
       dmItem.className='dm-item';
-      if(state.selectedUserId===user.id){
+      if(state.selectedUserId===user.user_id){
         dmItem.classList.add('active');
+      }
+      
+      // アイコン表示
+      let iconHtml;
+      if(user.avatar_url){
+        iconHtml=`<img src="${user.avatar_url}" alt="${user.display_name}">`;
+      }else{
+        const initial=user.display_name.charAt(0).toUpperCase();
+        const bgColor=user.avatar_color||'#FF6B35';
+        iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
       }
       
       const isOnline=user.is_online||false;
       const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
-      const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(user.last_online)}`;
+      const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(user.last_online||user.created_at)}`;
       
       const unreadCount=state.unreadCounts[user.user_id]||0;
       const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
       
-      // アバター表示
-      let avatarHtml='';
-      if(user.avatar_url){
-        avatarHtml=`<img src="${user.avatar_url}" alt="${user.display_name}">`;
-      }else{
-        const initial=user.display_name.charAt(0).toUpperCase();
-        const color=user.avatar_color||'#FF6B35';
-        avatarHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
-      }
-      
       dmItem.innerHTML=`
         <div class="dm-item-avatar">
-          ${avatarHtml}
+          ${iconHtml}
           ${onlineIndicator}
         </div>
         <div class="dm-item-info">
@@ -106,7 +107,7 @@ export function displayUsers(){
       
       dmItem.addEventListener('click',()=>{
         if(window.selectUser){
-          window.selectUser(user.id);
+          window.selectUser(user.user_id);
         }
       });
       
@@ -115,29 +116,30 @@ export function displayUsers(){
   }
 }
 
-// チャット画面のHTML（DM）
+// チャット画面のHTMLを生成（DM）
 export function createChatHTML(selectedUser){
-  let avatarHtml='';
+  // アイコン表示
+  let iconHtml;
   if(selectedUser.avatar_url){
-    avatarHtml=`<img src="${selectedUser.avatar_url}" alt="${selectedUser.display_name}">`;
+    iconHtml=`<img src="${selectedUser.avatar_url}" alt="${selectedUser.display_name}">`;
   }else{
     const initial=selectedUser.display_name.charAt(0).toUpperCase();
-    const color=selectedUser.avatar_color||'#FF6B35';
-    avatarHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${color};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
+    const bgColor=selectedUser.avatar_color||'#FF6B35';
+    iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:#fff;font-weight:600;font-size:18px;border-radius:50%;">${initial}</div>`;
   }
   
   const isOnline=selectedUser.is_online||false;
-  const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(selectedUser.last_online)}`;
+  const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(selectedUser.last_online||selectedUser.created_at)}`;
   
   return`
     <div class="chat-header">
       <div class="chat-header-user">
         <div class="chat-header-avatar">
-          ${avatarHtml}
+          ${iconHtml}
         </div>
         <div class="chat-header-info">
           <div class="chat-header-name">${selectedUser.display_name}</div>
-          <div class="chat-header-status" id="chat-header-status">${statusText}</div>
+          <div class="chat-header-status">${statusText}</div>
         </div>
       </div>
     </div>
@@ -176,7 +178,7 @@ export function createChatHTML(selectedUser){
   `;
 }
 
-// チャット画面のHTML（チャンネル）
+// チャット画面のHTMLを生成（チャンネル）
 export function createChannelChatHTML(channel){
   return`
     <div class="chat-header">
@@ -186,7 +188,7 @@ export function createChannelChatHTML(channel){
         </div>
         <div class="chat-header-info">
           <div class="chat-header-name">${channel.name}</div>
-          <div class="chat-header-status" id="chat-header-status">${channel.desc}</div>
+          <div class="chat-header-status">${channel.desc}</div>
         </div>
       </div>
     </div>

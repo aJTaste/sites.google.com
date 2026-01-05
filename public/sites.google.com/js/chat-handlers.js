@@ -1,12 +1,17 @@
-// チャットイベント処理（Supabase版）
-import{supabase}from'../common/core.js';
+// イベントハンドラー関連（Supabase版）
+
+import{supabase}from'../common/supabase-config.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
 import{displayUsers,createChatHTML,createChannelChatHTML}from'./chat-ui.js';
 import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
+import{handleImageFile}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
+
+console.log('chat-handlers.js読み込み開始');
 
 // ユーザーを選択
 export async function selectUser(userId){
+  console.log('selectUser()実行:',userId);
   updateState('selectedUserId',userId);
   updateState('selectedChannelId',null);
   
@@ -15,23 +20,19 @@ export async function selectUser(userId){
     .from('read_status')
     .upsert({
       user_id:state.currentProfile.id,
-      target_id:state.allUsers.find(u=>u.id===userId).user_id,
+      target_id:userId,
       last_read_at:new Date().toISOString()
-    });
+    },{onConflict:'user_id,target_id'});
   
-  // 未読をリセット
-  const targetUser=state.allUsers.find(u=>u.id===userId);
-  if(targetUser){
-    state.unreadCounts[targetUser.user_id]=0;
-  }
+  state.unreadCounts[userId]=0;
   
   displayUsers();
   
   const chatMain=document.getElementById('chat-main');
-  const selectedUser=state.allUsers.find(u=>u.id===userId);
+  const selectedUser=state.allUsers.find(u=>u.user_id===userId);
   
   if(!selectedUser){
-    console.error('選択されたユーザーが見つかりません');
+    console.error('選択されたユーザーが見つかりません:',userId);
     return;
   }
   
@@ -42,10 +43,12 @@ export async function selectUser(userId){
 
 // チャンネルを選択
 export async function selectChannel(channelId){
+  console.log('selectChannel()実行:',channelId);
+  
   const channel=CHANNELS.find(c=>c.id===channelId);
   
   if(!channel){
-    console.error('選択されたチャンネルが見つかりません');
+    console.error('選択されたチャンネルが見つかりません:',channelId);
     return;
   }
   
@@ -65,9 +68,8 @@ export async function selectChannel(channelId){
       user_id:state.currentProfile.id,
       target_id:channelId,
       last_read_at:new Date().toISOString()
-    });
+    },{onConflict:'user_id,target_id'});
   
-  // 未読をリセット
   state.unreadCounts[channelId]=0;
   
   displayUsers();
@@ -78,46 +80,71 @@ export async function selectChannel(channelId){
   loadChannelMessages(channelId);
 }
 
+// window経由で関数を公開（循環参照を避けるため）
+window.selectUser=selectUser;
+window.selectChannel=selectChannel;
+
 // チャット入力のセットアップ
 function setupChatInput(){
   const chatInput=document.getElementById('chat-input');
-  if(!chatInput)return;
+  if(!chatInput){
+    console.error('chat-inputが見つかりません');
+    return;
+  }
   
-  // 自動リサイズ
-  chatInput.addEventListener('input',()=>{
+  // 入力中ステータスの送信
+  let typingTimeout=null;
+  chatInput.addEventListener('input',async()=>{
     chatInput.style.height='auto';
     chatInput.style.height=Math.min(chatInput.scrollHeight,120)+'px';
     
-    // 入力中状態を送信
-    sendTypingStatus(true);
-    
-    // 3秒後に入力中を解除
-    if(state.typingTimeout){
-      clearTimeout(state.typingTimeout);
+    // 入力中ステータスを送信
+    const targetId=state.selectedUserId||state.selectedChannelId;
+    if(targetId){
+      await supabase
+        .from('typing_status')
+        .upsert({
+          user_id:state.currentProfile.id,
+          target_id:targetId,
+          is_typing:true,
+          updated_at:new Date().toISOString()
+        },{onConflict:'user_id,target_id'});
+      
+      // 3秒後に入力中を解除
+      if(typingTimeout)clearTimeout(typingTimeout);
+      typingTimeout=setTimeout(async()=>{
+        await supabase
+          .from('typing_status')
+          .upsert({
+            user_id:state.currentProfile.id,
+            target_id:targetId,
+            is_typing:false,
+            updated_at:new Date().toISOString()
+          },{onConflict:'user_id,target_id'});
+      },3000);
     }
-    state.typingTimeout=setTimeout(()=>{
-      sendTypingStatus(false);
-    },3000);
   });
   
-  // Enterで送信
   chatInput.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'&&!e.shiftKey){
       e.preventDefault();
       if(!state.isSending){
         sendMessage();
-        sendTypingStatus(false);
       }
     }
   });
   
-  // クリップボードから画像貼り付け
+  // クリップボードから画像を貼り付け
   chatInput.addEventListener('paste',(e)=>{
     const items=e.clipboardData.items;
     for(let i=0;i<items.length;i++){
       if(items[i].type.indexOf('image')!==-1){
         const file=items[i].getAsFile();
-        handleImageFile(file);
+        handleImageFile(file,(base64)=>{
+          updateState('selectedImage',base64);
+          document.getElementById('image-preview').src=base64;
+          document.getElementById('image-preview-container').classList.add('show');
+        });
         e.preventDefault();
         break;
       }
@@ -129,12 +156,11 @@ function setupChatInput(){
     sendBtn.addEventListener('click',()=>{
       if(!state.isSending){
         sendMessage();
-        sendTypingStatus(false);
       }
     });
   }
   
-  // 画像添付
+  // 画像添付ボタン
   const attachImageBtn=document.getElementById('attach-image-btn');
   const imageFileInput=document.getElementById('image-file-input');
   
@@ -146,7 +172,11 @@ function setupChatInput(){
     imageFileInput.addEventListener('change',(e)=>{
       const file=e.target.files[0];
       if(file){
-        handleImageFile(file);
+        handleImageFile(file,(base64)=>{
+          updateState('selectedImage',base64);
+          document.getElementById('image-preview').src=base64;
+          document.getElementById('image-preview-container').classList.add('show');
+        });
       }
     });
   }
@@ -170,50 +200,12 @@ function setupChatInput(){
   }
 }
 
-// 画像ファイル処理
-function handleImageFile(file){
-  if(!file.type.startsWith('image/')){
-    alert('画像ファイルを選択してください');
-    return;
-  }
-  
-  if(file.size>2*1024*1024){
-    alert('画像サイズは2MB以下にしてください');
-    return;
-  }
-  
-  updateState('selectedImage',file);
-  
-  const reader=new FileReader();
-  reader.onload=(e)=>{
-    document.getElementById('image-preview').src=e.target.result;
-    document.getElementById('image-preview-container').classList.add('show');
-  };
-  reader.readAsDataURL(file);
+// グローバル関数（window経由で呼び出し）
+window.openImageModal=function(imageUrl){
+  document.getElementById('image-modal-img').src=imageUrl;
+  document.getElementById('image-modal').classList.add('show');
 }
 
-// 入力中状態を送信
-async function sendTypingStatus(isTyping){
-  if(!state.selectedUserId&&!state.selectedChannelId)return;
-  
-  const targetId=state.selectedChannelId||state.allUsers.find(u=>u.id===state.selectedUserId)?.user_id;
-  if(!targetId)return;
-  
-  try{
-    await supabase
-      .from('typing_status')
-      .upsert({
-        user_id:state.currentProfile.id,
-        target_id:targetId,
-        is_typing:isTyping,
-        updated_at:new Date().toISOString()
-      });
-  }catch(error){
-    console.error('入力中状態の送信エラー:',error);
-  }
-}
-
-// グローバル関数
 window.replyMessage=function(messageId,text,senderId){
   updateState('replyToMessage',{id:messageId,text:text,senderId:senderId});
   document.getElementById('reply-preview-text').textContent=text.substring(0,100);
@@ -221,46 +213,17 @@ window.replyMessage=function(messageId,text,senderId){
   document.getElementById('chat-input').focus();
 }
 
-window.editMessage=function(messageId,isDM){
-  // 編集機能は一旦簡易実装（モーダルなし、プロンプトで編集）
-  const newText=prompt('新しいメッセージを入力してください:');
-  if(!newText||!newText.trim())return;
-  
-  const table=isDM?'dm_messages':'channel_messages';
-  
-  supabase
-    .from(table)
-    .update({
-      text:newText.trim(),
-      edited_at:new Date().toISOString()
-    })
-    .eq('id',messageId)
-    .then(({error})=>{
-      if(error){
-        console.error('編集エラー:',error);
-        alert('編集に失敗しました');
-      }
-    });
+window.editMessage=function(messageId,text,isDM){
+  updateState('editingMessageId',messageId);
+  updateState('editingIsDM',isDM);
+  document.getElementById('edit-textarea').value=text;
+  document.getElementById('edit-modal').classList.add('show');
 }
 
 window.deleteMessage=function(messageId,isDM){
-  if(!confirm('このメッセージを削除しますか？'))return;
-  
-  const table=isDM?'dm_messages':'channel_messages';
-  
-  supabase
-    .from(table)
-    .delete()
-    .eq('id',messageId)
-    .then(({error})=>{
-      if(error){
-        console.error('削除エラー:',error);
-        alert('削除に失敗しました');
-      }
-    });
+  updateState('editingMessageId',messageId);
+  updateState('editingIsDM',isDM);
+  document.getElementById('delete-modal').classList.add('show');
 }
 
-window.openImageModal=function(imageUrl){
-  document.getElementById('image-modal-img').src=imageUrl;
-  document.getElementById('image-modal').classList.add('show');
-}
+console.log('chat-handlers.js読み込み完了');
