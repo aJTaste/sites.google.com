@@ -53,12 +53,13 @@ export function createSidebar(activePage,userRole){
   const navItems=[
     {id:'index',icon:'home',title:'Home',href:'index.html'},
     {id:'chat',icon:'chat',title:'ChatHub',href:'chat.html'},
+    {id:'games',icon:'stadia_controller',title:'Games',href:'games.html'},
     {id:'links',icon:'link',title:'Links',href:'links.html'},
     {id:'files',icon:'folder',title:'Files',href:'files.html'},
     {id:'proxy',icon:'vpn_key',title:'Proxy',href:'proxy.html'},
     {id:'images',icon:'animated_images',title:'Images',href:'images.html'},
     {id:'piano',icon:'piano',title:'Piano',href:'piano.html'},
-    {id:'db',icon:'database',title:'Database',href:'db.html'}
+    {id:'db',icon:'database',title:'Database',href:'db.html'},
   ];
   
   const navHTML=navItems.map(item=>{
