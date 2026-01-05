@@ -1,5 +1,7 @@
 import{initPage,supabase}from'../common/core.js';
 
+let allProfiles=[];
+
 // ページ初期化（モデレーター以上のみ）
 await initPage('db','Database',{
   onUserLoaded:async(profile)=>{
@@ -9,58 +11,61 @@ await initPage('db','Database',{
       return;
     }
     
-    // ユーザー一覧を読み込み
-    await loadUsers();
+    // データを読み込み
+    await loadProfiles();
+    
+    // リアルタイム購読
+    subscribeToProfiles();
   }
 });
 
-// ユーザー一覧を読み込み
-async function loadUsers(){
+// プロフィールデータを読み込み
+async function loadProfiles(){
   try{
-    const{data:users,error}=await supabase
+    const{data:profiles,error}=await supabase
       .from('profiles')
       .select('*')
       .order('created_at',{ascending:false});
     
     if(error)throw error;
     
-    // 統計情報を更新
-    updateStats(users);
-    
-    // テーブルを表示
-    displayUsers(users);
+    allProfiles=profiles||[];
+    displayProfiles();
   }catch(error){
-    console.error('ユーザー読み込みエラー:',error);
-    document.getElementById('users-tbody').innerHTML=`
+    console.error('データ読み込みエラー:',error);
+    document.getElementById('data-tbody').innerHTML=`
       <tr>
-        <td colspan="6" style="text-align:center;padding:40px;color:#cf222e;">
-          読み込みに失敗しました
+        <td colspan="20" style="text-align:center;padding:40px;color:#cf222e;">
+          読み込みに失敗しました: ${error.message}
         </td>
       </tr>
     `;
   }
 }
 
-// 統計情報を更新
-function updateStats(users){
-  const total=users.length;
-  const online=users.filter(u=>u.is_online).length;
-  const admins=users.filter(u=>u.role==='admin').length;
-  
-  document.getElementById('stat-total').textContent=total;
-  document.getElementById('stat-online').textContent=online;
-  document.getElementById('stat-admins').textContent=admins;
+// リアルタイム購読
+function subscribeToProfiles(){
+  supabase
+    .channel('profiles-db-changes')
+    .on('postgres_changes',{
+      event:'*',
+      schema:'public',
+      table:'profiles'
+    },async()=>{
+      await loadProfiles();
+    })
+    .subscribe();
 }
 
-// ユーザー一覧を表示
-function displayUsers(users){
-  const tbody=document.getElementById('users-tbody');
+// プロフィールデータを表示
+function displayProfiles(){
+  const tbody=document.getElementById('data-tbody');
   
-  if(users.length===0){
+  if(allProfiles.length===0){
     tbody.innerHTML=`
       <tr>
-        <td colspan="6" style="text-align:center;padding:40px;color:var(--text-tertiary);">
-          ユーザーがいません
+        <td colspan="20" style="text-align:center;padding:40px;color:var(--text-tertiary);">
+          データがありません
         </td>
       </tr>
     `;
@@ -69,59 +74,47 @@ function displayUsers(users){
   
   tbody.innerHTML='';
   
-  users.forEach(user=>{
+  allProfiles.forEach(profile=>{
     const tr=document.createElement('tr');
     
-    // アイコン表示
-    let iconHtml;
-    if(user.avatar_url){
-      iconHtml=`<img src="${user.avatar_url}" alt="${user.display_name}">`;
-    }else{
-      const initial=user.display_name.charAt(0).toUpperCase();
-      const bgColor=user.avatar_color||'#FF6B35';
-      iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${initial}</div>`;
-    }
-    
-    // 権限バッジ
-    const roleNames={user:'一般',moderator:'モデレーター',admin:'管理者'};
-    const roleColors={user:'#6e7781',moderator:'#8c52ff',admin:'#ff6b35'};
-    const roleName=roleNames[user.role]||user.role;
-    const roleColor=roleColors[user.role]||'#6e7781';
-    
-    // ステータスバッジ
-    const statusHtml=user.is_online
-      ?'<span class="status-badge online"><span class="material-symbols-outlined">circle</span>オンライン</span>'
-      :'<span class="status-badge offline"><span class="material-symbols-outlined">circle</span>オフライン</span>';
-    
-    // 姓名
-    const fullName=[user.last_name,user.first_name].filter(Boolean).join(' ')||'-';
-    
-    // 作成日
-    const createdDate=new Date(user.created_at).toLocaleDateString('ja-JP');
-    
+    // 各カラムの値を表示
     tr.innerHTML=`
-      <td>
-        <div class="user-info">
-          <div class="user-avatar-small">
-            ${iconHtml}
-          </div>
-          <div>
-            <div class="user-name">${user.display_name}</div>
-          </div>
-        </div>
-      </td>
-      <td><code>${user.user_id}</code></td>
-      <td>${fullName}</td>
-      <td><span style="color:${roleColor};font-weight:600;">${roleName}</span></td>
-      <td>${statusHtml}</td>
-      <td>${createdDate}</td>
+      <td><code>${profile.id}</code></td>
+      <td><strong>${profile.user_id}</strong></td>
+      <td>${profile.display_name}</td>
+      <td>${profile.last_name||'-'}</td>
+      <td>${profile.first_name||'-'}</td>
+      <td>${profile.role}</td>
+      <td>${profile.is_online?'<span style="color:#2da44e;">●</span>':'<span style="color:#8b949e;">○</span>'}</td>
+      <td>${formatDate(profile.last_online)}</td>
+      <td>${profile.avatar_url?'<a href="'+profile.avatar_url+'" target="_blank">URL</a>':'-'}</td>
+      <td>${profile.avatar_color||'-'}</td>
+      <td>${formatDate(profile.created_at)}</td>
+      <td>${formatDate(profile.updated_at)}</td>
     `;
     
     tbody.appendChild(tr);
+  });
+  
+  // 件数を更新
+  document.getElementById('total-count').textContent=allProfiles.length;
+}
+
+// 日時フォーマット
+function formatDate(dateStr){
+  if(!dateStr)return'-';
+  const date=new Date(dateStr);
+  return date.toLocaleString('ja-JP',{
+    year:'numeric',
+    month:'2-digit',
+    day:'2-digit',
+    hour:'2-digit',
+    minute:'2-digit',
+    second:'2-digit'
   });
 }
 
 // 更新ボタン
 document.getElementById('refresh-btn').addEventListener('click',()=>{
-  loadUsers();
+  loadProfiles();
 });

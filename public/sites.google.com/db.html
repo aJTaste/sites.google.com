@@ -16,56 +16,39 @@
       <main class="main-content">
         <div class="db-container">
           <div class="db-header">
-            <h1>Database</h1>
-            <p class="db-description">全ユーザーの情報を閲覧できます（モデレーター・管理者のみ）</p>
-          </div>
-
-          <div class="db-stats">
-            <div class="stat-card">
-              <span class="material-symbols-outlined">people</span>
-              <div>
-                <div class="stat-value" id="stat-total">0</div>
-                <div class="stat-label">総ユーザー数</div>
+            <h1>Database - profiles</h1>
+            <div class="db-controls">
+              <div class="total-count">
+                全 <strong id="total-count">0</strong> 件
               </div>
-            </div>
-            <div class="stat-card">
-              <span class="material-symbols-outlined">circle</span>
-              <div>
-                <div class="stat-value" id="stat-online">0</div>
-                <div class="stat-label">オンライン</div>
-              </div>
-            </div>
-            <div class="stat-card">
-              <span class="material-symbols-outlined">admin_panel_settings</span>
-              <div>
-                <div class="stat-value" id="stat-admins">0</div>
-                <div class="stat-label">管理者</div>
-              </div>
-            </div>
-          </div>
-
-          <div class="users-table-container">
-            <div class="table-header">
-              <h2>全ユーザー一覧</h2>
               <button class="refresh-btn" id="refresh-btn">
                 <span class="material-symbols-outlined">refresh</span>
                 <span>更新</span>
               </button>
             </div>
-            <table class="users-table">
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
               <thead>
                 <tr>
-                  <th>ユーザー</th>
-                  <th>ユーザーID</th>
-                  <th>姓名</th>
-                  <th>権限</th>
-                  <th>ステータス</th>
-                  <th>作成日</th>
+                  <th>id</th>
+                  <th>user_id</th>
+                  <th>display_name</th>
+                  <th>last_name</th>
+                  <th>first_name</th>
+                  <th>role</th>
+                  <th>is_online</th>
+                  <th>last_online</th>
+                  <th>avatar_url</th>
+                  <th>avatar_color</th>
+                  <th>created_at</th>
+                  <th>updated_at</th>
                 </tr>
               </thead>
-              <tbody id="users-tbody">
+              <tbody id="data-tbody">
                 <tr>
-                  <td colspan="6" style="text-align:center;padding:40px;color:var(--text-tertiary);">
+                  <td colspan="20" style="text-align:center;padding:40px;color:var(--text-tertiary);">
                     読み込み中...
                   </td>
                 </tr>
