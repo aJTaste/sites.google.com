@@ -22,22 +22,42 @@ async function loadLinks(){
   try{
     const{data:links,error}=await supabase
       .from('links')
-      .select(`
-        *,
-        posted_by_profile:profiles!posted_by(display_name,avatar_url,avatar_color)
-      `)
+      .select('*')
       .order('created_at',{ascending:false});
     
     if(error)throw error;
     
-    allLinks=links||[];
+    // posted_by で profiles を取得
+    if(links&&links.length>0){
+      const userIds=[...new Set(links.map(l=>l.posted_by))];
+      const{data:profiles}=await supabase
+        .from('profiles')
+        .select('id,display_name,avatar_url,avatar_color')
+        .in('id',userIds);
+      
+      const profileMap={};
+      if(profiles){
+        profiles.forEach(p=>{
+          profileMap[p.id]=p;
+        });
+      }
+      
+      // posted_by_profile を追加
+      allLinks=links.map(link=>({
+        ...link,
+        posted_by_profile:profileMap[link.posted_by]||{display_name:'不明'}
+      }));
+    }else{
+      allLinks=[];
+    }
+    
     displayLinks();
   }catch(error){
     console.error('リンク読み込みエラー:',error);
     document.getElementById('links-grid').innerHTML=`
       <div class="empty-state">
         <span class="material-symbols-outlined">error</span>
-        <p>読み込みに失敗しました</p>
+        <p>読み込みに失敗しました: ${error.message}</p>
       </div>
     `;
   }
@@ -164,6 +184,7 @@ document.getElementById('add-link-form').addEventListener('submit',async(e)=>{
   const description=document.getElementById('link-description').value.trim();
   const category=document.getElementById('link-category').value;
   const errorEl=document.getElementById('link-error');
+  const submitBtn=e.target.querySelector('button[type="submit"]');
   
   errorEl.textContent='';
   
@@ -171,6 +192,9 @@ document.getElementById('add-link-form').addEventListener('submit',async(e)=>{
     errorEl.textContent='すべての項目を入力してください';
     return;
   }
+  
+  submitBtn.disabled=true;
+  submitBtn.textContent='投稿中...';
   
   try{
     const{error}=await supabase
@@ -188,6 +212,9 @@ document.getElementById('add-link-form').addEventListener('submit',async(e)=>{
     document.getElementById('add-link-form').reset();
   }catch(error){
     console.error('投稿エラー:',error);
-    errorEl.textContent='投稿に失敗しました';
+    errorEl.textContent='投稿に失敗しました: '+error.message;
+  }finally{
+    submitBtn.disabled=false;
+    submitBtn.textContent='投稿';
   }
 });

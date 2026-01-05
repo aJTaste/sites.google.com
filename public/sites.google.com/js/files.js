@@ -29,22 +29,42 @@ async function loadFiles(){
   try{
     const{data:files,error}=await supabase
       .from('files')
-      .select(`
-        *,
-        uploaded_by_profile:profiles!uploaded_by(display_name,avatar_url,avatar_color)
-      `)
+      .select('*')
       .order('created_at',{ascending:false});
     
     if(error)throw error;
     
-    allFiles=files||[];
+    // uploaded_by で profiles を取得
+    if(files&&files.length>0){
+      const userIds=[...new Set(files.map(f=>f.uploaded_by))];
+      const{data:profiles}=await supabase
+        .from('profiles')
+        .select('id,display_name,avatar_url,avatar_color')
+        .in('id',userIds);
+      
+      const profileMap={};
+      if(profiles){
+        profiles.forEach(p=>{
+          profileMap[p.id]=p;
+        });
+      }
+      
+      // uploaded_by_profile を追加
+      allFiles=files.map(file=>({
+        ...file,
+        uploaded_by_profile:profileMap[file.uploaded_by]||{display_name:'不明'}
+      }));
+    }else{
+      allFiles=[];
+    }
+    
     displayFiles();
   }catch(error){
     console.error('ファイル読み込みエラー:',error);
     document.getElementById('files-grid').innerHTML=`
       <div class="empty-state">
         <span class="material-symbols-outlined">error</span>
-        <p>読み込みに失敗しました</p>
+        <p>読み込みに失敗しました: ${error.message}</p>
       </div>
     `;
   }
@@ -105,7 +125,7 @@ function displayFiles(){
     // 削除ボタン（アップロード者本人またはモデレーター以上）
     const canDelete=file.uploaded_by===currentProfile.id||['moderator','admin'].includes(currentProfile.role);
     const deleteBtn=canDelete?`
-      <button class="file-action-btn delete" onclick="deleteFile('${file.id}')" title="削除">
+      <button class="file-action-btn delete" onclick="deleteFile('${file.id}','${file.file_url}')" title="削除">
         <span class="material-symbols-outlined">delete</span>
       </button>
     `:'';
@@ -172,21 +192,12 @@ window.downloadFile=function(url,filename){
 }
 
 // ファイル削除
-window.deleteFile=async function(fileId){
+window.deleteFile=async function(fileId,fileUrl){
   if(!confirm('このファイルを削除しますか？'))return;
   
   try{
-    // ファイル情報を取得
-    const{data:file,error:fetchError}=await supabase
-      .from('files')
-      .select('file_url')
-      .eq('id',fileId)
-      .single();
-    
-    if(fetchError)throw fetchError;
-    
     // Storageから削除
-    const filePath=file.file_url.split('/').pop();
+    const filePath=fileUrl.split('/').pop();
     await supabase.storage
       .from('shared-files')
       .remove([filePath]);
@@ -294,7 +305,7 @@ document.getElementById('upload-form').addEventListener('submit',async(e)=>{
     selectedFile=null;
   }catch(error){
     console.error('アップロードエラー:',error);
-    errorEl.textContent='アップロードに失敗しました';
+    errorEl.textContent='アップロードに失敗しました: '+error.message;
   }finally{
     uploadBtn.disabled=false;
     uploadBtn.textContent='アップロード';
