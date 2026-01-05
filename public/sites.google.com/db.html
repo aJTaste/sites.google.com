@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Database | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/db.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <div class="main-container">
+      <main class="main-content">
+        <div class="db-container">
+          <div class="db-header">
+            <h1>Database</h1>
+            <p class="db-description">全ユーザーの情報を閲覧できます（モデレーター・管理者のみ）</p>
+          </div>
+
+          <div class="db-stats">
+            <div class="stat-card">
+              <span class="material-symbols-outlined">people</span>
+              <div>
+                <div class="stat-value" id="stat-total">0</div>
+                <div class="stat-label">総ユーザー数</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="material-symbols-outlined">circle</span>
+              <div>
+                <div class="stat-value" id="stat-online">0</div>
+                <div class="stat-label">オンライン</div>
+              </div>
+            </div>
+            <div class="stat-card">
+              <span class="material-symbols-outlined">admin_panel_settings</span>
+              <div>
+                <div class="stat-value" id="stat-admins">0</div>
+                <div class="stat-label">管理者</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="users-table-container">
+            <div class="table-header">
+              <h2>全ユーザー一覧</h2>
+              <button class="refresh-btn" id="refresh-btn">
+                <span class="material-symbols-outlined">refresh</span>
+                <span>更新</span>
+              </button>
+            </div>
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>ユーザー</th>
+                  <th>ユーザーID</th>
+                  <th>姓名</th>
+                  <th>権限</th>
+                  <th>ステータス</th>
+                  <th>作成日</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <tr>
+                  <td colspan="6" style="text-align:center;padding:40px;color:var(--text-tertiary);">
+                    読み込み中...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/db.js"></script>
+  <script src="common/stealth-mode.js"></script>
+  <script src="common/capture-handler.js"></script>
+</body>
+</html>

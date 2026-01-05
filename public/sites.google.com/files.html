@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Files | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/files.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <div class="main-container">
+      <main class="main-content">
+        <div class="files-container">
+          <div class="files-header">
+            <h1>Files</h1>
+            <p class="files-description">全種類のファイルを共有できます（最大20MB）</p>
+          </div>
+
+          <div class="upload-section">
+            <h2>ファイルをアップロード</h2>
+            <form class="upload-form" id="upload-form">
+              <div class="file-input-wrapper">
+                <input type="file" id="file-input" required>
+                <span class="material-symbols-outlined file-input-icon">upload_file</span>
+                <div class="file-input-text">
+                  <p>ファイルを選択</p>
+                  <span>クリックまたはドラッグ&ドロップ（最大20MB）</span>
+                </div>
+              </div>
+              <div class="selected-file-info" id="selected-file-info"></div>
+              <div class="form-group">
+                <label for="file-description">説明（任意）</label>
+                <input type="text" id="file-description" placeholder="このファイルの説明を入力">
+              </div>
+              <div class="moderator-toggle" id="moderator-toggle" style="display:none;">
+                <input type="checkbox" id="moderator-only">
+                <label for="moderator-only">モデレーター・管理者のみ閲覧可能にする</label>
+              </div>
+              <button type="submit" class="btn-primary" id="upload-btn">アップロード</button>
+              <span class="error-message" id="upload-error"></span>
+            </form>
+          </div>
+
+          <div class="filter-section">
+            <button class="filter-btn active" data-filter="all">
+              <span class="material-symbols-outlined">apps</span>
+              <span>すべて</span>
+            </button>
+            <button class="filter-btn" data-filter="public">
+              <span class="material-symbols-outlined">public</span>
+              <span>公開</span>
+            </button>
+            <button class="filter-btn" data-filter="moderator" id="moderator-filter" style="display:none;">
+              <span class="material-symbols-outlined">shield</span>
+              <span>モデレーター限定</span>
+            </button>
+          </div>
+
+          <div class="files-grid" id="files-grid">
+            <div class="empty-state">
+              <span class="material-symbols-outlined">folder</span>
+              <p>読み込み中...</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/files.js"></script>
+  <script src="common/stealth-mode.js"></script>
+  <script src="common/capture-handler.js"></script>
+</body>
+</html>
