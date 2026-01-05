@@ -14,7 +14,7 @@
 			"use strict";
 			window.addEventListener("load", function() {
 				if(window.location.href.indexOf("file:") === 0) {
-					alert("これはオンライン用のファイルです。これをプレイするには、この下のフォルダ内にある[README]ファイルを開いてください。プレイできるリンクがあるはずです。");
+					alert("ホスティングしろ");
 				}else {
 					var relayId = Math.floor(Math.random() * 3);
 					window.eaglercraftXOpts = {
@@ -24,9 +24,7 @@
 						localesURI: "lang/",
 						worldsDB: "worlds",
 						servers: [
-							{ addr: "wss://play.zelz.net", name: "ZelzNet" },
-							{ addr: "wss://mc.arch.lol", name: "ArchMC" },
-							{ addr: "wss://beta.arch.lol", name: "§r §r §r §r §4§lArchMC Beta" }
+							{ addr: "wss://c905e84f-063e-4131-b223-dbc5bcd6e2b5-00-2pxqqs5ihhicd.sisko.replit.dev:3000/", name: "AppHubサーバー" },
     						]
 					};
 					main();
