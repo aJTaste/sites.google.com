@@ -5,6 +5,7 @@ import{checkPermission}from'./permissions.js';
 // グローバルな現在のユーザー情報
 let currentUser=null;
 let currentProfile=null;
+let onlineStatusInterval=null;
 
 // ========================================
 // UI生成関数
@@ -127,23 +128,32 @@ export async function initPage(pageId,pageTitle,options={}){
     currentProfile=profile;
     
     // オンライン状態を更新
-    await supabase
-      .from('profiles')
-      .update({
-        is_online:true,
-        last_online:new Date().toISOString()
-      })
-      .eq('id',currentUser.id);
+    await updateOnlineStatus(true);
+    
+    // 定期的にオンライン状態を更新（30秒ごと）
+    if(onlineStatusInterval){
+      clearInterval(onlineStatusInterval);
+    }
+    onlineStatusInterval=setInterval(async()=>{
+      await updateOnlineStatus(true);
+    },30000);
     
     // オフライン時の処理
-    window.addEventListener('beforeunload',async()=>{
-      await supabase
-        .from('profiles')
-        .update({
-          is_online:false,
-          last_online:new Date().toISOString()
-        })
-        .eq('id',currentUser.id);
+    const handleOffline=async()=>{
+      await updateOnlineStatus(false);
+      if(onlineStatusInterval){
+        clearInterval(onlineStatusInterval);
+      }
+    };
+    
+    window.addEventListener('beforeunload',handleOffline);
+    window.addEventListener('pagehide',handleOffline);
+    document.addEventListener('visibilitychange',async()=>{
+      if(document.hidden){
+        await updateOnlineStatus(false);
+      }else{
+        await updateOnlineStatus(true);
+      }
     });
     
     // UI生成
@@ -193,6 +203,21 @@ export async function initPage(pageId,pageTitle,options={}){
       window.location.href='login.html';
     }
     return null;
+  }
+}
+
+// オンライン状態を更新
+async function updateOnlineStatus(isOnline){
+  try{
+    await supabase
+      .from('profiles')
+      .update({
+        is_online:isOnline,
+        last_online:new Date().toISOString()
+      })
+      .eq('id',currentUser.id);
+  }catch(error){
+    console.error('オンライン状態更新エラー:',error);
   }
 }
 
@@ -261,6 +286,12 @@ function setupHeaderEvents(){
   if(logoutBtn){
     logoutBtn.addEventListener('click',async()=>{
       try{
+        // オフライン状態に更新
+        await updateOnlineStatus(false);
+        if(onlineStatusInterval){
+          clearInterval(onlineStatusInterval);
+        }
+        
         await supabase.auth.signOut();
         window.location.href='login.html';
       }catch(error){

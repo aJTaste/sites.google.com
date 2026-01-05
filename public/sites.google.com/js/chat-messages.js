@@ -223,6 +223,9 @@ async function displaySingleMessage(msg,otherUserId,shouldScroll){
   
   actionsHtml+=`</div>`;
   
+  // 編集済みチェック（updated_atとcreated_atを比較）
+  const isEdited=msg.updated_at&&new Date(msg.updated_at).getTime()>new Date(msg.created_at).getTime()+1000;
+  
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
@@ -238,7 +241,7 @@ async function displaySingleMessage(msg,otherUserId,shouldScroll){
       ${msg.reply_to_text?`<div class="message-reply">返信: ${escapeHtml(msg.reply_to_text).substring(0,100)}...</div>`:''}
       ${msg.text?`<div class="message-text">${escapeHtml(msg.text)}</div>`:''}
       ${msg.image_url?`<img class="message-image" src="${msg.image_url}" alt="画像" onclick="window.openImageModal('${msg.image_url}')">`:''}
-      ${msg.updated_at&&msg.updated_at!==msg.created_at?`<div class="message-edited">(編集済み)</div>`:''}
+      ${isEdited?`<div class="message-edited">(編集済み)</div>`:''}
     </div>
     ${actionsHtml}
   `;
@@ -300,6 +303,9 @@ async function displaySingleChannelMessage(msg){
   
   actionsHtml+=`</div>`;
   
+  // 編集済みチェック（updated_atとcreated_atを比較）
+  const isEdited=msg.updated_at&&new Date(msg.updated_at).getTime()>new Date(msg.created_at).getTime()+1000;
+  
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
@@ -315,7 +321,7 @@ async function displaySingleChannelMessage(msg){
       ${msg.reply_to_text?`<div class="message-reply">返信: ${escapeHtml(msg.reply_to_text).substring(0,100)}...</div>`:''}
       ${msg.text?`<div class="message-text">${escapeHtml(msg.text)}</div>`:''}
       ${msg.image_url?`<img class="message-image" src="${msg.image_url}" alt="画像" onclick="window.openImageModal('${msg.image_url}')">`:''}
-      ${msg.updated_at&&msg.updated_at!==msg.created_at?`<div class="message-edited">(編集済み)</div>`:''}
+      ${isEdited?`<div class="message-edited">(編集済み)</div>`:''}
     </div>
     ${actionsHtml}
   `;
@@ -338,12 +344,18 @@ function updateMessageInDOM(messageId,newData){
     textEl.innerHTML=escapeHtml(newData.text);
   }
   
-  // 編集済みマークを追加
-  if(!messageEl.querySelector('.message-edited')){
+  // 編集済みチェック（updated_atとcreated_atを比較）
+  const isEdited=newData.updated_at&&new Date(newData.updated_at).getTime()>new Date(newData.created_at).getTime()+1000;
+  
+  // 編集済みマークを追加/削除
+  const existingEdited=messageEl.querySelector('.message-edited');
+  if(isEdited&&!existingEdited){
     const editedEl=document.createElement('div');
     editedEl.className='message-edited';
     editedEl.textContent='(編集済み)';
     messageEl.querySelector('.message-content').appendChild(editedEl);
+  }else if(!isEdited&&existingEdited){
+    existingEdited.remove();
   }
 }
 
@@ -411,11 +423,14 @@ export async function sendMessage(){
       imageUrl=urlData.publicUrl;
     }
     
+    const now=new Date().toISOString();
+    
     const messageData={
       sender_id:state.currentProfile.id,
       text:messageText,
       image_url:imageUrl,
-      created_at:new Date().toISOString()
+      created_at:now,
+      updated_at:now
     };
     
     if(messageReply){
