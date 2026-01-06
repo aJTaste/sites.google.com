@@ -1,6 +1,6 @@
 // AppHub Core - Supabase版
-import{supabase}from'./supabase-config.js';
-import{checkPermission}from'./permissions.js';
+import{supabase}from'/sites.google.com/common/supabase-config.js';
+import{checkPermission}from'/sites.google.com/common/permissions.js';
 
 // グローバルな現在のユーザー情報
 let currentUser=null;
@@ -16,8 +16,8 @@ export function createHeader(pageTitle){
   return`
     <header class="top-header">
       <div class="header-left">
-        <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
-        <a href="index.html" style="text-decoration:none;color:inherit;">
+        <img src="/sites.google.com/assets/favicon1.svg" alt="AppHub" class="logo-icon">
+        <a href="/sites.google.com/index.html" style="text-decoration:none;color:inherit;">
           <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
         </a>
         <span class="header-divider">|</span>
@@ -51,15 +51,15 @@ export function createHeader(pageTitle){
 // サイドバー生成
 export function createSidebar(activePage,userRole){
   const navItems=[
-    {id:'index',icon:'home',title:'Home',href:'index.html'},
-    {id:'chat',icon:'chat',title:'ChatHub',href:'chat.html'},
-    {id:'games',icon:'stadia_controller',title:'Games',href:'games.html'},
-    {id:'links',icon:'link',title:'Links',href:'links.html'},
-    {id:'files',icon:'folder',title:'Files',href:'files.html'},
-    {id:'proxy',icon:'vpn_key',title:'Proxy',href:'proxy.html'},
-    {id:'images',icon:'animated_images',title:'Images',href:'images.html'},
-    {id:'piano',icon:'piano',title:'Piano',href:'piano.html'},
-    {id:'db',icon:'database',title:'Database',href:'db.html'},
+    {id:'index',icon:'home',title:'Home',href:'/sites.google.com/index.html'},
+    {id:'chat',icon:'chat',title:'ChatHub',href:'/sites.google.com/chat.html'},
+    {id:'games',icon:'stadia_controller',title:'Games',href:'/sites.google.com/games.html'},
+    {id:'links',icon:'link',title:'Links',href:'/sites.google.com/links.html'},
+    {id:'files',icon:'folder',title:'Files',href:'/sites.google.com/files.html'},
+    {id:'proxy',icon:'vpn_key',title:'Proxy',href:'/sites.google.com/proxy.html'},
+    {id:'images',icon:'animated_images',title:'Images',href:'/sites.google.com/images.html'},
+    {id:'piano',icon:'piano',title:'Piano',href:'/sites.google.com/piano.html'},
+    {id:'db',icon:'database',title:'Database',href:'/sites.google.com/db.html'},
   ];
   
   const navHTML=navItems.map(item=>{
@@ -104,7 +104,7 @@ export async function initPage(pageId,pageTitle,options={}){
     
     if(!session){
       if(redirectIfNotAuth){
-        window.location.href='login.html';
+        window.location.href='/sites.google.com/login.html';
       }
       return null;
     }
@@ -122,7 +122,7 @@ export async function initPage(pageId,pageTitle,options={}){
       console.error('プロフィール取得エラー:',profileError);
       alert('アカウント情報の取得に失敗しました');
       await supabase.auth.signOut();
-      window.location.href='login.html';
+      window.location.href='/sites.google.com/login.html';
       return null;
     }
     
@@ -183,7 +183,7 @@ export async function initPage(pageId,pageTitle,options={}){
     if(pageId==='db'){
       if(!['moderator','admin'].includes(profile.role)){
         alert('このページへのアクセス権限がありません');
-        window.location.href='index.html';
+        window.location.href='/sites.google.com/index.html';
         return null;
       }
     }
@@ -201,7 +201,7 @@ export async function initPage(pageId,pageTitle,options={}){
   }catch(error){
     console.error('初期化エラー:',error);
     if(redirectIfNotAuth){
-      window.location.href='login.html';
+      window.location.href='/sites.google.com/login.html';
     }
     return null;
   }
@@ -272,14 +272,14 @@ function setupHeaderEvents(){
   const profileBtn=document.getElementById('profile-btn');
   if(profileBtn){
     profileBtn.addEventListener('click',()=>{
-      window.location.href='profile.html';
+      window.location.href='/sites.google.com/profile.html';
     });
   }
   
   const settingsBtn=document.getElementById('settings-btn');
   if(settingsBtn){
     settingsBtn.addEventListener('click',()=>{
-      window.location.href='settings.html';
+      window.location.href='/sites.google.com/settings.html';
     });
   }
   
@@ -294,7 +294,7 @@ function setupHeaderEvents(){
         }
         
         await supabase.auth.signOut();
-        window.location.href='login.html';
+        window.location.href='/sites.google.com/login.html';
       }catch(error){
         console.error('ログアウトエラー:',error);
         alert('ログアウトに失敗しました');
