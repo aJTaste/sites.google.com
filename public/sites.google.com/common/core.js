@@ -59,7 +59,7 @@ export function createSidebar(activePage,userRole){
     {id:'proxy',icon:'vpn_key',title:'Proxy',href:'/sites.google.com/proxy.html'},
     {id:'images',icon:'animated_images',title:'Images',href:'/sites.google.com/images.html'},
     {id:'piano',icon:'piano',title:'Piano',href:'/sites.google.com/piano.html'},
-    {id:'db',icon:'database',title:'Database',href:'/sites.google.com/db.html'},
+    // {id:'db',icon:'database',title:'Database',href:'/sites.google.com/db.html'},
   ];
   
   const navHTML=navItems.map(item=>{
