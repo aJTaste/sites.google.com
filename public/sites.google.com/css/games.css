@@ -1,0 +1,74 @@
+/* index.html 固有のスタイル */
+
+.welcome-section{
+  max-width:1200px;
+  margin:0 auto;
+}
+
+.welcome-section h1{
+  font-size:32px;
+  font-weight:600;
+  margin-bottom:8px;
+  color:var(--text-primary);
+}
+
+.welcome-section>p{
+  font-size:16px;
+  color:var(--text-secondary);
+  margin-bottom:32px;
+}
+
+.app-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:16px;
+}
+
+.app-card{
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:24px;
+  transition:transform 0.15s,box-shadow 0.15s;
+  cursor:pointer;
+}
+
+.app-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 4px 12px rgba(0,0,0,0.08);
+}
+
+.app-icon{
+  width:48px;
+  height:48px;
+  background:var(--main-light);
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-bottom:16px;
+}
+
+.app-icon .material-symbols-outlined{
+  font-size:28px;
+  color:var(--main);
+}
+
+.app-card h3{
+  font-size:18px;
+  font-weight:600;
+  margin-bottom:8px;
+  color:var(--text-primary);
+}
+
+.app-card p{
+  font-size:14px;
+  color:var(--text-secondary);
+  line-height:1.5;
+}
+
+@media(max-width:768px){
+  .app-grid{
+    grid-template-columns:1fr;
+  }
+}
