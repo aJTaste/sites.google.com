@@ -26,21 +26,35 @@ await initPage('files','Files',{
 
 // ファイル一覧を読み込み
 async function loadFiles(){
+  console.log('ファイル読み込み開始...');
   try{
     const{data:files,error}=await supabase
       .from('files')
       .select('*')
       .order('created_at',{ascending:false});
     
-    if(error)throw error;
+    if(error){
+      console.error('クエリエラー:',error);
+      throw error;
+    }
+    
+    console.log('取得したファイル:',files);
     
     // uploaded_by で profiles を取得
     if(files&&files.length>0){
       const userIds=[...new Set(files.map(f=>f.uploaded_by))];
-      const{data:profiles}=await supabase
+      console.log('ユーザーID:',userIds);
+      
+      const{data:profiles,error:profileError}=await supabase
         .from('profiles')
         .select('id,display_name,avatar_url,avatar_color')
         .in('id',userIds);
+      
+      if(profileError){
+        console.error('プロフィール取得エラー:',profileError);
+      }
+      
+      console.log('取得したプロフィール:',profiles);
       
       const profileMap={};
       if(profiles){
@@ -58,6 +72,7 @@ async function loadFiles(){
       allFiles=[];
     }
     
+    console.log('表示するファイル:',allFiles);
     displayFiles();
   }catch(error){
     console.error('ファイル読み込みエラー:',error);
@@ -72,16 +87,20 @@ async function loadFiles(){
 
 // リアルタイム購読
 function subscribeToFiles(){
+  console.log('リアルタイム購読開始...');
   supabase
-    .channel('files-changes')
+    .channel('files-realtime-changes')
     .on('postgres_changes',{
       event:'*',
       schema:'public',
       table:'files'
-    },async()=>{
-      await loadFiles();
+    },(payload)=>{
+      console.log('リアルタイム更新:',payload);
+      loadFiles();
     })
-    .subscribe();
+    .subscribe((status)=>{
+      console.log('購読ステータス:',status);
+    });
 }
 
 // ファイル一覧を表示
@@ -270,39 +289,63 @@ document.getElementById('upload-form').addEventListener('submit',async(e)=>{
   errorEl.textContent='';
   
   try{
+    console.log('アップロード開始:',selectedFile.name);
+    
     // ファイルをStorageにアップロード
     const fileName=`${currentProfile.id}_${Date.now()}_${selectedFile.name}`;
     
-    const{error:uploadError}=await supabase.storage
+    const{data:uploadData,error:uploadError}=await supabase.storage
       .from('shared-files')
       .upload(fileName,selectedFile);
     
-    if(uploadError)throw uploadError;
+    if(uploadError){
+      console.error('ストレージエラー:',uploadError);
+      throw uploadError;
+    }
+    
+    console.log('アップロード成功:',uploadData);
     
     // 公開URLを取得
     const{data:urlData}=supabase.storage
       .from('shared-files')
       .getPublicUrl(fileName);
     
-    // データベースに保存
-    const{error:dbError}=await supabase
-      .from('files')
-      .insert({
-        filename:selectedFile.name,
-        file_url:urlData.publicUrl,
-        file_size:selectedFile.size,
-        file_type:selectedFile.type,
-        description:description||null,
-        is_moderator_only:isModeratorOnly,
-        uploaded_by:currentProfile.id
-      });
+    console.log('公開URL:',urlData.publicUrl);
     
-    if(dbError)throw dbError;
+    // データベースに保存
+    const insertData={
+      filename:selectedFile.name,
+      file_url:urlData.publicUrl,
+      file_size:selectedFile.size,
+      file_type:selectedFile.type,
+      description:description||null,
+      is_moderator_only:isModeratorOnly,
+      uploaded_by:currentProfile.id
+    };
+    
+    console.log('DB挿入データ:',insertData);
+    
+    const{data:dbData,error:dbError}=await supabase
+      .from('files')
+      .insert(insertData)
+      .select();
+    
+    if(dbError){
+      console.error('DB挿入エラー:',dbError);
+      throw dbError;
+    }
+    
+    console.log('DB挿入成功:',dbData);
+    
+    // 即座に画面を更新
+    await loadFiles();
     
     // フォームをリセット
     document.getElementById('upload-form').reset();
     document.getElementById('selected-file-info').classList.remove('show');
     selectedFile=null;
+    
+    alert('アップロードが完了しました');
   }catch(error){
     console.error('アップロードエラー:',error);
     errorEl.textContent='アップロードに失敗しました: '+error.message;
