@@ -24,6 +24,8 @@ export function createHeader(pageTitle){
         <span class="page-title">${pageTitle}</span>
       </div>
       <div class="header-right">
+        <div id="header-clock" class="header-clock" aria-label="current time"></div>
+        
         <button class="icon-btn" id="notification-btn" title="通知">
           <span class="material-symbols-outlined">notifications</span>
         </button>
@@ -178,6 +180,7 @@ export async function initPage(pageId,pageTitle,options={}){
     
     // アバター表示
     updateAvatarDisplay();
+    startHeaderClock();
     
     // db.htmlへのアクセス制御（モデレーター以上）
     if(pageId==='db'){
@@ -301,6 +304,23 @@ function setupHeaderEvents(){
       }
     });
   }
+}
+
+// ========================================
+// ヘッダー時計
+// ========================================
+function startHeaderClock(){
+  const el = document.getElementById('header-clock');
+  if(!el) return;
+  const tick = () => {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    el.textContent = `${hh}:${mm}:${ss}`;
+  };
+  tick();
+  setInterval(tick, 1000);
 }
 
 // ========================================
