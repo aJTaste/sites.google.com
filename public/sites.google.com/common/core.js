@@ -53,7 +53,7 @@ export function createHeader(pageTitle){
 // サイドバー生成
 export function createSidebar(activePage,userRole){
   const navItems=[
-    {id:'hub',icon:'home',title:'Home',href:'/sites.google.com/hub.html'},
+    {id:'hub',icon:'hub',title:'Hub',href:'/sites.google.com/hub.html'},
     {id:'chat',icon:'chat',title:'ChatHub',href:'/sites.google.com/chat.html'},
     {id:'games',icon:'stadia_controller',title:'Games',href:'/sites.google.com/games.html'},
     {id:'links',icon:'link',title:'Links',href:'/sites.google.com/links.html'},
