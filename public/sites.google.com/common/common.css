@@ -200,7 +200,13 @@ input::placeholder,textarea::placeholder{
   flex-shrink:0;
 }
 
-.ft{
+.header-left{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.up-data{
   display:flex;
   align-items:center;
   gap:12px;
