@@ -26,7 +26,7 @@ form.addEventListener('submit',async(e)=>{
     if(error)throw error;
     
     // ログイン成功
-    window.location.href='index.html';
+    window.location.href='hub.html';
     
   }catch(error){
     console.error('ログインエラー:',error);

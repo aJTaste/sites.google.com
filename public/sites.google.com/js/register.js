@@ -206,7 +206,7 @@ form.addEventListener('submit',async(e)=>{
     if(profileError)throw profileError;
     
     alert('登録完了！');
-    window.location.href='index.html';
+    window.location.href='hub.html';
     
   }catch(error){
     console.error('登録エラー:',error);

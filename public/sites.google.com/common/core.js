@@ -17,7 +17,7 @@ export function createHeader(pageTitle){
     <header class="top-header">
       <div class="header-left">
         <img src="/sites.google.com/assets/favicon1.svg" alt="AppHub" class="logo-icon">
-        <a href="/sites.google.com/index.html" style="text-decoration:none;color:inherit;">
+        <a href="/sites.google.com/hub.html" style="text-decoration:none;color:inherit;">
           <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
         </a>
         <span class="header-divider">|</span>
@@ -53,7 +53,7 @@ export function createHeader(pageTitle){
 // サイドバー生成
 export function createSidebar(activePage,userRole){
   const navItems=[
-    {id:'index',icon:'home',title:'Home',href:'/sites.google.com/index.html'},
+    {id:'hub',icon:'home',title:'Home',href:'/sites.google.com/hub.html'},
     {id:'chat',icon:'chat',title:'ChatHub',href:'/sites.google.com/chat.html'},
     {id:'games',icon:'stadia_controller',title:'Games',href:'/sites.google.com/games.html'},
     {id:'links',icon:'link',title:'Links',href:'/sites.google.com/links.html'},
@@ -186,7 +186,7 @@ export async function initPage(pageId,pageTitle,options={}){
     if(pageId==='db'){
       if(!['moderator','admin'].includes(profile.role)){
         alert('このページへのアクセス権限がありません');
-        window.location.href='/sites.google.com/index.html';
+        window.location.href='/sites.google.com/hub.html';
         return null;
       }
     }

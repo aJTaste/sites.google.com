@@ -7,7 +7,7 @@ await initPage('db','Database',{
   onUserLoaded:async(profile)=>{
     if(!['moderator','admin'].includes(profile.role)){
       alert('このページへのアクセス権限がありません');
-      window.location.href='index.html';
+      window.location.href='hub.html';
       return;
     }
     
