@@ -228,7 +228,6 @@ input::placeholder,textarea::placeholder{
   color:var(--text-secondary);
 }
 
-
 .header-right{
   display:flex;
   align-items:center;
