@@ -22,6 +22,7 @@ export function createHeader(pageTitle){
         </a>
         <span class="header-divider">|</span>
         <span class="page-title">${pageTitle}</span>
+        <p>Ver.1.0.0<p>
       </div>
       <div class="header-right">
         <p>ここに直近のアプデ内容を表示するようにします<p>
