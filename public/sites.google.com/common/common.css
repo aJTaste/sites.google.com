@@ -206,12 +206,6 @@ input::placeholder,textarea::placeholder{
   gap:12px;
 }
 
-.up-data{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
 .logo-icon{
   width:28px;
   height:28px;
@@ -230,6 +224,12 @@ input::placeholder,textarea::placeholder{
 
 .page-title{
   font-size:16px;
+  font-weight:500;
+  color:var(--text-secondary);
+}
+
+.up-data{
+  font-size:12px;
   font-weight:500;
   color:var(--text-secondary);
 }
