@@ -32,9 +32,7 @@ export function createHeader(pageTitle){
           <div class="update-dropdown" id="update-dropdown">
             <div class="update-version">v1.0.0 <span>2026-01-17</span></div>
             <ul class="update-list">
-              <li>ヘッダーに各種情報を表示</li>
-              <li>チャット画面のレイアウト改善</li>
-              <li>UI全体の視認性を調整</li>
+              <li>ヘッダーにいろいろ情報追加</li>
             </ul>
           </div>
         </div>
