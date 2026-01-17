@@ -22,7 +22,7 @@ export function createHeader(pageTitle){
         </a>
         <span class="header-divider">|</span>
         <span class="page-title">${pageTitle}</span>
-        <p>Ver.1.0.0 2026-01-17 ここにバージョン及びその日付、アプデ内容を示すようにしました<p>
+        <p>Ver.1.0.0：いろいろ表示するようにした（2026-01-17）<p>
       </div>
       <div class="header-right">
         <div id="header-clock" class="header-clock" aria-label="current time"></div>
