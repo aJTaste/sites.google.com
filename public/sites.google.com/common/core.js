@@ -17,7 +17,7 @@ export function createHeader(pageTitle){
     <header class="top-header">
       <div class="header-left">
         <img src="/sites.google.com/assets/favicon1.svg" alt="AppHub" class="logo-icon">
-        <a href="/sites.google.com/hub.html" style="text-decoration:none;color:inherit;">
+        <a href="/sites.google.com/index.html" style="text-decoration:none;color:inherit;">
           <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
         </a>
         <span class="header-divider">|</span>
