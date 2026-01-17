@@ -24,8 +24,8 @@ export function createHeader(pageTitle){
         <span class="page-title">${pageTitle}</span>
       </div>
       <div class="header-right">
+        <p>ここに直近のアプデ内容を表示するようにします<p>
         <div id="header-clock" class="header-clock" aria-label="current time"></div>
-        
         <button class="icon-btn" id="notification-btn" title="通知">
           <span class="material-symbols-outlined">notifications</span>
         </button>
