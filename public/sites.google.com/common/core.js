@@ -22,7 +22,7 @@ export function createHeader(pageTitle){
         </a>
         <span class="header-divider">|</span>
         <span class="page-title">${pageTitle}</span>
-        <p class="up-data">Ver.1.0.0 [2026-01-17]→いろいろ表示するようにした<p>
+        <p class="up-data">Ver.1.0.0 [2026-01-17] いろいろ表示するようにした<p>
       </div>
       <div class="header-right">
         <div id="header-clock" class="header-clock" aria-label="current time"></div>

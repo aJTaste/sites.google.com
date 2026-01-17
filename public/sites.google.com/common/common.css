@@ -229,7 +229,7 @@ input::placeholder,textarea::placeholder{
 }
 
 .up-data{
-  font-size:12px;
+  font-size:14px;
   font-weight:500;
   color:var(--text-secondary);
 }
