@@ -307,6 +307,20 @@ function setupHeaderEvents(){
       }
     });
   }
+    // 更新情報ドロップダウン
+  const updateBtn = document.getElementById('update-btn');
+  const updateDropdown = document.getElementById('update-dropdown');
+
+  if(updateBtn && updateDropdown){
+    updateBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      updateDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', ()=>{
+      updateDropdown.classList.remove('show');
+    });
+  }
 }
 
 // ========================================
@@ -341,18 +355,3 @@ export function getCurrentProfile(){
 
 // Supabaseクライアントをエクスポート
 export{supabase};
-
-  // 更新情報ドロップダウン
-  const updateBtn = document.getElementById('update-btn');
-  const updateDropdown = document.getElementById('update-dropdown');
-
-  if(updateBtn && updateDropdown){
-    updateBtn.addEventListener('click', (e)=>{
-      e.stopPropagation();
-      updateDropdown.classList.toggle('show');
-    });
-
-    document.addEventListener('click', ()=>{
-      updateDropdown.classList.remove('show');
-    });
-  }
