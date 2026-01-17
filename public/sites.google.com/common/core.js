@@ -12,6 +12,7 @@ let onlineStatusInterval=null;
 // ========================================
 
 // ヘッダー生成
+// ヘッダー生成
 export function createHeader(pageTitle){
   return`
     <header class="top-header">
@@ -22,28 +23,30 @@ export function createHeader(pageTitle){
         </a>
         <span class="header-divider">|</span>
         <span class="page-title">${pageTitle}</span>
-        <p class="up-data">Ver.1.0.0：いろいろ表示するようにした &gt;&gt; 2026-01-17</p>
+
+        <!-- 更新情報 -->
+        <div class="update-info">
+          <button class="up-data" id="update-btn">
+            v1.0.0 · 2026-01-17
+          </button>
+          <div class="update-dropdown" id="update-dropdown">
+            <div class="update-version">v1.0.0 <span>2026-01-17</span></div>
+            <ul class="update-list">
+              <li>ヘッダーに各種情報を表示</li>
+              <li>チャット画面のレイアウト改善</li>
+              <li>UI全体の視認性を調整</li>
+            </ul>
+          </div>
+        </div>
       </div>
+
       <div class="header-right">
         <div id="header-clock" class="header-clock" aria-label="current time"></div>
         <button class="icon-btn" id="notification-btn" title="通知">
           <span class="material-symbols-outlined">notifications</span>
         </button>
         <div class="user-menu">
-          <button class="user-btn" id="user-btn">
-            <div id="user-avatar" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:#FF6B35;color:#fff;font-weight:600;font-size:14px;">?</div>
-          </button>
-          <div class="user-dropdown" id="user-dropdown">
-            <div class="dropdown-item" id="settings-btn">
-              <span class="material-symbols-outlined">settings</span>
-              <span>設定</span>
-            </div>
-            <div class="dropdown-divider"></div>
-            <div class="dropdown-item" id="logout-btn">
-              <span class="material-symbols-outlined">logout</span>
-              <span>ログアウト</span>
-            </div>
-          </div>
+          ...
         </div>
       </div>
     </header>
@@ -338,3 +341,18 @@ export function getCurrentProfile(){
 
 // Supabaseクライアントをエクスポート
 export{supabase};
+
+  // 更新情報ドロップダウン
+  const updateBtn = document.getElementById('update-btn');
+  const updateDropdown = document.getElementById('update-dropdown');
+
+  if(updateBtn && updateDropdown){
+    updateBtn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      updateDropdown.classList.toggle('show');
+    });
+
+    document.addEventListener('click', ()=>{
+      updateDropdown.classList.remove('show');
+    });
+  }
