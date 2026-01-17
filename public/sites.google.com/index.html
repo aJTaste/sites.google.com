@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="description" content="学生向けの便利ツール集AppHub。チャット、ファイル共有、プロキシブラウザなど、学校生活をサポートする機能が満載。">
+  <title>AppHub aJTaste - 学生のための便利ツール集</title>
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <style>
+    :root{
+      --main:#ff6b35;
+      --main-hover:#e55a2b;
+      --main-light:#fff4f0;
+      --bg-primary:#ffffff;
+      --bg-secondary:#f6f8fa;
+      --text-primary:#24292f;
+      --text-secondary:#57606a;
+      --text-tertiary:#8b949e;
+      --border:#d0d7de;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
+      color:var(--text-primary);
+      background:var(--bg-secondary);
+      line-height:1.6;
+    }
+    .hero{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:40px 24px;
+      background:linear-gradient(135deg,#ff6b35 0%,#f97316 100%);
+      position:relative;
+      overflow:hidden;
+    }
+    .hero::before{
+      content:'';
+      position:absolute;
+      top:-50%;
+      right:-50%;
+      width:200%;
+      height:200%;
+      background:radial-gradient(circle,rgba(255,255,255,0.1) 1px,transparent 1px);
+      background-size:50px 50px;
+      animation:drift 20s linear infinite;
+    }
+    @keyframes drift{
+      0%{transform:translate(0,0);}
+      100%{transform:translate(50px,50px);}
+    }
+    .hero-content{
+      position:relative;
+      z-index:1;
+      text-align:center;
+      max-width:800px;
+    }
+    .hero-icon{
+      width:120px;
+      height:120px;
+      margin:0 auto 32px;
+      background:rgba(255,255,255,0.2);
+      backdrop-filter:blur(10px);
+      border-radius:24px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 8px 32px rgba(0,0,0,0.1);
+    }
+    .hero-icon img{
+      width:80px;
+      height:80px;
+      filter:brightness(0) invert(1);
+    }
+    .hero h1{
+      font-size:56px;
+      font-weight:700;
+      color:#ffffff;
+      margin-bottom:16px;
+      text-shadow:0 2px 8px rgba(0,0,0,0.1);
+    }
+    .hero-subtitle{
+      font-size:24px;
+      color:rgba(255,255,255,0.95);
+      margin-bottom:40px;
+      font-weight:500;
+    }
+    .hero-buttons{
+      display:flex;
+      gap:16px;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .btn{
+      padding:16px 32px;
+      font-size:16px;
+      font-weight:600;
+      border:none;
+      border-radius:8px;
+      cursor:pointer;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition:all 0.2s;
+    }
+    .btn-primary{
+      background:#ffffff;
+      color:var(--main);
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    }
+    .btn-primary:hover{
+      transform:translateY(-2px);
+      box-shadow:0 6px 16px rgba(0,0,0,0.2);
+    }
+    .btn-secondary{
+      background:rgba(255,255,255,0.2);
+      color:#ffffff;
+      backdrop-filter:blur(10px);
+      border:2px solid rgba(255,255,255,0.3);
+    }
+    .btn-secondary:hover{
+      background:rgba(255,255,255,0.3);
+    }
+    .section{
+      padding:80px 24px;
+      max-width:1200px;
+      margin:0 auto;
+    }
+    .section-header{
+      text-align:center;
+      margin-bottom:64px;
+    }
+    .section-header h2{
+      font-size:40px;
+      font-weight:700;
+      margin-bottom:16px;
+      color:var(--text-primary);
+    }
+    .section-header p{
+      font-size:18px;
+      color:var(--text-secondary);
+    }
+    .features-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+      gap:32px;
+    }
+    .feature-card{
+      background:var(--bg-primary);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:32px;
+      transition:all 0.3s;
+    }
+    .feature-card:hover{
+      transform:translateY(-4px);
+      box-shadow:0 8px 24px rgba(0,0,0,0.1);
+      border-color:var(--main);
+    }
+    .feature-icon{
+      width:64px;
+      height:64px;
+      background:var(--main-light);
+      border-radius:12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      margin-bottom:20px;
+    }
+    .feature-icon .material-symbols-outlined{
+      font-size:36px;
+      color:var(--main);
+    }
+    .feature-card h3{
+      font-size:22px;
+      font-weight:600;
+      margin-bottom:12px;
+      color:var(--text-primary);
+    }
+    .feature-card p{
+      font-size:15px;
+      color:var(--text-secondary);
+      line-height:1.7;
+    }
+    .ai-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:12px 20px;
+      background:linear-gradient(135deg,#8b5cf6,#6366f1);
+      color:#ffffff;
+      border-radius:24px;
+      font-size:14px;
+      font-weight:600;
+      margin-top:32px;
+      box-shadow:0 4px 12px rgba(139,92,246,0.3);
+    }
+    .ai-badge .material-symbols-outlined{
+      font-size:20px;
+    }
+    .cta-section{
+      background:linear-gradient(135deg,#ff6b35,#f97316);
+      padding:80px 24px;
+      text-align:center;
+    }
+    .cta-section h2{
+      font-size:40px;
+      font-weight:700;
+      color:#ffffff;
+      margin-bottom:24px;
+    }
+    .cta-section p{
+      font-size:18px;
+      color:rgba(255,255,255,0.95);
+      margin-bottom:40px;
+    }
+    .footer{
+      background:var(--bg-primary);
+      border-top:1px solid var(--border);
+      padding:40px 24px;
+      text-align:center;
+    }
+    .footer-links{
+      display:flex;
+      gap:24px;
+      justify-content:center;
+      margin-bottom:24px;
+      flex-wrap:wrap;
+    }
+    .footer-links a{
+      color:var(--text-secondary);
+      text-decoration:none;
+      font-size:14px;
+      transition:color 0.2s;
+    }
+    .footer-links a:hover{
+      color:var(--main);
+    }
+    .footer-text{
+      font-size:14px;
+      color:var(--text-tertiary);
+    }
+    @media(max-width:768px){
+      .hero h1{font-size:40px;}
+      .hero-subtitle{font-size:18px;}
+      .section-header h2{font-size:32px;}
+      .hero-buttons{flex-direction:column;}
+      .btn{width:100%;}
+    }
+  </style>
+</head>
+<body>
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-icon">
+        <img src="assets/favicon1.svg" alt="AppHub">
+      </div>
+      <h1>AppHub aJTaste</h1>
+      <p class="hero-subtitle">学生のための便利ツール集</p>
+      <div class="hero-buttons">
+        <a href="register.html" class="btn btn-primary">
+          <span class="material-symbols-outlined">person_add</span>
+          新規登録
+        </a>
+        <a href="login.html" class="btn btn-secondary">
+          <span class="material-symbols-outlined">login</span>
+          ログイン
+        </a>
+      </div>
+      <div class="ai-badge">
+        <span class="material-symbols-outlined">auto_awesome</span>
+        このページはClaude AIによって制作されました
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-header">
+      <h2>AppHubとは？</h2>
+      <p>学校生活をより便利にする、学生向けの統合ツールプラットフォームです</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-symbols-outlined">chat</span>
+        </div>
+        <h3>ChatHub</h3>
+        <p>リアルタイムチャット機能。ダイレクトメッセージやチャンネルでのグループチャットが可能。画像共有やリプライ機能も搭載。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-symbols-outlined">link</span>
+        </div>
+        <h3>Links</h3>
+        <p>便利なゲームやツールのURLを共有できます。カテゴリー分けで整理され、みんなでおすすめのサイトを共有しましょう。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-symbols-outlined">folder</span>
+        </div>
+        <h3>Files</h3>
+        <p>あらゆる形式のファイルを共有できます。最大20MBまでアップロード可能。モデレーター限定共有機能も搭載。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-symbols-outlined">vpn_key</span>
+        </div>
+        <h3>Proxy</h3>
+        <p>フィルタリングを回避してWebサイトにアクセス。複数のプロキシモードで、より多くのサイトに対応します。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-symbols-outlined">screenshot_monitor</span>
+        </div>
+        <h3>Images</h3>
+        <p>Alt+Sでスクリーンショット、Alt+Rで画面録画が可能。撮影した画像や動画は自動で保存され、いつでも確認できます。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-symbols-outlined">piano</span>
+        </div>
+        <h3>Piano</h3>
+        <p>キーボードやマウスでピアノ演奏が楽しめます。録音機能付きで、演奏を保存することも可能です。</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-symbols-outlined">stadia_controller</span>
+        </div>
+        <h3>Games</h3>
+        <p>Eaglercraftやしょぼんのアクションなど、人気ゲームが遊べます。リクエストも随時受付中！</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">
+          <span class="material-symbols-outlined">security</span>
+        </div>
+        <h3>偽装モード</h3>
+        <p>Meta(検索)+1キーで、画面を瞬時に「まなびポケット」に偽装。緊急時も安心です。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta-section">
+    <h2>今すぐ始めよう</h2>
+    <p>無料でアカウントを作成して、すべての機能を使い始めましょう</p>
+    <div class="hero-buttons">
+      <a href="register.html" class="btn btn-primary">
+        <span class="material-symbols-outlined">person_add</span>
+        新規登録
+      </a>
+      <a href="login.html" class="btn btn-secondary">
+        <span class="material-symbols-outlined">login</span>
+        ログイン
+      </a>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="footer-links">
+      <a href="https://github.com/aJTaste/sites.google.com" target="_blank">GitHub</a>
+      <a href="register.html">新規登録</a>
+      <a href="login.html">ログイン</a>
+    </div>
+    <p class="footer-text">© 2025 AppHub aJTaste. このプロジェクトの情報を基に、Claude AIが紹介ページを制作しました。</p>
+  </footer>
+
+  <script type="module">
+    import{supabase}from'/sites.google.com/common/supabase-config.js';
+    
+    // ログイン済みの場合はhub.htmlにリダイレクト
+    const{data:{session}}=await supabase.auth.getSession();
+    if(session){
+      window.location.href='hub.html';
+    }
+  </script>
+</body>
+</html>
