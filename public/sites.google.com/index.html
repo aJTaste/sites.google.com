@@ -369,13 +369,6 @@
   </footer>
 
   <script type="module">
-    import{supabase}from'/sites.google.com/common/supabase-config.js';
-    
-    // ログイン済みの場合はhub.htmlにリダイレクト
-    const{data:{session}}=await supabase.auth.getSession();
-    if(session){
-      window.location.href='hub.html';
-    }
   </script>
 </body>
 </html>
