@@ -200,7 +200,7 @@ input::placeholder,textarea::placeholder{
   flex-shrink:0;
 }
 
-.header-left{
+.ft{
   display:flex;
   align-items:center;
   gap:12px;
@@ -228,6 +228,11 @@ input::placeholder,textarea::placeholder{
   color:var(--text-secondary);
 }
 
+.up-data{
+  font-size:12px;
+  font-weight:500;
+  color:var(--text-secondary);
+}
 .header-right{
   display:flex;
   align-items:center;
