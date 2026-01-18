@@ -5,18 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
     <title>Eaglercraft 1.12 WASM-GC</title>
     <script>
-    "use strict";
-    localStorage.setItem("eaglercraft.servers", JSON.stringify([
-      {addr: "wss://example1.example.com/",name: "旧共同サーバー"},
-      {addr: "wss://example2.example.com/",name: "サバイバルサーバー"},
-      {addr: "wss://example3.example.com/",name: "PvPサーバー"}
-    ]));
-    if (!localStorage.getItem("eaglercraft.servers")) {
-      localStorage.setItem("eaglercraft.servers", JSON.stringify([...]));
-      localStorage.setItem("eaglercraft.lastServer", "wss://example1.example.com/");
-    }
-    </script>
-    <script>
       "use strict";
       window.eaglercraftXOpts = {
         container: "game_frame",
@@ -24,57 +12,7 @@
       };
     </script>
     <script>
-      "use strict";
-      if(typeof window!=="undefined")window.eaglercraftXClientScriptElement=document.currentScript;
-      (function(){
-      window.main=async function(){
-      let o=window.eaglercraftXOpts;
-      if(!o||typeof o.container!=="string")return;
-
-      let c=o.assetsURI;
-      if(typeof c!=="string")c=c?.[0]?.url;
-      if(typeof c!=="string")return;
-
-      let r=document.getElementById(o.container);
-      if(!r)return;
-
-      r.textContent="";
-      let d=document.createElement("div");
-      d.style.cssText="width:100%;height:100%;background:#000";
-      r.appendChild(d);
-
-      let b;
-      try{
-      b=c.startsWith("data:")
-      ?await(await fetch(c)).arrayBuffer()
-      :await(await fetch(c,{cache:"force-cache"})).arrayBuffer();
-      }catch(e){return;}
-
-      let v=new DataView(b);
-      if(v.getUint32(0,true)!==608649541||v.getUint32(4,true)!==1297301847)return;
-
-      let js=new Uint8Array(b,v.getUint32(164,true),v.getUint32(168,true));
-      let wasm=new Uint8Array(b,v.getUint32(180,true),v.getUint32(184,true));
-
-      let jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"}));
-      let wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));
-
-      let opts={};
-      for(let k in o)if(k!=="container"&&k!=="assetsURI")opts[k]=o[k];
-
-      window.__eaglercraftXLoaderContextPre={
-      rootElement:r,
-      eaglercraftXOpts:opts,
-      theEPWFileBuffer:b,
-      loaderWASMURL:wasmURL,
-      splashURL:null   // ★必須（中身は不要）
-      };
-
-      let s=document.createElement("script");
-      s.src=jsURL;
-      document.head.appendChild(s);
-      };
-      })();
+      "use strict";if(typeof window!=="undefined")window.eaglercraftXClientScriptElement=document.currentScript;(function(){window.main=async function(){let o=window.eaglercraftXOpts;if(!o||typeof o.container!=="string")return;let c=o.assetsURI;if(typeof c!=="string")c=c?.[0]?.url;if(typeof c!=="string")return;let r=document.getElementById(o.container);if(!r)return;r.textContent="";let d=document.createElement("div");d.style.cssText="width:100%;height:100%;background:#000";r.appendChild(d);let b;try{b=c.startsWith("data:")?await(await fetch(c)).arrayBuffer():await(await fetch(c,{cache:"force-cache"})).arrayBuffer()}catch(e){return} let v=new DataView(b);if(v.getUint32(0,!0)!==608649541||v.getUint32(4,!0)!==1297301847)return;let js=new Uint8Array(b,v.getUint32(164,!0),v.getUint32(168,!0));let wasm=new Uint8Array(b,v.getUint32(180,!0),v.getUint32(184,!0));let jsURL=URL.createObjectURL(new Blob([js],{type:"text/javascript"}));let wasmURL=URL.createObjectURL(new Blob([wasm],{type:"application/wasm"}));let opts={};for(let k in o)if(k!=="container"&&k!=="assetsURI")opts[k]=o[k];window.__eaglercraftXLoaderContextPre={rootElement:r,eaglercraftXOpts:opts,theEPWFileBuffer:b,loaderWASMURL:wasmURL,splashURL:null};let s=document.createElement("script");s.src=jsURL;document.head.appendChild(s)}})()
     </script>
 <script>
 "use strict";
