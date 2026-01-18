@@ -30,7 +30,7 @@ export function createHeader(pageTitle){
             v1.1.0 · 2026-01-18
           </button>
           <div class="update-dropdown" id="update-dropdown">
-            <div class="update-version">v1.0.0 <span>2026-01-17</span></div>
+            <div class="update-version">v1.1.0 <span>2026-01-18</span></div>
             <ul class="update-list">
               <li>Docs機能追加</li>
             </ul>
