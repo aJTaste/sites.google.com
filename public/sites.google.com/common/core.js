@@ -76,7 +76,7 @@ export function createSidebar(activePage,userRole){
     {id:'links',icon:'link',title:'Links',href:'/sites.google.com/links.html'},
     {id:'files',icon:'folder',title:'Files',href:'/sites.google.com/files.html'},
     {id:'piano',icon:'piano',title:'Piano',href:'/sites.google.com/piano.html'}
-    // {id:'db',icon:'database',title:'Database',href:'/sites.google.com/db.html'},
+    // {id:'db',icon:'database',title:'Database',href:'/sites.google.com/db.html'}
   ];
   
   const navHTML=navItems.map(item=>{
