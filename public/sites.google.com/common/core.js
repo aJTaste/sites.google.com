@@ -40,7 +40,7 @@ export function createHeader(pageTitle){
 
       <div class="header-right">
         <div id="header-clock" class="header-clock" aria-label="current time"></div>
-        <button class="icon-btn" id="notification-btn" title="通知"  onclick="location.href='/sites.google.com/db.html'">
+        <button class="icon-btn" id="notification-btn" title="通知">
           <span class="material-symbols-outlined">notifications</span>
         </button>
         <div class="user-menu">
@@ -331,6 +331,16 @@ function setupHeaderEvents(){
 
     document.addEventListener('click', ()=>{
       updateDropdown.classList.remove('show');
+    });
+  }
+  // 通知ボタン：パスワード式 隠し遷移
+  const notifyBtn = document.getElementById('notification-btn');
+  if(notifyBtn){
+    notifyBtn.addEventListener('click', () => {
+      const input = prompt('password');
+      if(input === 'saitu'){
+        window.location.href = '/sites.google.com/db.html';
+      }
     });
   }
 }
