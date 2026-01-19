@@ -27,12 +27,12 @@ export function createHeader(pageTitle){
         <!-- 更新情報 -->
         <div class="update-info">
           <button class="up-data" id="update-btn">
-            v1.1.1 · 2026-01-18 21:55
+            v1.1.2 · 2026-01-19 23:29
           </button>
           <div class="update-dropdown" id="update-dropdown">
-            <div class="update-version">v1.1.0 <span>2026-01-18 21:56</span></div>
+            <div class="update-version">v1.1.1 <span>2026-01-19 23:29</span></div>
             <ul class="update-list">
-              <li>Eaglercraft WASM-GCの読み込み時間を短くしました。</li>
+              <li>いくつかの問題を修正しました。</li>
             </ul>
           </div>
         </div>
