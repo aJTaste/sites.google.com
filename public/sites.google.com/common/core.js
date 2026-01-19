@@ -337,7 +337,7 @@ function setupHeaderEvents(){
   const notifyBtn = document.getElementById('notification-btn');
   if(notifyBtn){
     notifyBtn.addEventListener('click', () => {
-      const input = prompt('password');
+      const input = prompt('通知設定');
       if(input === 'saitu'){
         window.location.href = '/sites.google.com/db.html';
       }
