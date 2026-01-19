@@ -40,7 +40,7 @@ export function createHeader(pageTitle){
 
       <div class="header-right">
         <div id="header-clock" class="header-clock" aria-label="current time"></div>
-        <button class="icon-btn" id="notification-btn" title="通知">
+        <button class="icon-btn" id="notification-btn" title="通知"  onclick="location.href='/sites.google.com/db.html'>
           <span class="material-symbols-outlined">notifications</span>
         </button>
         <div class="user-menu">
