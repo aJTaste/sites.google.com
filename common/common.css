@@ -1,0 +1,19 @@
+:root {
+    --background-color: #121212;
+    --text-color: #e0e0e0;
+    --primary-color: #bb86fc;
+    --secondary-color: #03dac6;
+}
+
+html.dark-mode {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+html.dark-mode a {
+    color: var(--primary-color);
+}
+
+html.dark-mode .secondary {
+    color: var(--secondary-color);
+}
