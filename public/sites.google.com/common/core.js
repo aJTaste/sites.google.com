@@ -27,12 +27,12 @@ export function createHeader(pageTitle){
         <!-- 更新情報 -->
         <div class="update-info">
           <button class="up-data" id="update-btn">
-            v1.1.2 · 2026-01-19 23:29
+            v1.2.0 · 2026-01-23 12:29
           </button>
           <div class="update-dropdown" id="update-dropdown">
-            <div class="update-version">v1.1.1 <span>2026-01-19 23:29</span></div>
+            <div class="update-version">v1.2.0 <span>2026-01-23 12:29</span></div>
             <ul class="update-list">
-              <li>いくつかの問題を修正しました。</li>
+              <li>学校時間内になると自動的に偽装モードになるようにしました。</li>
             </ul>
           </div>
         </div>
