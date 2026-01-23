@@ -1,93 +1,144 @@
-// 偽装モード: 検索キー(Meta/Win) + 1 で発動
+// ================================
+// 偽装モード設定
+// ================================
 
-let stealthMode=false;
-let originalTitle='';
-let originalFavicon='';
-let originalContent='';
+// 曜日別スケジュール（24時間表記）
+// day: 0=日, 1=月, ..., 6=土
+const STEALTH_SCHEDULE = {
+  1: { start: '08:30', end: '16:00' }, // 月
+  2: { start: '08:30', end: '16:00' }, // 火
+  3: { start: '08:30', end: '16:00' }, // 水
+  4: { start: '08:30', end: '16:00' }, // 木
+  5: { start: '08:30', end: '16:00' }  // 金
+};
 
-// Chromebookの検索キーはMetaKey（Windowsキーと同じ扱い）
-document.addEventListener('keydown',(e)=>{
-  // Meta(検索キー) + 1
-  if(e.metaKey&&e.key==='1'){
+const STORAGE_KEY = 'stealthModeState';
+
+// ================================
+// 状態管理
+// ================================
+
+let stealthMode = false;
+let originalTitle = document.title;
+let originalFavicon = '';
+let originalFaviconType = '';
+
+const faviconLink = document.querySelector('link[rel="icon"]');
+if (faviconLink) {
+  originalFavicon = faviconLink.href;
+  originalFaviconType = faviconLink.type || '';
+}
+
+// ================================
+// 手動切替（Meta + 1）
+// ================================
+
+document.addEventListener('keydown', (e) => {
+  if (e.metaKey && e.key === '1') {
     e.preventDefault();
-    toggleStealthMode();
+    toggleStealthMode(true);
   }
 });
 
-function toggleStealthMode(){
-  stealthMode=!stealthMode;
-  
-  if(stealthMode){
+// ================================
+// 偽装モード制御
+// ================================
+
+function toggleStealthMode(isManual = false) {
+  stealthMode = !stealthMode;
+  applyStealthMode();
+  saveState();
+}
+
+function activateStealth() {
+  document.title = 'まなびポケット';
+
+  if (faviconLink) {
+    faviconLink.href = '/sites.google.com/assets/manabi.png';
+    faviconLink.type = 'image/png';
+  }
+}
+
+function deactivateStealth() {
+  document.title = originalTitle;
+
+  if (faviconLink && originalFavicon) {
+    faviconLink.href = originalFavicon;
+    if (originalFaviconType) {
+      faviconLink.type = originalFaviconType;
+    } else {
+      faviconLink.removeAttribute('type');
+    }
+  }
+}
+
+function applyStealthMode() {
+  if (stealthMode) {
     activateStealth();
-  }else{
+  } else {
     deactivateStealth();
   }
 }
 
-function activateStealth(){
-  // タイトルとファビコンを保存
-  originalTitle=document.title;
-  originalFavicon=document.querySelector('link[rel="icon"]')?.href||'';
-  const originalType=document.querySelector('link[rel="icon"]')?.type||'';
-  
-  // タイトルを変更
-  document.title='まなびポケット';
-  
-  // ファビコンを変更（PNGの場合はtype属性も設定）
-  const faviconLink=document.querySelector('link[rel="icon"]');
-  if(faviconLink){
-    faviconLink.href='/sites.google.com/assets/manabi.png';
-    faviconLink.type='image/png';
-  }
-  
-  // 念のため保存
-  window.originalFaviconType=originalType;
-  
-  // bodyの内容を保存して非表示
-  originalContent=document.body.innerHTML;
-  document.body.innerHTML='';
-  document.body.style.background='#ffffff';
-  
-  // 念のため全要素を非表示
-  const style=document.createElement('style');
-  style.id='stealth-style';
-  style.textContent='*{display:none!important;visibility:hidden!important;}body{display:block!important;visibility:visible!important;background:#fff!important;}';
-  document.head.appendChild(style);
+// ================================
+// 自動スケジュール判定
+// ================================
+
+function isWithinSchedule() {
+  const now = new Date();
+  const day = now.getDay();
+  const rule = STEALTH_SCHEDULE[day];
+  if (!rule) return false;
+
+  const [sh, sm] = rule.start.split(':').map(Number);
+  const [eh, em] = rule.end.split(':').map(Number);
+
+  const start = new Date(now);
+  start.setHours(sh, sm, 0, 0);
+
+  const end = new Date(now);
+  end.setHours(eh, em, 0, 0);
+
+  return now >= start && now < end;
 }
 
-function deactivateStealth(){
-  // タイトルとファビコンを復元
-  document.title=originalTitle;
-  
-  const faviconLink=document.querySelector('link[rel="icon"]');
-  if(faviconLink&&originalFavicon){
-    faviconLink.href=originalFavicon;
-    // type属性も復元
-    if(window.originalFaviconType){
-      faviconLink.type=window.originalFaviconType;
-    }else{
-      faviconLink.removeAttribute('type');
-    }
+function enforceSchedule() {
+  const shouldBeStealth = isWithinSchedule();
+  if (stealthMode !== shouldBeStealth) {
+    stealthMode = shouldBeStealth;
+    applyStealthMode();
+    saveState();
   }
-  
-  // bodyの内容を復元
-  document.body.innerHTML=originalContent;
-  document.body.style.background='';
-  
-  // スタイルを削除
-  const stealthStyle=document.getElementById('stealth-style');
-  if(stealthStyle){
-    stealthStyle.remove();
-  }
-  
-  // イベントリスナーを再設定（復元後にJSが動くように）
-  const scripts=document.querySelectorAll('script[type="module"]');
-  scripts.forEach(script=>{
-    const newScript=document.createElement('script');
-    newScript.type='module';
-    newScript.src=script.src;
-    document.body.appendChild(newScript);
-  });
 }
 
-console.log('偽装モード準備完了: Meta(検索) + 1 で発動');
+// ================================
+// 永続化
+// ================================
+
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    stealthMode
+  }));
+}
+
+function loadState() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      stealthMode = JSON.parse(saved).stealthMode;
+    } catch {}
+  }
+}
+
+// ================================
+// 初期化
+// ================================
+
+loadState();
+applyStealthMode();
+
+// 起動時にスケジュール強制判定
+enforceSchedule();
+
+// 1分ごとに自動判定（指定時間になった瞬間を確実に拾う）
+setInterval(enforceSchedule, 60 * 1000);
