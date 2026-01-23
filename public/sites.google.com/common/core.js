@@ -1,6 +1,7 @@
 // AppHub Core - Supabase版
 import{supabase}from'/sites.google.com/common/supabase-config.js';
 import{checkPermission}from'/sites.google.com/common/permissions.js';
+import{NAV_ITEMS,UPDATE_INFO,APP_INFO}from'/sites.google.com/common/config.js';
 
 // グローバルな現在のユーザー情報
 let currentUser=null;
@@ -12,14 +13,20 @@ let onlineStatusInterval=null;
 // ========================================
 
 // ヘッダー生成
-// ヘッダー生成
 export function createHeader(pageTitle){
+  const updateHistory=UPDATE_INFO.history.map(update=>`
+    <div class="update-version">${update.version} <span>${update.date}</span></div>
+    <ul class="update-list">
+      ${update.changes.map(change=>`<li>${change}</li>`).join('')}
+    </ul>
+  `).join('');
+
   return`
     <header class="top-header">
       <div class="header-left">
-        <img src="/sites.google.com/assets/favicon1.svg" alt="AppHub" class="logo-icon">
+        <img src="/sites.google.com/assets/favicon1.svg" alt="${APP_INFO.shortName}" class="logo-icon">
         <a href="/sites.google.com/index.html" style="text-decoration:none;color:inherit;">
-          <h1 class="logo-text" style="cursor:pointer;">AppHub</h1>
+          <h1 class="logo-text" style="cursor:pointer;">${APP_INFO.shortName}</h1>
         </a>
         <span class="header-divider">|</span>
         <span class="page-title">${pageTitle}</span>
@@ -27,13 +34,10 @@ export function createHeader(pageTitle){
         <!-- 更新情報 -->
         <div class="update-info">
           <button class="up-data" id="update-btn">
-            v1.1.2 · 2026-01-19 23:29
+            ${UPDATE_INFO.current.version} · ${UPDATE_INFO.current.date}
           </button>
           <div class="update-dropdown" id="update-dropdown">
-            <div class="update-version">v1.1.1 <span>2026-01-19 23:29</span></div>
-            <ul class="update-list">
-              <li>いくつかの問題を修正しました。</li>
-            </ul>
+            ${updateHistory}
           </div>
         </div>
       </div>
@@ -66,20 +70,7 @@ export function createHeader(pageTitle){
 
 // サイドバー生成
 export function createSidebar(activePage,userRole){
-  const navItems=[
-    {id:'hub',icon:'hub',title:'Hub',href:'/sites.google.com/hub.html'},
-    {id:'chat',icon:'chat',title:'ChatHub',href:'/sites.google.com/chat.html'},
-    {id:'games',icon:'stadia_controller',title:'Games',href:'/sites.google.com/games.html'},
-    {id:'proxy',icon:'vpn_key',title:'Proxy',href:'/sites.google.com/proxy.html'},
-    {id:'docs',icon:'edit_note',title:'Docs',href:'/sites.google.com/docs.html'},
-    {id:'images',icon:'animated_images',title:'Images',href:'/sites.google.com/images.html'},
-    {id:'links',icon:'link',title:'Links',href:'/sites.google.com/links.html'},
-    {id:'files',icon:'folder',title:'Files',href:'/sites.google.com/files.html'},
-    {id:'piano',icon:'piano',title:'Piano',href:'/sites.google.com/piano.html'}
-    // {id:'db',icon:'database',title:'Database',href:'/sites.google.com/db.html'}
-  ];
-  
-  const navHTML=navItems.map(item=>{
+  const navHTML=NAV_ITEMS.map(item=>{
     const activeClass=activePage===item.id?'active':'';
     return`
       <a href="${item.href}" class="nav-item ${activeClass}" title="${item.title}">
@@ -319,27 +310,29 @@ function setupHeaderEvents(){
       }
     });
   }
-    // 更新情報ドロップダウン
-  const updateBtn = document.getElementById('update-btn');
-  const updateDropdown = document.getElementById('update-dropdown');
+  
+  // 更新情報ドロップダウン
+  const updateBtn=document.getElementById('update-btn');
+  const updateDropdown=document.getElementById('update-dropdown');
 
-  if(updateBtn && updateDropdown){
-    updateBtn.addEventListener('click', (e)=>{
+  if(updateBtn&&updateDropdown){
+    updateBtn.addEventListener('click',(e)=>{
       e.stopPropagation();
       updateDropdown.classList.toggle('show');
     });
 
-    document.addEventListener('click', ()=>{
+    document.addEventListener('click',()=>{
       updateDropdown.classList.remove('show');
     });
   }
+  
   // 通知ボタン：パスワード式 隠し遷移
-  const notifyBtn = document.getElementById('notification-btn');
+  const notifyBtn=document.getElementById('notification-btn');
   if(notifyBtn){
-    notifyBtn.addEventListener('click', () => {
-      const input = prompt('通知設定');
-      if(input === 'saitu'){
-        window.location.href = '/sites.google.com/db.html';
+    notifyBtn.addEventListener('click',()=>{
+      const input=prompt('通知設定');
+      if(input==='saitu'){
+        window.location.href='/sites.google.com/db.html';
       }
     });
   }
@@ -349,17 +342,17 @@ function setupHeaderEvents(){
 // ヘッダー時計
 // ========================================
 function startHeaderClock(){
-  const el = document.getElementById('header-clock');
-  if(!el) return;
-  const tick = () => {
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2,'0');
-    const mm = String(now.getMinutes()).padStart(2,'0');
-    const ss = String(now.getSeconds()).padStart(2,'0');
-    el.textContent = `${hh}:${mm}:${ss}`;
+  const el=document.getElementById('header-clock');
+  if(!el)return;
+  const tick=()=>{
+    const now=new Date();
+    const hh=String(now.getHours()).padStart(2,'0');
+    const mm=String(now.getMinutes()).padStart(2,'0');
+    const ss=String(now.getSeconds()).padStart(2,'0');
+    el.textContent=`${hh}:${mm}:${ss}`;
   };
   tick();
-  setInterval(tick, 1000);
+  setInterval(tick,1000);
 }
 
 // ========================================
