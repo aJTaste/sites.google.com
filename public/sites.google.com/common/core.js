@@ -32,7 +32,10 @@ export function createHeader(pageTitle){
           <div class="update-dropdown" id="update-dropdown">
             <div class="update-version">v1.2.0 <span>2026-01-23 12:29</span></div>
             <ul class="update-list">
-              <li>学校時間内になると自動的に偽装モードになるようにしました。</li>
+              <li>学校時間による偽装モードの自動切り替えに対応しました。</li>
+              <li>リロードしても、偽装モードの状態が保持されるようになりました。</li>
+              <li>指定時刻到達時は現在の状態に関係なく自動制御を優先します。</li>
+              <li>偽装モード中に、画面が真っ白になる問題を修正しました。</li>
             </ul>
           </div>
         </div>
