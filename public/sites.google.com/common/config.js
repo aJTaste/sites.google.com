@@ -18,7 +18,7 @@ export const UPDATE_INFO={
   history:[
     {
       version:'v1.2.1',
-      date:'2026-01-23 23:30',
+      date:'2026-01-23 23:33',
       changes:[
         '内部構造を改善しました。',
         '個人的にアップデート情報の記載がしやすくなりました。'
