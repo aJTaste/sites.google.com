@@ -14,12 +14,20 @@ let onlineStatusInterval=null;
 
 // ヘッダー生成
 export function createHeader(pageTitle){
-  const updateHistory=UPDATE_INFO.history.map(update=>`
-    <div class="update-version">${update.version} <span>${update.date}</span></div>
-    <ul class="update-list">
-      ${update.changes.map(change=>`<li>${change}</li>`).join('')}
-    </ul>
-  `).join('');
+  const latestUpdate = UPDATE_INFO.history.find(
+    u => u.version === UPDATE_INFO.current.version
+  );
+
+  const updateHistory = latestUpdate
+    ? `
+      <div class="update-version">
+        ${latestUpdate.version} <span>${latestUpdate.date}</span>
+      </div>
+      <ul class="update-list">
+        ${latestUpdate.changes.map(change => `<li>${change}</li>`).join('')}
+      </ul>
+    `
+    : '<div class="update-empty">更新情報が見つかりません</div>';
 
   return`
     <header class="top-header">
