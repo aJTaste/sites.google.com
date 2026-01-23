@@ -12,8 +12,8 @@ export const NAV_ITEMS=[
 
 export const UPDATE_INFO={
   current:{
-    version:'v1.1.2',
-    date:'2026-01-19 23:29'
+    version:'v1.2.1',
+    date:'2026-01-13 23:33',
   },
   history:[
     {
