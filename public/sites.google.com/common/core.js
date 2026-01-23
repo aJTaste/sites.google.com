@@ -14,9 +14,7 @@ let onlineStatusInterval=null;
 
 // ヘッダー生成
 export function createHeader(pageTitle){
-  const latestUpdate = UPDATE_INFO.history.find(
-    u => u.version === UPDATE_INFO.current.version
-  );
+  const latestUpdate = UPDATE_INFO.current;
 
   const updateHistory = latestUpdate
     ? `
