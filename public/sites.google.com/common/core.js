@@ -1,34 +1,34 @@
 // AppHub Core - Supabase版
-import { supabase } from './supabase-config.js';
-import { checkPermission } from './permissions.js';
-import { NAV_ITEMS, APP_INFO } from './config.js';
-import { UPDATE_INFO } from './updates.js';
+import{supabase}from'/sites.google.com/common/supabase-config.js';
+import{checkPermission}from'/sites.google.com/common/permissions.js';
+import{NAV_ITEMS,APP_INFO}from'/sites.google.com/common/config.js';
+import{UPDATE_INFO}from'/sites.google.com/common/updates.js'; // 変更点
 
 // グローバルな現在のユーザー情報
-let currentUser = null;
-let currentProfile = null;
-let onlineStatusInterval = null;
+let currentUser=null;
+let currentProfile=null;
+let onlineStatusInterval=null;
 
 // ========================================
 // UI生成関数
 // ========================================
 
 // ヘッダー生成
-export function createHeader(pageTitle) {
-  const latestUpdate = UPDATE_INFO.current;
+export function createHeader(pageTitle){
+  const latestUpdate=UPDATE_INFO.current;
 
-  const updateHistory = latestUpdate
-    ? `
+  const updateHistory=latestUpdate
+    ?`
       <div class="update-version">
         ${latestUpdate.version} <span>${latestUpdate.date}</span>
       </div>
       <ul class="update-list">
-        ${latestUpdate.changes.map(change => `<li>${change}</li>`).join('')}
+        ${latestUpdate.changes.map(change=>`<li>${change}</li>`).join('')}
       </ul>
     `
-    : '<div class="update-empty">更新情報が見つかりません</div>';
+    :'<div class="update-empty">更新情報が見つかりません</div>';
 
-  return `
+  return`
     <header class="top-header">
       <div class="header-left">
         <img src="/sites.google.com/assets/favicon1.svg" alt="${APP_INFO.shortName}" class="logo-icon">
@@ -38,6 +38,7 @@ export function createHeader(pageTitle) {
         <span class="header-divider">|</span>
         <span class="page-title">${pageTitle}</span>
 
+        <!-- 更新情報 -->
         <div class="update-info">
           <button class="up-data" id="update-btn">
             ${UPDATE_INFO.current.version} · ${UPDATE_INFO.current.date}
@@ -78,17 +79,17 @@ export function createHeader(pageTitle) {
 }
 
 // サイドバー生成
-export function createSidebar(activePage) {
-  const navHTML = NAV_ITEMS.map(item => {
-    const activeClass = activePage === item.id ? 'active' : '';
-    return `
+export function createSidebar(activePage,userRole){
+  const navHTML=NAV_ITEMS.map(item=>{
+    const activeClass=activePage===item.id?'active':'';
+    return`
       <a href="${item.href}" class="nav-item ${activeClass}" title="${item.title}">
         <span class="material-symbols-outlined">${item.icon}</span>
       </a>
     `;
   }).join('');
-
-  return `
+  
+  return`
     <aside class="sidebar">
       <nav class="sidebar-nav">
         ${navHTML}
@@ -101,77 +102,128 @@ export function createSidebar(activePage) {
 // ページ初期化
 // ========================================
 
-export async function initPage(pageId, pageTitle, options = {}) {
-  const {
-    requireAuth = true,
-    redirectIfNotAuth = true,
-    onUserLoaded = null
-  } = options;
-
-  if (!requireAuth) {
+export async function initPage(pageId,pageTitle,options={}){
+  const{
+    requireAuth=true,
+    redirectIfNotAuth=true,
+    onUserLoaded=null
+  }=options;
+  
+  if(!requireAuth){
     showPage();
     return null;
   }
-
-  try {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error) throw error;
-
-    if (!session) {
-      if (redirectIfNotAuth) {
-        window.location.href = '/sites.google.com/login.html';
+  
+  try{
+    // セッション確認
+    const{data:{session},error}=await supabase.auth.getSession();
+    
+    if(error)throw error;
+    
+    if(!session){
+      if(redirectIfNotAuth){
+        window.location.href='/sites.google.com/login.html';
       }
       return null;
     }
-
-    currentUser = session.user;
-
-    const { data: profile, error: profileError } = await supabase
+    
+    currentUser=session.user;
+    
+    // プロフィール取得
+    const{data:profile,error:profileError}=await supabase
       .from('profiles')
       .select('*')
-      .eq('id', currentUser.id)
+      .eq('id',currentUser.id)
       .single();
-
-    if (profileError) throw profileError;
-
-    currentProfile = profile;
-
-    await updateOnlineStatus(true);
-
-    if (onlineStatusInterval) clearInterval(onlineStatusInterval);
-    onlineStatusInterval = setInterval(() => updateOnlineStatus(true), 30000);
-
-    const container = document.querySelector('.app-container') || document.body;
-
-    if (!container.querySelector('.top-header')) {
-      container.insertAdjacentHTML('afterbegin', createHeader(pageTitle));
-    }
-
-    const mainContainer = container.querySelector('.main-container');
-    if (mainContainer && !container.querySelector('.sidebar')) {
-      mainContainer.insertAdjacentHTML('afterbegin', createSidebar(pageId));
-    }
-
-    setupHeaderEvents();
-    initDarkMode();
-    updateAvatarDisplay();
-    startHeaderClock();
-
-    if (pageId === 'db' && !['moderator', 'admin'].includes(profile.role)) {
-      alert('このページへのアクセス権限がありません');
-      window.location.href = '/sites.google.com/hub.html';
+    
+    if(profileError){
+      console.error('プロフィール取得エラー:',profileError);
+      alert('アカウント情報の取得に失敗しました');
+      await supabase.auth.signOut();
+      window.location.href='/sites.google.com/login.html';
       return null;
     }
+    
+    currentProfile=profile;
+    
+    // オンライン状態を更新
+    await updateOnlineStatus(true);
+    
+    // 定期的にオンライン状態を更新（30秒ごと）
+    if(onlineStatusInterval){
+      clearInterval(onlineStatusInterval);
+    }
+    onlineStatusInterval=setInterval(async()=>{
+      await updateOnlineStatus(true);
+    },30000);
+    
+    // オフライン時の処理
+    const handleOffline=async()=>{
+      await updateOnlineStatus(false);
+      if(onlineStatusInterval){
+        clearInterval(onlineStatusInterval);
+      }
+    };
+    
+    window.addEventListener('beforeunload',handleOffline);
+    window.addEventListener('pagehide',handleOffline);
+    document.addEventListener('visibilitychange',async()=>{
+      if(document.hidden){
+        await updateOnlineStatus(false);
+      }else{
+        await updateOnlineStatus(true);
+      }
+    });
+    
+    // UI生成
+    const container=document.querySelector('.app-container')||document.body;
+    const hasHeader=!container.querySelector('.top-header');
+    const hasSidebar=!container.querySelector('.sidebar');
+    
+    if(hasHeader){
+      container.insertAdjacentHTML('afterbegin',createHeader(pageTitle));
+    }
+    
+    if(hasSidebar){
+      const mainContainer=container.querySelector('.main-container');
+      if(mainContainer){
+        mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,profile.role));
+      }
+    }
+    
+    // イベントリスナー設定
+    setupHeaderEvents();
 
-    if (onUserLoaded) await onUserLoaded(profile);
-
+    // ダークモード初期化
+    initDarkMode();
+    
+    // アバター表示
+    updateAvatarDisplay();
+    startHeaderClock();
+    
+    // db.htmlへのアクセス制御（モデレーター以上）
+    if(pageId==='db'){
+      if(!['moderator','admin'].includes(profile.role)){
+        alert('このページへのアクセス権限がありません');
+        window.location.href='/sites.google.com/hub.html';
+        return null;
+      }
+    }
+    
+    // コールバック実行
+    if(onUserLoaded){
+      await onUserLoaded(profile);
+    }
+    
+    // ページ表示
     showPage();
+    
     return profile;
-
-  } catch (error) {
-    console.error('初期化エラー:', error);
-    if (redirectIfNotAuth) {
-      window.location.href = '/sites.google.com/login.html';
+    
+  }catch(error){
+    console.error('初期化エラー:',error);
+    if(redirectIfNotAuth){
+      window.location.href='/sites.google.com/login.html';
     }
     return null;
   }
