@@ -1,7 +1,8 @@
 // AppHub Core - Supabase版
 import{supabase}from'/sites.google.com/common/supabase-config.js';
 import{checkPermission}from'/sites.google.com/common/permissions.js';
-import{NAV_ITEMS,UPDATE_INFO,APP_INFO}from'/sites.google.com/common/config.js';
+import{NAV_ITEMS,APP_INFO}from'/sites.google.com/common/config.js';
+import{UPDATE_INFO}from'/sites.google.com/common/updates.js'; // 変更点
 
 // グローバルな現在のユーザー情報
 let currentUser=null;
@@ -14,18 +15,18 @@ let onlineStatusInterval=null;
 
 // ヘッダー生成
 export function createHeader(pageTitle){
-  const latestUpdate = UPDATE_INFO.current;
+  const latestUpdate=UPDATE_INFO.current;
 
-  const updateHistory = latestUpdate
-    ? `
+  const updateHistory=latestUpdate
+    ?`
       <div class="update-version">
         ${latestUpdate.version} <span>${latestUpdate.date}</span>
       </div>
       <ul class="update-list">
-        ${latestUpdate.changes.map(change => `<li>${change}</li>`).join('')}
+        ${latestUpdate.changes.map(change=>`<li>${change}</li>`).join('')}
       </ul>
     `
-    : '<div class="update-empty">更新情報が見つかりません</div>';
+    :'<div class="update-empty">更新情報が見つかりません</div>';
 
   return`
     <header class="top-header">

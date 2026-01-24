@@ -1,3 +1,6 @@
+// アプリケーション設定
+
+// ナビゲーションアイテム
 export const NAV_ITEMS=[
   {id:'hub',icon:'hub',title:'Hub',href:'/sites.google.com/hub.html'},
   {id:'chat',icon:'chat',title:'ChatHub',href:'/sites.google.com/chat.html'},
@@ -10,66 +13,9 @@ export const NAV_ITEMS=[
   {id:'piano',icon:'piano',title:'Piano',href:'/sites.google.com/piano.html'}
 ];
 
-export const UPDATE_HISTORY=[
-  {
-    version:"1.3.0",
-    date:"2026-01-24 12:36",
-    changes:[
-      "ダークモードに対応しました。"
-    ]
-  },
-  {
-    version:'v1.2.1',
-    date:'2026-01-23 23:33',
-    changes:[
-      '内部構造を改善しました。',
-      '個人的にアップデート情報の記載がしやすくなりました。'
-    ]
-  },
-  {
-    version:'v1.2.0',
-    date:'2026-01-23 12:29',
-    changes:[
-      '学校時間による偽装モードの自動切り替えに対応しました。',
-      'リロードしても、偽装モードの状態が保持されるようになりました。',
-      '指定時刻到達時は現在の状態に関係なく自動制御を優先します。',
-      '偽装モード中に、画面が真っ白になる問題を修正しました。',
-      '引き続き、meta+1で手動切替が可能です。'
-    ]
-  },
-  {
-    version:'v1.1.2',
-    date:'2026-01-19 23:29',
-    changes:[
-      'いくつかの問題を修正しました。'
-    ]
-  },
-  {
-    version:'v1.1.1',
-    date:'2026-01-18 15:00',
-    changes:[
-      'チャット機能のパフォーマンスを改善。',
-      'ファイル共有の安定性を向上。'
-    ]
-  },
-  {
-    version:'v1.1.0',
-    date:'2026-01-17 10:30',
-    changes:[
-      'Docs機能を追加。',
-      'リアルタイム自動保存に対応。'
-    ]
-  }
-];
-
-export const UPDATE_INFO = {
-  current: UPDATE_HISTORY[0],
-  history: UPDATE_HISTORY
-};
-
+// アプリケーション情報
 export const APP_INFO={
   name:'AppHub aJTaste',
   shortName:'AppHub',
-  version:UPDATE_INFO.current.version,
   description:'学生のための便利ツール集'
 };
