@@ -12,6 +12,13 @@ export const NAV_ITEMS=[
 
 export const UPDATE_HISTORY=[
   {
+    version:"1.3.0",
+    date:"2026-01-24 12:36",
+    changes:[
+      "ダークモードに対応しました。"
+    ]
+  },
+  {
     version:'v1.2.1',
     date:'2026-01-23 23:33',
     changes:[
