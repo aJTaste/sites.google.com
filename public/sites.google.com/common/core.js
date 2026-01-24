@@ -2,19 +2,7 @@
 import{supabase}from'/sites.google.com/common/supabase-config.js';
 import{checkPermission}from'/sites.google.com/common/permissions.js';
 import{NAV_ITEMS,APP_INFO}from'/sites.google.com/common/config.js';
-import{UPDATE_INFO}from'/sites.google.com/common/updates.js';
-
-// 緊急診断用（importの後に配置）
-const showDebug=(msg)=>{
-  const div=document.createElement('div');
-  div.style.cssText='position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;z-index:99999;font-size:14px;';
-  div.textContent=msg;
-  document.body.appendChild(div);
-};
-
-window.addEventListener('error',(e)=>{
-  showDebug('エラー: '+e.message+' at '+e.filename+':'+e.lineno);
-});
+import{UPDATE_INFO}from'/sites.google.com/common/updates.js'; // 変更点
 
 // グローバルな現在のユーザー情報
 let currentUser=null;
@@ -115,40 +103,33 @@ export function createSidebar(activePage,userRole){
 // ========================================
 
 export async function initPage(pageId,pageTitle,options={}){
+  const{
+    requireAuth=true,
+    redirectIfNotAuth=true,
+    onUserLoaded=null
+  }=options;
+  
+  if(!requireAuth){
+    showPage();
+    return null;
+  }
+  
   try{
-    showDebug('1: initPage開始');
-    
-    const{
-      requireAuth=true,
-      redirectIfNotAuth=true,
-      onUserLoaded=null
-    }=options;
-    
-    if(!requireAuth){
-      showDebug('2: 認証不要 -> ページ表示');
-      showPage();
-      return null;
-    }
-    
-    showDebug('3: セッション取得開始');
+    // セッション確認
     const{data:{session},error}=await supabase.auth.getSession();
     
-    if(error){
-      showDebug('4: セッション取得エラー: '+error.message);
-      throw error;
-    }
+    if(error)throw error;
     
     if(!session){
-      showDebug('5: セッションなし -> ログインへ');
       if(redirectIfNotAuth){
         window.location.href='/sites.google.com/login.html';
       }
       return null;
     }
     
-    showDebug('6: プロフィール取得開始');
     currentUser=session.user;
     
+    // プロフィール取得
     const{data:profile,error:profileError}=await supabase
       .from('profiles')
       .select('*')
@@ -156,11 +137,13 @@ export async function initPage(pageId,pageTitle,options={}){
       .single();
     
     if(profileError){
-      showDebug('7: プロフィール取得エラー: '+profileError.message);
-      throw profileError;
+      console.error('プロフィール取得エラー:',profileError);
+      alert('アカウント情報の取得に失敗しました');
+      await supabase.auth.signOut();
+      window.location.href='/sites.google.com/login.html';
+      return null;
     }
     
-    showDebug('8: UI生成開始');
     currentProfile=profile;
     
     // オンライン状態を更新
