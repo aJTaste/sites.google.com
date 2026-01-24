@@ -50,6 +50,9 @@ export function createHeader(pageTitle){
 
       <div class="header-right">
         <div id="header-clock" class="header-clock" aria-label="current time"></div>
+        <button class="theme-toggle" id="theme-toggle" title="ダークモード切替">
+          <span class="material-symbols-outlined" id="theme-icon">dark_mode</span>
+        </button>
         <button class="icon-btn" id="notification-btn" title="通知">
           <span class="material-symbols-outlined">notifications</span>
         </button>
@@ -189,6 +192,9 @@ export async function initPage(pageId,pageTitle,options={}){
     
     // イベントリスナー設定
     setupHeaderEvents();
+
+    // ダークモード初期化
+    initDarkMode();
     
     // アバター表示
     updateAvatarDisplay();
@@ -342,6 +348,37 @@ function setupHeaderEvents(){
       }
     });
   }
+
+  // ダークモード切替
+  const themeToggle=document.getElementById('theme-toggle');
+  const themeIcon=document.getElementById('theme-icon');
+
+  if(themeToggle&&themeIcon){
+    // 初期状態を読み込み
+    const savedTheme=localStorage.getItem('darkModeEnabled');
+    const isDark=savedTheme==='true';
+    
+    if(isDark){
+      document.documentElement.setAttribute('data-theme','dark');
+      themeIcon.textContent='light_mode';
+    }
+    
+    // クリックイベント
+    themeToggle.addEventListener('click',()=>{
+      const currentTheme=document.documentElement.getAttribute('data-theme');
+      const newTheme=currentTheme==='dark'?'light':'dark';
+      
+      document.documentElement.setAttribute('data-theme',newTheme);
+      
+      if(newTheme==='dark'){
+        themeIcon.textContent='light_mode';
+        localStorage.setItem('darkModeEnabled','true');
+      }else{
+        themeIcon.textContent='dark_mode';
+        localStorage.setItem('darkModeEnabled','false');
+      }
+    });
+  }
 }
 
 // ========================================
@@ -359,6 +396,14 @@ function startHeaderClock(){
   };
   tick();
   setInterval(tick,1000);
+}
+
+// ダークモード初期化
+function initDarkMode(){
+  const savedTheme=localStorage.getItem('darkModeEnabled');
+  if(savedTheme==='true'){
+    document.documentElement.setAttribute('data-theme','dark');
+  }
 }
 
 // ========================================
