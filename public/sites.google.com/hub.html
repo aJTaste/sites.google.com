@@ -11,6 +11,21 @@
   <link rel="apple-touch-icon" href="assets/icon1.svg">
 </head>
 <body class="page-loading">
+
+    <script>
+    const debug=document.createElement('div');
+    debug.style.cssText='position:fixed;top:0;left:0;right:0;background:blue;color:white;padding:10px;z-index:99999;font-size:14px;';
+    debug.textContent='HTML読み込み完了';
+    document.body.appendChild(debug);
+    
+    setTimeout(()=>{
+      if(document.body.classList.contains('page-loading')){
+        debug.textContent='JSが実行されていません';
+        debug.style.background='red';
+      }
+    },3000);
+  </script>
+
   <div class="app-container">
     <div class="main-container">
       <main class="main-content">
