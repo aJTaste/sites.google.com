@@ -1,20 +1,20 @@
-// 緊急診断用
-function showDebug(msg){
-  const div=document.createElement('div');
-  div.style.cssText='position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;z-index:99999;font-size:14px;';
-  div.textContent=msg;
-  document.body.appendChild(div);
-}
-
-window.addEventListener('error',(e)=>{
-  showDebug('エラー: '+e.message+' at '+e.filename+':'+e.lineno);
-});
-
 // AppHub Core - Supabase版
 import{supabase}from'/sites.google.com/common/supabase-config.js';
 import{checkPermission}from'/sites.google.com/common/permissions.js';
 import{NAV_ITEMS,APP_INFO}from'/sites.google.com/common/config.js';
-import{UPDATE_INFO}from'/sites.google.com/common/updates.js'; // 変更点
+import{UPDATE_INFO}from'/sites.google.com/common/updates.js';
+
+// 緊急診断用（importの後に配置）
+const showDebug=(msg)=>{
+  const div=document.createElement('div');
+  div.style.cssText='position:fixed;top:0;left:0;right:0;background:red;color:white;padding:10px;z-index:99999;font-size:14px;';
+  div.textContent=msg;
+  document.body.appendChild(div);
+};
+
+window.addEventListener('error',(e)=>{
+  showDebug('エラー: '+e.message+' at '+e.filename+':'+e.lineno);
+});
 
 // グローバルな現在のユーザー情報
 let currentUser=null;
