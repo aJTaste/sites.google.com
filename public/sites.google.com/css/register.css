@@ -1,114 +1,131 @@
 /* ================================
-   register.html 専用リニューアル
+   register.html 専用リニューアルCSS
    ================================ */
 
+/* ボックス幅を安定させる */
 .auth-box{
-  max-width:720px;
-  margin:0 auto;
+  max-width:920px;
+  margin:auto;
 }
 
-/* 全体レイアウト */
+/* フォーム全体レイアウト */
 .form-layout{
   display:grid;
-  grid-template-columns:1fr;
-  gap:28px;
-  margin-bottom:28px;
+  grid-template-columns: 1fr 240px;
+  gap:40px;
+  align-items:flex-start;
+  margin-bottom:32px;
 }
 
-/* 入力フォーム */
+/* 左フォーム */
 .form-left{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:16px 20px;
+  display:flex;
+  flex-direction:column;
+  gap:18px;
 }
 
-/* フル幅指定 */
-.form-left .input-group{
-  grid-column:span 2;
+/* 入力グループの余白を統一 */
+.input-group{
+  margin-bottom:0;
 }
 
-.form-left .input-group.half{
-  grid-column:span 1;
-}
-
-/* アイコン設定カード */
+/* 右カラム */
 .form-right{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+
+/* アイコンラベル */
+.form-right > label{
+  font-size:14px;
+  font-weight:600;
+  color:var(--text-primary);
+}
+
+/* アイコンエリア */
+.icon-section{
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  align-items:center;
+  padding:16px;
   border:1px solid var(--border);
   border-radius:8px;
-  padding:20px;
   background:var(--bg-secondary);
 }
 
-.form-right > label{
-  display:block;
-  margin-bottom:12px;
-  font-size:14px;
-  font-weight:600;
-}
-
-/* アイコン領域 */
-.icon-section{
-  display:flex;
-  align-items:center;
-  gap:16px;
-}
-
+/* プレビュー */
 .icon-preview{
-  width:96px;
-  height:96px;
+  width:120px;
+  height:120px;
   border-radius:50%;
   overflow:hidden;
-  flex-shrink:0;
   border:2px solid var(--border);
-  background:#FF6B35;
+  background:var(--main);
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:36px;
+  font-size:48px;
   font-weight:600;
-  color:#fff;
+  color:#ffffff;
 }
 
+/* プレビュー画像 */
 .icon-preview img{
   width:100%;
   height:100%;
   object-fit:cover;
 }
 
-/* ボタン群 */
-.icon-actions{
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
-
-.icon-actions button{
-  width:140px;
+/* ボタン */
+.icon-section button{
+  width:100%;
 }
 
 /* ヘルプ・エラー */
-.form-right .help-text,
-.form-right .error-message{
+.icon-section .help-text,
+.icon-section .error-message{
+  text-align:center;
+}
+
+/* 送信ボタン */
+#submit-btn{
   margin-top:8px;
 }
 
-/* モバイル対応 */
-@media(max-width:768px){
-  .form-left{
+/* ================================
+   レスポンシブ（タブレット以下）
+   ================================ */
+@media(max-width:900px){
+  .form-layout{
     grid-template-columns:1fr;
+    gap:24px;
   }
 
-  .form-left .input-group,
-  .form-left .input-group.half{
-    grid-column:span 1;
+  .form-right{
+    width:100%;
   }
 
   .icon-section{
-    flex-direction:column;
-    align-items:flex-start;
+    flex-direction:row;
+    align-items:center;
+    gap:16px;
   }
 
-  .icon-actions{
-    flex-direction:row;
+  .icon-preview{
+    width:80px;
+    height:80px;
+    font-size:32px;
+  }
+
+  .icon-section button{
+    width:auto;
+    min-width:120px;
+  }
+
+  .icon-section .help-text,
+  .icon-section .error-message{
+    text-align:left;
   }
 }

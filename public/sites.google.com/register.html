@@ -4,19 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Sign Up | AppHub</title>
-
   <link rel="stylesheet" href="common/common.css">
   <link rel="stylesheet" href="css/auth.css">
   <link rel="stylesheet" href="css/register.css">
-
   <link rel="icon" href="assets/favicon1.svg">
   <link rel="apple-touch-icon" href="assets/icon1.svg">
 </head>
-
 <body class="page-loading">
   <div class="auth-container">
-
-    <!-- ヘッダー -->
     <header class="auth-header">
       <div class="header-left">
         <img src="assets/favicon1.svg" alt="AppHub" class="logo-icon">
@@ -27,151 +22,61 @@
         <span class="page-title">新規登録</span>
       </div>
     </header>
-
-    <!-- メイン -->
     <main class="auth-main">
       <div class="auth-box">
-
         <form id="register-form">
-
           <div class="form-layout">
-
-            <!-- 左：入力フォーム -->
             <div class="form-left">
-
               <div class="input-group">
                 <label for="user-id">ID</label>
-                <input
-                  type="text"
-                  id="user-id"
-                  placeholder="207d23XXXX"
-                  pattern="207d23\d{4}"
-                  required
-                >
-                <span class="help-text">
-                  207d230116@ita.ed.jp などの教育委員会メールの @ 前部分
-                </span>
+                <input type="text" id="user-id" placeholder="207d23XXXX" pattern="207d23\d{4}" required>
+                <span class="help-text">207d230116@ita.ed.jpなどの教育委員会メールアドレスの、@の前の部分</span>
                 <span class="error-message" id="id-error"></span>
               </div>
-
               <div class="input-group">
                 <label for="password">パスワード</label>
-                <input
-                  type="password"
-                  id="password"
-                  placeholder="8文字以上"
-                  minlength="8"
-                  required
-                >
+                <input type="password" id="password" placeholder="8文字以上" minlength="8" required>
               </div>
-
               <div class="input-group">
                 <label for="password-confirm">パスワード（確認）</label>
-                <input
-                  type="password"
-                  id="password-confirm"
-                  placeholder="もう一度入力"
-                  required
-                >
+                <input type="password" id="password-confirm" placeholder="もう一度入力" required>
                 <span class="error-message" id="password-error"></span>
               </div>
-
               <div class="input-group">
                 <label for="display-name">表示名</label>
-                <input
-                  type="text"
-                  id="display-name"
-                  placeholder="ニックネームや表示名"
-                  required
-                >
+                <input type="text" id="display-name" placeholder="ニックネームや表示名" required>
               </div>
-
-              <div class="input-group half">
+              <div class="input-group">
                 <label for="last-name">姓</label>
-                <input
-                  type="text"
-                  id="last-name"
-                  placeholder="松林"
-                >
+                <input type="text" id="last-name" placeholder="松林">
               </div>
-
-              <div class="input-group half">
+              <div class="input-group">
                 <label for="first-name">名</label>
-                <input
-                  type="text"
-                  id="first-name"
-                  placeholder="晴河"
-                >
+                <input type="text" id="first-name" placeholder="晴河">
               </div>
-
             </div>
-
-            <!-- 右：アイコン設定 -->
             <div class="form-right">
               <label>アイコン</label>
-
               <div class="icon-section">
-
-                <div
-                  class="icon-preview"
-                  id="icon-preview"
-                  style="background:#FF6B35;"
-                ></div>
-
-                <div class="icon-actions">
-                  <input
-                    type="file"
-                    id="icon-file"
-                    accept="image/*"
-                    hidden
-                  >
-                  <button
-                    type="button"
-                    class="btn-secondary"
-                    id="upload-btn"
-                  >
-                    画像を選択
-                  </button>
-                  <button
-                    type="button"
-                    class="btn-secondary"
-                    id="default-btn"
-                  >
-                    デフォルト
-                  </button>
+                <div class="icon-preview" id="icon-preview" style="display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:600;color:#fff;background:#FF6B35;">
+                  
                 </div>
-
+                <input type="file" id="icon-file" accept="image/*" hidden>
+                <button type="button" class="btn-secondary" id="upload-btn">画像を選択</button>
+                <button type="button" class="btn-secondary" id="default-btn">デフォルト</button>
+                <span class="help-text">500KB以下</span>
+                <span class="error-message" id="icon-error"></span>
               </div>
-
-              <span class="help-text">500KB 以下</span>
-              <span class="error-message" id="icon-error"></span>
             </div>
-
           </div>
-
-          <!-- 登録ボタン -->
-          <button
-            type="submit"
-            class="btn-primary btn-full"
-            id="submit-btn"
-          >
-            登録
-          </button>
-
+          <button type="submit" class="btn-primary btn-full" id="submit-btn">登録</button>
         </form>
-
-        <!-- フッター -->
         <div class="auth-footer">
-          すでにアカウントをお持ちですか？
-          <a href="login.html">ログイン</a>
+          すでにアカウントをお持ちですか？ <a href="login.html">ログイン</a>
         </div>
-
       </div>
     </main>
-
   </div>
-
-  <!-- JS -->
   <script type="module" src="js/register.js"></script>
   <script src="common/stealth-mode.js"></script>
 </body>
