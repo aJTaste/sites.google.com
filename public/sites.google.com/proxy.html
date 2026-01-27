@@ -78,7 +78,7 @@
       if('serviceWorker'in navigator){
         try{
           await navigator.serviceWorker.register('/sites.google.com/uv/uv.sw.js',{
-            scope:'/sites.google.com/uv-service/'
+            scope:'/sites.google.com/uv/'
           });
           console.log('✓ Service Worker registered');
         }catch(e){
