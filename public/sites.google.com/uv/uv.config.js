@@ -1,6 +1,6 @@
 self.__uv$config={
   prefix:'/sites.google.com/uv/service/',
-  bare:['https://uv.holyubofficial.net/bare/'],
+  bare:'https://uv.holyubofficial.net/bare/',
   encodeUrl:Ultraviolet.codec.xor.encode,
   decodeUrl:Ultraviolet.codec.xor.decode,
   handler:'/sites.google.com/uv/uv.handler.js',
