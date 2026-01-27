@@ -156,7 +156,8 @@
     const iframe=document.createElement('iframe');
     iframe.className='proxy-iframe';
     iframe.src=proxyUrl;
-    iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups';
+    iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation';
+
 
     browserContent.innerHTML='';
     browserContent.appendChild(iframe);
