@@ -1,6 +1,11 @@
 self.__uv$config={
   prefix:'/sites.google.com/uv/',
-  bare:'https://uv.holyubofficial.net/bare/',
+  bare:[
+    'https://uv.holyubofficial.net/bare/',
+    'https://tomp.app/bare/',
+    'https://incog.dev/bare/',
+    'https://uv.rammerhead.org/bare/'
+  ],
   encodeUrl:Ultraviolet.codec.xor.encode,
   decodeUrl:Ultraviolet.codec.xor.decode,
   handler:'/sites.google.com/uv/uv.handler.js',
