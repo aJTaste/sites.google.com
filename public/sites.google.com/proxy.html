@@ -71,8 +71,27 @@
   <script src="/sites.google.com/uv/uv.bundle.js"></script>
   <script src="/sites.google.com/uv/uv.config.js"></script>
   <script type="module">
-    import{initPage}from'../common/core.js';
+    import{initPage}from'/sites.google.com/common/core.js';
+
+    // Service Worker登録（UV必須）
+    async function registerSW(){
+      if('serviceWorker'in navigator){
+        try{
+          await navigator.serviceWorker.register('/sites.google.com/uv/uv.sw.js',{
+            scope:'/sites.google.com/uv-service/'
+          });
+          console.log('✓ Service Worker registered');
+        }catch(e){
+          console.error('✗ SW registration failed:',e);
+        }
+      }
+    }
+
+    // ページ初期化待機
     await initPage('proxy','プロキシブラウザ');
+
+    // SW登録
+    await registerSW();
 
     const state={
       currentUrl:'',
@@ -240,7 +259,7 @@
 
     currentModeText.textContent=PROXY_SERVICES[state.mode].name;
 
-    console.log('Ultravioletプロキシ準備完了！');
+    console.log('✓ Ultravioletプロキシ準備完了');
   </script>
   <script src="common/stealth-mode.js"></script>
   <script src="common/capture-handler.js"></script>
