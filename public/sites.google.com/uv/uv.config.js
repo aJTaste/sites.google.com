@@ -1,0 +1,10 @@
+self.__uv$config={
+  prefix:'/sites.google.com/uv-service/',
+  bare:'https://uv.holyubofficial.net/bare/',
+  encodeUrl:Ultraviolet.codec.xor.encode,
+  decodeUrl:Ultraviolet.codec.xor.decode,
+  handler:'/sites.google.com/uv/uv.handler.js',
+  bundle:'/sites.google.com/uv/uv.bundle.js',
+  config:'/sites.google.com/uv/uv.config.js',
+  sw:'/sites.google.com/uv/uv.sw.js'
+};
