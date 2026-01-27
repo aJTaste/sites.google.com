@@ -1,5 +1,5 @@
 self.__uv$config={
-  prefix:'/sites.google.com/uv-service/',
+  prefix:'/sites.google.com/uv/',
   bare:'https://uv.holyubofficial.net/bare/',
   encodeUrl:Ultraviolet.codec.xor.encode,
   decodeUrl:Ultraviolet.codec.xor.decode,
