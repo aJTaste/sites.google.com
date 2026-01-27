@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -36,11 +35,6 @@
             <button class="control-btn" id="fullscreen-btn" title="全画面">
               <span class="material-symbols-outlined">fullscreen</span>
             </button>
-            
-            <button class="mode-toggle-btn" id="proxy-mode-btn" title="プロキシモード切替">
-              <span class="material-symbols-outlined">swap_horiz</span>
-              <span id="current-mode">Ultraviolet</span>
-            </button>
           </div>
           
           <div class="browser-content" id="browser-content">
@@ -48,19 +42,14 @@
               <div class="welcome-icon">
                 <span class="material-symbols-outlined">public</span>
               </div>
-              <h2>プロキシブラウザ</h2>
-              <p>フィルタリングを回避してWebサイトにアクセスできます</p>
+              <h2>Ultraviolet プロキシブラウザ</h2>
+              <p>高速プロキシ技術でWebサイトにアクセス</p>
               <div class="info-box">
                 <h3>使い方</h3>
                 <ol>
                   <li>上部のURLバーにアクセスしたいURLを入力</li>
-                  <li>読み込みに失敗した場合は、右上のモード切替ボタンを押す</li>
                   <li>全画面ボタンで画面を最大化できます</li>
                 </ol>
-              </div>
-              <div class="mode-info">
-                <p><strong>現在のモード:</strong> <span class="mode-badge">Ultraviolet</span></p>
-                <p class="mode-desc">最新のプロキシ技術で高速・安定動作</p>
               </div>
             </div>
           </div>
@@ -74,51 +63,11 @@
   <script type="module">
     import{initPage}from'/sites.google.com/common/core.js';
 
-    // Service Worker登録（UV必須）
-    async function registerSW(){
-      if('serviceWorker'in navigator){
-        try{
-          await navigator.serviceWorker.register('/sites.google.com/uv/uv.sw.js',{
-            scope:'/sites.google.com/uv/'
-          });
-          console.log('✓ Service Worker registered');
-        }catch(e){
-          console.error('✗ SW registration failed:',e);
-        }
-      }
-    }
-
-    // ページ初期化待機
     await initPage('proxy','プロキシブラウザ');
-
-    // SW登録
-    await registerSW();
 
     const state={
       currentUrl:'',
-      mode:'ultraviolet'
-    };
-
-    const PROXY_SERVICES={
-      ultraviolet:{
-        name:'Ultraviolet',
-        load:async(url)=>{
-          const encoded=__uv$config.encodeUrl(url);
-          return __uv$config.prefix+encoded+'#youtube.com';
-        }
-      },
-      allorigins:{
-        name:'AllOrigins',
-        load:async(url)=>{
-          return `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}#youtube.com`;
-        }
-      },
-      corsproxy:{
-        name:'CORS Proxy',
-        load:async(url)=>{
-          return `https://corsproxy.io/?${encodeURIComponent(url)}#youtube.com`;
-        }
-      }
+      swReady:false
     };
 
     const urlInput=document.getElementById('url-input');
@@ -126,47 +75,69 @@
     const reloadBtn=document.getElementById('reload-btn');
     const homeBtn=document.getElementById('home-btn');
     const fullscreenBtn=document.getElementById('fullscreen-btn');
-    const proxyModeBtn=document.getElementById('proxy-mode-btn');
     const browserContent=document.getElementById('browser-content');
-    const currentModeText=document.getElementById('current-mode');
     const proxyContainer=document.querySelector('.proxy-container');
 
     const welcomeHTML=document.querySelector('.welcome-screen').outerHTML;
 
-    async function loadUrl(url){
-  if(!url)return;
-  if(!url.startsWith('http'))url='https://'+url;
-  state.currentUrl=url;
-  urlInput.value=url;
-  showLoading();
+    async function registerSW(){
+      if(!('serviceWorker' in navigator)){
+        showError('','Service Worker非対応のブラウザです');
+        return false;
+      }
 
-  try{
-    // ★ 修正3の核心
-    await navigator.serviceWorker.ready;
+      try{
+        const registration=await navigator.serviceWorker.register('/sites.google.com/uv/uv.sw.js',{
+          scope:'/sites.google.com/uv/service/'
+        });
 
-    // ★ まだ制御下に入っていなければ、1回だけリロード
-    if(!navigator.serviceWorker.controller){
-      location.reload();
-      return;
+        await navigator.serviceWorker.ready;
+
+        if(navigator.serviceWorker.controller){
+          state.swReady=true;
+          console.log('✓ Service Worker ready');
+          return true;
+        }
+
+        window.location.reload();
+        return false;
+      }catch(e){
+        console.error('✗ SW registration failed:',e);
+        showError('','Service Workerの登録に失敗しました');
+        return false;
+      }
     }
 
-    const encoded=__uv$config.encodeUrl(url);
-    const proxyUrl=__uv$config.prefix+encoded+'#youtube.com';
+    async function loadUrl(url){
+      if(!url)return;
+      if(!url.startsWith('http'))url='https://'+url;
 
-    const iframe=document.createElement('iframe');
-    iframe.className='proxy-iframe';
-    iframe.src=proxyUrl;
-    iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-top-navigation';
+      if(!state.swReady){
+        showLoading();
+        const ready=await registerSW();
+        if(!ready)return;
+      }
 
+      state.currentUrl=url;
+      urlInput.value=url;
+      showLoading();
 
-    browserContent.innerHTML='';
-    browserContent.appendChild(iframe);
-  }catch(e){
-    showError(url,e.message);
-  }
-}
+      try{
+        const encoded=__uv$config.encodeUrl(url);
+        const proxyUrl=location.origin+__uv$config.prefix+encoded;
 
+        const iframe=document.createElement('iframe');
+        iframe.className='proxy-iframe';
+        iframe.src=proxyUrl;
+        iframe.allow='fullscreen';
 
+        browserContent.innerHTML='';
+        browserContent.appendChild(iframe);
+      }catch(e){
+        console.error('読み込みエラー:',e);
+        showError(url,e.message);
+      }
+    }
 
     function showLoading(){
       browserContent.innerHTML=`
@@ -185,18 +156,12 @@
           </div>
           <h2>読み込みに失敗しました</h2>
           <p>${message}</p>
-          <p style="font-size:14px;color:var(--text-tertiary);margin-bottom:24px;">URL: ${url}</p>
+          ${url?`<p style="font-size:14px;color:var(--text-tertiary);margin-bottom:24px;">URL: ${url}</p>`:''}
           <div class="error-actions">
-            <button class="btn-primary" onclick="location.reload()">再読み込み</button>
-            <button class="btn-secondary" id="try-another-mode">別のモードで試す</button>
+            <button class="btn-primary" onclick="location.reload()">ページを再読み込み</button>
           </div>
         </div>
       `;
-
-      document.getElementById('try-another-mode').addEventListener('click',()=>{
-        switchProxyMode();
-        loadUrl(url);
-      });
     }
 
     function reload(){
@@ -211,64 +176,31 @@
       urlInput.value='';
     }
 
-    function switchProxyMode(){
-      const modes=Object.keys(PROXY_SERVICES);
-      const currentIndex=modes.indexOf(state.mode);
-      const nextIndex=(currentIndex+1)%modes.length;
-      state.mode=modes[nextIndex];
-
-      currentModeText.textContent=PROXY_SERVICES[state.mode].name;
-
-      if(state.currentUrl){
-        loadUrl(state.currentUrl);
-      }
-    }
-
     function toggleFullscreen(){
       proxyContainer.classList.toggle('is-fullscreen');
-
-      if(proxyContainer.classList.contains('is-fullscreen')){
-        fullscreenBtn.querySelector('.material-symbols-outlined').textContent='fullscreen_exit';
-      }else{
-        fullscreenBtn.querySelector('.material-symbols-outlined').textContent='fullscreen';
-        proxyContainer.classList.remove('show-controls');
-      }
+      const icon=fullscreenBtn.querySelector('.material-symbols-outlined');
+      icon.textContent=proxyContainer.classList.contains('is-fullscreen')?'fullscreen_exit':'fullscreen';
     }
 
-    function toggleControls(){
-      if(!proxyContainer.classList.contains('is-fullscreen'))return;
-      proxyContainer.classList.toggle('show-controls');
-    }
+    urlInput.addEventListener('keydown',e=>{
+      if(e.key==='Enter')loadUrl(urlInput.value);
+    });
+
+    goBtn.addEventListener('click',()=>loadUrl(urlInput.value));
+    reloadBtn.addEventListener('click',reload);
+    homeBtn.addEventListener('click',goHome);
+    fullscreenBtn.addEventListener('click',toggleFullscreen);
 
     document.addEventListener('keydown',e=>{
-      if(e.key==='ArrowUp'){
-        toggleControls();
-      }
       if(e.key==='Escape'&&proxyContainer.classList.contains('is-fullscreen')){
         toggleFullscreen();
       }
     });
 
-    urlInput.addEventListener('keydown',e=>{
-      if(e.key==='Enter'){
-        loadUrl(urlInput.value);
-      }
-    });
-
-    goBtn.addEventListener('click',()=>{
-      loadUrl(urlInput.value);
-    });
-
-    reloadBtn.addEventListener('click',reload);
-    homeBtn.addEventListener('click',goHome);
-    fullscreenBtn.addEventListener('click',toggleFullscreen);
-    proxyModeBtn.addEventListener('click',switchProxyMode);
-
-    currentModeText.textContent=PROXY_SERVICES[state.mode].name;
-
-    console.log('✓ Ultravioletプロキシ準備完了');
+    registerSW();
+    console.log('✓ Ultraviolet初期化完了');
   </script>
-  <script src="common/stealth-mode.js"></script>
-  <script src="common/capture-handler.js"></script>
+  <script src="../common/stealth-mode.js"></script>
+  <script src="../common/capture-handler.js"></script>
 </body>
 </html>
