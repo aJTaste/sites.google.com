@@ -133,33 +133,38 @@
     const welcomeHTML=document.querySelector('.welcome-screen').outerHTML;
 
     async function loadUrl(url){
-      if(!url)return;
+  if(!url)return;
+  if(!url.startsWith('http'))url='https://'+url;
+  state.currentUrl=url;
+  urlInput.value=url;
+  showLoading();
 
-      if(!url.startsWith('http')){
-        url='https://'+url;
-      }
+  try{
+    // ★ 修正3の核心
+    await navigator.serviceWorker.ready;
 
-      state.currentUrl=url;
-      urlInput.value=url;
-
-      showLoading();
-
-      try{
-        const proxy=PROXY_SERVICES[state.mode];
-        const proxyUrl=await proxy.load(url);
-
-        const iframe=document.createElement('iframe');
-        iframe.className='proxy-iframe';
-        iframe.src=proxyUrl;
-        iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
-
-        browserContent.innerHTML='';
-        browserContent.appendChild(iframe);
-      }catch(error){
-        console.error('読み込みエラー:',error);
-        showError(url,error.message);
-      }
+    // ★ まだ制御下に入っていなければ、1回だけリロード
+    if(!navigator.serviceWorker.controller){
+      location.reload();
+      return;
     }
+
+    const encoded=__uv$config.encodeUrl(url);
+    const proxyUrl=__uv$config.prefix+encoded+'#youtube.com';
+
+    const iframe=document.createElement('iframe');
+    iframe.className='proxy-iframe';
+    iframe.src=proxyUrl;
+    iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups';
+
+    browserContent.innerHTML='';
+    browserContent.appendChild(iframe);
+  }catch(e){
+    showError(url,e.message);
+  }
+}
+
+
 
     function showLoading(){
       browserContent.innerHTML=`
