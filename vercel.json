@@ -1,0 +1,8 @@
+{
+  "rewrites":[
+    {
+      "source":"/sites.google.com/uv/(.*)",
+      "destination":"/sites.google.com/uv/uv.bundle.js"
+    }
+  ]
+}
