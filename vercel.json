@@ -1,8 +1,8 @@
 {
   "rewrites":[
     {
-      "source":"/sites.google.com/uv/(.*)",
-      "destination":"/sites.google.com/uv/index.html"
+      "source":"/sites.google.com/uv/service/:path*",
+      "destination":"/sites.google.com/uv/service/:path*"
     }
   ]
 }
