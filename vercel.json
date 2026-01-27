@@ -2,7 +2,7 @@
   "rewrites":[
     {
       "source":"/sites.google.com/uv/(.*)",
-      "destination":"/sites.google.com/uv/uv.bundle.js"
+      "destination":"/sites.google.com/uv/index.html"
     }
   ]
 }
