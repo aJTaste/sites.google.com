@@ -92,9 +92,7 @@
         console.log('SW scope:','/sites.google.com/uv/');
         
         const registration=await navigator.serviceWorker.register('/sites.google.com/uv/uv.sw.js',{
-          scope:'/sites.google.com/uv/',
-          type:'classic'
-        });
+          scope:'/sites.google.com/uv/service/'});
 
         console.log('SW登録成功:',registration);
         console.log('SW scope:',registration.scope);
