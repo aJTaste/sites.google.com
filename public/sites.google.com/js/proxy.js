@@ -14,10 +14,46 @@ const quickLinks=document.querySelectorAll('.quick-link');
 let swReady=false;
 
 async function registerSW(){
+  console.log('1. SW登録開始');
+  
   if(!('serviceWorker'in navigator)){
+    console.error('Service Worker非対応');
     alert('Service Workerに対応していません');
     return false;
   }
+  
+  goBtn.disabled=true;
+  goBtn.textContent='初期化中...';
+  
+  try{
+    console.log('2. SW登録リクエスト送信');
+    const reg=await navigator.serviceWorker.register('/sites.google.com/uv.sw.js',{
+      scope:'/sites.google.com/service/'
+    });
+    
+    console.log('3. SW登録成功:',reg);
+    console.log('4. SW状態:',reg.installing,reg.waiting,reg.active);
+    
+    console.log('5. SW Ready待機中...');
+    await navigator.serviceWorker.ready;
+    console.log('6. SW Ready完了');
+    
+    await new Promise(resolve=>setTimeout(resolve,500));
+    console.log('7. 追加待機完了');
+    
+    swReady=true;
+    goBtn.disabled=false;
+    goBtn.innerHTML='<span class="material-symbols-outlined">arrow_forward</span>移動';
+    
+    console.log('8. 初期化完了 - swReady=true');
+    return true;
+  }catch(err){
+    console.error('SW登録失敗:',err);
+    alert('プロキシの初期化に失敗しました: '+err.message);
+    goBtn.textContent='初期化失敗';
+    return false;
+  }
+}
   
   goBtn.disabled=true;
   goBtn.textContent='初期化中...';
