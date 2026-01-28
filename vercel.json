@@ -1,8 +1,0 @@
-{
-  "rewrites":[
-    {
-      "source":"/sites.google.com/uv/service/:path*",
-      "destination":"/sites.google.com/uv/service/:path*"
-    }
-  ]
-}
