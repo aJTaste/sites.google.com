@@ -32,10 +32,22 @@ function normalize(input){
 
 function loadPage(url){
   loading.classList.remove('hidden');
+
   const encoded=__uv$config.encodeUrl(url);
   proxyFrame.src=__uv$config.prefix+encoded+'#youtube.com';
-  proxyFrame.onload=()=>loading.classList.add('hidden');
+
+  let cleared=false;
+
+  const done=()=>{
+    if(cleared)return;
+    cleared=true;
+    loading.classList.add('hidden');
+  };
+
+  proxyFrame.onload=done;
+  setTimeout(done,4000); // ★重要
 }
+
 
 goBtn.onclick=()=>{
   const url=normalize(urlInput.value);
