@@ -1,4 +1,4 @@
-// js/proxy.js（修正版）
+// js/proxy.js（完全修正版）
 import{initPage}from'../common/core.js';
 
 await initPage('proxy','Proxy');
@@ -14,21 +14,24 @@ const homeBtn=document.getElementById('home-btn');
 const fullscreenBtn=document.getElementById('fullscreen-btn');
 
 let currentUrl='';
+let uvConfig=null;
 
 // Ultraviolet初期化
 async function initUV(){
   try{
     console.log('UV初期化開始...');
     
+    // 設定読み込み
+    await loadUVConfig();
+    
     if('serviceWorker'in navigator){
-      // 既存のSW削除（クリーンスタート）
+      // 既存のSW削除
       const registrations=await navigator.serviceWorker.getRegistrations();
       for(let registration of registrations){
         await registration.unregister();
-        console.log('既存SW削除:',registration.scope);
       }
       
-      // Service Worker登録（パス修正）
+      // Service Worker登録
       const registration=await navigator.serviceWorker.register(
         '/sites.google.com/uv.sw.js',
         {scope:'/sites.google.com/service/'}
@@ -40,8 +43,6 @@ async function initUV(){
       await navigator.serviceWorker.ready;
       console.log('Service Workerアクティブ化完了');
       
-      alert('プロキシ初期化成功！');
-      
     }else{
       throw new Error('このブラウザはService Workerに対応していません');
     }
@@ -49,6 +50,21 @@ async function initUV(){
     console.error('UV初期化エラー:',error);
     alert(`プロキシの初期化に失敗しました: ${error.message}`);
   }
+}
+
+// UV設定読み込み
+async function loadUVConfig(){
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement('script');
+    script.src='/sites.google.com/uv.config.js';
+    script.onload=()=>{
+      uvConfig=self.__uv$config;
+      console.log('UV設定読み込み完了:',uvConfig);
+      resolve();
+    };
+    script.onerror=reject;
+    document.head.appendChild(script);
+  });
 }
 
 // URL処理
@@ -67,6 +83,15 @@ function processUrl(input){
   return input;
 }
 
+// XORエンコード（Ultraviolet互換）
+function xorEncode(str){
+  return encodeURIComponent(
+    str.split('').map((char,ind)=>
+      ind%2?String.fromCharCode(char.charCodeAt(0)^2):char
+    ).join('')
+  );
+}
+
 // ページ読み込み
 async function loadPage(url){
   if(!url)return;
@@ -77,8 +102,8 @@ async function loadPage(url){
   try{
     console.log('ページ読み込み開始:',url);
     
-    // Base64エンコード
-    const encoded=btoa(url);
+    // Ultraviolet形式でエンコード
+    const encoded=xorEncode(url);
     const proxyUrl=`/sites.google.com/service/${encoded}#youtube.com`;
     
     console.log('プロキシURL:',proxyUrl);
@@ -86,12 +111,20 @@ async function loadPage(url){
     proxyFrame.src=proxyUrl;
     urlInput.value=url;
     
-    proxyFrame.onload=()=>{
-      console.log('ページ読み込み完了');
+    // タイムアウト設定
+    const timeout=setTimeout(()=>{
       loading.classList.add('hidden');
+      console.log('ロード完了（タイムアウト）');
+    },5000);
+    
+    proxyFrame.onload=()=>{
+      clearTimeout(timeout);
+      loading.classList.add('hidden');
+      console.log('ページ読み込み完了');
     };
     
     proxyFrame.onerror=(e)=>{
+      clearTimeout(timeout);
       console.error('iframe読み込みエラー:',e);
       loading.classList.add('hidden');
       alert('ページの読み込みに失敗しました');
@@ -100,7 +133,7 @@ async function loadPage(url){
   }catch(error){
     console.error('ページ読み込みエラー:',error);
     loading.classList.add('hidden');
-    alert('ページの読み込みに失敗しました');
+    alert(`エラー: ${error.message}`);
   }
 }
 
@@ -140,10 +173,8 @@ forwardBtn.addEventListener('click',()=>{
 });
 
 reloadBtn.addEventListener('click',()=>{
-  try{
-    proxyFrame.contentWindow.location.reload();
-  }catch(e){
-    console.error('リロードエラー:',e);
+  if(currentUrl){
+    loadPage(currentUrl);
   }
 });
 
