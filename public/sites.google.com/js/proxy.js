@@ -1,4 +1,4 @@
-// js/proxy.js（デバッグ版）
+// js/proxy.js（修正版）
 import{initPage}from'../common/core.js';
 
 await initPage('proxy','Proxy');
@@ -20,10 +20,7 @@ async function initUV(){
   try{
     console.log('UV初期化開始...');
     
-    // Service Worker登録
     if('serviceWorker'in navigator){
-      console.log('Service Worker対応ブラウザ');
-      
       // 既存のSW削除（クリーンスタート）
       const registrations=await navigator.serviceWorker.getRegistrations();
       for(let registration of registrations){
@@ -31,9 +28,9 @@ async function initUV(){
         console.log('既存SW削除:',registration.scope);
       }
       
-      // 新規登録
+      // Service Worker登録（パス修正）
       const registration=await navigator.serviceWorker.register(
-        '/sites.google.com/js/uv.sw.js',
+        '/sites.google.com/uv.sw.js',
         {scope:'/sites.google.com/service/'}
       );
       
@@ -43,11 +40,13 @@ async function initUV(){
       await navigator.serviceWorker.ready;
       console.log('Service Workerアクティブ化完了');
       
+      alert('プロキシ初期化成功！');
+      
     }else{
       throw new Error('このブラウザはService Workerに対応していません');
     }
   }catch(error){
-    console.error('UV初期化エラー詳細:',error);
+    console.error('UV初期化エラー:',error);
     alert(`プロキシの初期化に失敗しました: ${error.message}`);
   }
 }
