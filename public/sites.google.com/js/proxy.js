@@ -1,11 +1,7 @@
-// js/proxy.js
+// js/proxy.js（修正版）
 import{initPage}from'../common/core.js';
 
 await initPage('proxy','Proxy');
-
-const UV_BUNDLE='https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3/dist/uv.bundle.js';
-const UV_CONFIG='https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3/dist/uv.config.js';
-const UV_SW='/sites.google.com/js/uv.sw.js';
 
 const urlInput=document.getElementById('url-input');
 const goBtn=document.getElementById('go-btn');
@@ -22,48 +18,29 @@ let currentUrl='';
 // Ultraviolet初期化
 async function initUV(){
   try{
-    // UVスクリプト読み込み
-    await loadScript(UV_CONFIG);
-    await loadScript(UV_BUNDLE);
-    
     // Service Worker登録
     if('serviceWorker'in navigator){
-      await navigator.serviceWorker.register(UV_SW,{
-        scope:'/sites.google.com/service/'
-      });
+      const registration=await navigator.serviceWorker.register(
+        '/sites.google.com/js/uv.sw.js',
+        {scope:'/service/'}
+      );
+      console.log('Service Worker登録成功:',registration);
     }
-    
-    console.log('Ultraviolet準備完了');
   }catch(error){
     console.error('UV初期化エラー:',error);
     alert('プロキシの初期化に失敗しました');
   }
 }
 
-// スクリプト読み込み
-function loadScript(src){
-  return new Promise((resolve,reject)=>{
-    const script=document.createElement('script');
-    script.src=src;
-    script.onload=resolve;
-    script.onerror=reject;
-    document.head.appendChild(script);
-  });
-}
-
 // URL処理
 function processUrl(input){
   input=input.trim();
-  
-  // 空の場合
   if(!input)return'';
   
-  // 検索ワード判定（スペース含むor プロトコルなし）
   if(input.includes(' ')||(!input.includes('.')&&!input.startsWith('http'))){
     return`https://www.google.com/search?q=${encodeURIComponent(input)}`;
   }
   
-  // プロトコル補完
   if(!input.startsWith('http://')&&!input.startsWith('https://')){
     input='https://'+input;
   }
@@ -79,16 +56,13 @@ async function loadPage(url){
   loading.classList.remove('hidden');
   
   try{
-    // UVエンコード
-    const encodedUrl=window.__uv$config.prefix+window.__uv$config.encodeUrl(url);
+    // XOR エンコード（簡易版）
+    const encoded=btoa(url);
+    const proxyUrl=`/service/${encoded}#youtube.com`; // 佐伊津技法
     
-    // 佐伊津技法適用
-    const saituUrl=encodedUrl+'#youtube.com';
-    
-    proxyFrame.src=saituUrl;
+    proxyFrame.src=proxyUrl;
     urlInput.value=url;
     
-    // 読み込み完了待機
     proxyFrame.onload=()=>{
       loading.classList.add('hidden');
     };
@@ -113,15 +87,12 @@ urlInput.addEventListener('keypress',(e)=>{
   }
 });
 
-// クイックリンク
 document.querySelectorAll('.quick-link').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    const url=btn.dataset.url;
-    loadPage(url);
+    loadPage(btn.dataset.url);
   });
 });
 
-// コントロールボタン
 backBtn.addEventListener('click',()=>{
   proxyFrame.contentWindow.history.back();
 });
@@ -147,5 +118,4 @@ fullscreenBtn.addEventListener('click',()=>{
   }
 });
 
-// 初期化
 initUV();
