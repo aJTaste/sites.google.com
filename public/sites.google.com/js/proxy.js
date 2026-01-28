@@ -1,4 +1,4 @@
-// js/proxy.js（修正版）
+// js/proxy.js（デバッグ版）
 import{initPage}from'../common/core.js';
 
 await initPage('proxy','Proxy');
@@ -18,17 +18,37 @@ let currentUrl='';
 // Ultraviolet初期化
 async function initUV(){
   try{
+    console.log('UV初期化開始...');
+    
     // Service Worker登録
     if('serviceWorker'in navigator){
+      console.log('Service Worker対応ブラウザ');
+      
+      // 既存のSW削除（クリーンスタート）
+      const registrations=await navigator.serviceWorker.getRegistrations();
+      for(let registration of registrations){
+        await registration.unregister();
+        console.log('既存SW削除:',registration.scope);
+      }
+      
+      // 新規登録
       const registration=await navigator.serviceWorker.register(
         '/sites.google.com/js/uv.sw.js',
-        {scope:'/service/'}
+        {scope:'/sites.google.com/service/'}
       );
+      
       console.log('Service Worker登録成功:',registration);
+      
+      // アクティブ化待機
+      await navigator.serviceWorker.ready;
+      console.log('Service Workerアクティブ化完了');
+      
+    }else{
+      throw new Error('このブラウザはService Workerに対応していません');
     }
   }catch(error){
-    console.error('UV初期化エラー:',error);
-    alert('プロキシの初期化に失敗しました');
+    console.error('UV初期化エラー詳細:',error);
+    alert(`プロキシの初期化に失敗しました: ${error.message}`);
   }
 }
 
@@ -56,15 +76,26 @@ async function loadPage(url){
   loading.classList.remove('hidden');
   
   try{
-    // XOR エンコード（簡易版）
+    console.log('ページ読み込み開始:',url);
+    
+    // Base64エンコード
     const encoded=btoa(url);
-    const proxyUrl=`/service/${encoded}#youtube.com`; // 佐伊津技法
+    const proxyUrl=`/sites.google.com/service/${encoded}#youtube.com`;
+    
+    console.log('プロキシURL:',proxyUrl);
     
     proxyFrame.src=proxyUrl;
     urlInput.value=url;
     
     proxyFrame.onload=()=>{
+      console.log('ページ読み込み完了');
       loading.classList.add('hidden');
+    };
+    
+    proxyFrame.onerror=(e)=>{
+      console.error('iframe読み込みエラー:',e);
+      loading.classList.add('hidden');
+      alert('ページの読み込みに失敗しました');
     };
     
   }catch(error){
@@ -94,15 +125,27 @@ document.querySelectorAll('.quick-link').forEach(btn=>{
 });
 
 backBtn.addEventListener('click',()=>{
-  proxyFrame.contentWindow.history.back();
+  try{
+    proxyFrame.contentWindow.history.back();
+  }catch(e){
+    console.error('戻るエラー:',e);
+  }
 });
 
 forwardBtn.addEventListener('click',()=>{
-  proxyFrame.contentWindow.history.forward();
+  try{
+    proxyFrame.contentWindow.history.forward();
+  }catch(e){
+    console.error('進むエラー:',e);
+  }
 });
 
 reloadBtn.addEventListener('click',()=>{
-  proxyFrame.contentWindow.location.reload();
+  try{
+    proxyFrame.contentWindow.location.reload();
+  }catch(e){
+    console.error('リロードエラー:',e);
+  }
 });
 
 homeBtn.addEventListener('click',()=>{
@@ -118,4 +161,5 @@ fullscreenBtn.addEventListener('click',()=>{
   }
 });
 
+// 初期化実行
 initUV();
