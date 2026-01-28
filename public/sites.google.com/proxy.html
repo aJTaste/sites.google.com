@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Proxy | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/proxy.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+  <script src="/sites.google.com/uv.config.js"></script>
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <div class="main-container">
+      <main class="main-content">
+        <div class="proxy-container">
+          <div class="proxy-header">
+            <h1>Proxy</h1>
+            <p class="proxy-description">フィルタリングを回避してWebサイトにアクセス</p>
+          </div>
+          <div class="proxy-search">
+            <div class="search-bar">
+              <input type="text" id="url-input" placeholder="URLまたは検索ワードを入力">
+              <button class="btn-primary" id="go-btn">
+                <span class="material-symbols-outlined">arrow_forward</span>
+                移動
+              </button>
+            </div>
+            <div class="quick-links">
+              <div class="quick-link" data-url="https://www.google.com">
+                <span class="material-symbols-outlined">search</span>
+                Google
+              </div>
+              <div class="quick-link" data-url="https://www.youtube.com">
+                <span class="material-symbols-outlined">play_circle</span>
+                YouTube
+              </div>
+              <div class="quick-link" data-url="https://discord.com">
+                <span class="material-symbols-outlined">chat</span>
+                Discord
+              </div>
+            </div>
+          </div>
+          <div class="proxy-controls">
+            <button class="control-btn" id="back-btn" title="戻る">
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <button class="control-btn" id="forward-btn" title="進む">
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+            <button class="control-btn" id="reload-btn" title="再読み込み">
+              <span class="material-symbols-outlined">refresh</span>
+            </button>
+            <button class="control-btn" id="fullscreen-btn" title="全画面">
+              <span class="material-symbols-outlined">fullscreen</span>
+            </button>
+          </div>
+          <div class="proxy-frame-container">
+            <div class="proxy-loading" id="loading">
+              <div class="loading-spinner"></div>
+              <p>読み込み中...</p>
+            </div>
+            <iframe id="proxy-frame"></iframe>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script type="module" src="js/proxy.js"></script>
+  <script src="common/stealth-mode.js"></script>
+  <script src="common/capture-handler.js"></script>
+</body>
+</html>
