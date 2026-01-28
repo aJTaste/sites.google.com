@@ -1,64 +1,118 @@
-// public/sites.google.com/js/proxy.js
 import{initPage}from'../common/core.js';
 await initPage('proxy','Proxy');
 
 const urlInput=document.getElementById('url-input');
 const goBtn=document.getElementById('go-btn');
+const backBtn=document.getElementById('back-btn');
+const forwardBtn=document.getElementById('forward-btn');
+const reloadBtn=document.getElementById('reload-btn');
+const fullscreenBtn=document.getElementById('fullscreen-btn');
 const proxyFrame=document.getElementById('proxy-frame');
 const loading=document.getElementById('loading');
+const quickLinks=document.querySelectorAll('.quick-link');
 
-async function initUV(){
+let swReady=false;
+
+async function registerSW(){
   if(!('serviceWorker'in navigator)){
-    alert('Service Worker 非対応');
-    return;
+    alert('Service Workerに対応していません');
+    return false;
   }
-  await navigator.serviceWorker.register(
-    '/sites.google.com/uv.sw.js',
-    {scope:'/sites.google.com/'}
-  );
+  try{
+    const reg=await navigator.serviceWorker.register('/sites.google.com/uv.sw.js',{
+      scope:'/sites.google.com/service/'
+    });
+    await navigator.serviceWorker.ready;
+    swReady=true;
+    return true;
+  }catch(err){
+    console.error('SW登録失敗:',err);
+    alert('プロキシの初期化に失敗しました');
+    return false;
+  }
 }
 
-function normalize(input){
+function normalizeURL(input){
   input=input.trim();
   if(!input)return'';
-  if(input.includes(' ')||!input.includes('.')){
+  if(input.includes(' ')||(!input.includes('.')&&!input.startsWith('http'))){
     return'https://www.google.com/search?q='+encodeURIComponent(input);
   }
-  if(!/^https?:\/\//.test(input)){
+  if(!/^https?:\/\//i.test(input)){
     input='https://'+input;
   }
   return input;
 }
 
-function loadPage(url){
+function loadURL(url){
+  if(!swReady){
+    alert('プロキシの準備ができていません');
+    return;
+  }
   loading.classList.remove('hidden');
-
   const encoded=__uv$config.encodeUrl(url);
-  proxyFrame.src=__uv$config.prefix+encoded+'#youtube.com';
-
-  let cleared=false;
-
-  const done=()=>{
-    if(cleared)return;
-    cleared=true;
+  const proxyURL=__uv$config.prefix+encoded;
+  proxyFrame.src=proxyURL;
+  let loadTimeout=setTimeout(()=>{
+    loading.classList.add('hidden');
+  },3000);
+  proxyFrame.onload=()=>{
+    clearTimeout(loadTimeout);
     loading.classList.add('hidden');
   };
-
-  proxyFrame.onload=done;
-  setTimeout(done,4000); // ★重要
 }
 
+goBtn.addEventListener('click',()=>{
+  const url=normalizeURL(urlInput.value);
+  if(url)loadURL(url);
+});
 
-goBtn.onclick=()=>{
-  const url=normalize(urlInput.value);
-  if(url)loadPage(url);
-};
-
-urlInput.onkeydown=e=>{
+urlInput.addEventListener('keydown',e=>{
   if(e.key==='Enter'){
-    const url=normalize(urlInput.value);
-    if(url)loadPage(url);
+    const url=normalizeURL(urlInput.value);
+    if(url)loadURL(url);
   }
-};
+});
 
-initUV();
+quickLinks.forEach(link=>{
+  link.addEventListener('click',()=>{
+    const url=link.dataset.url;
+    urlInput.value=url;
+    loadURL(url);
+  });
+});
+
+backBtn.addEventListener('click',()=>{
+  try{
+    proxyFrame.contentWindow.history.back();
+  }catch(err){
+    console.error('戻る失敗:',err);
+  }
+});
+
+forwardBtn.addEventListener('click',()=>{
+  try{
+    proxyFrame.contentWindow.history.forward();
+  }catch(err){
+    console.error('進む失敗:',err);
+  }
+});
+
+reloadBtn.addEventListener('click',()=>{
+  if(proxyFrame.src){
+    proxyFrame.src=proxyFrame.src;
+  }
+});
+
+fullscreenBtn.addEventListener('click',()=>{
+  const container=document.querySelector('.proxy-frame-container');
+  if(!document.fullscreenElement){
+    container.requestFullscreen().catch(err=>{
+      console.error('全画面失敗:',err);
+    });
+  }else{
+    document.exitFullscreen();
+  }
+});
+
+registerSW();
