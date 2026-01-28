@@ -18,16 +18,28 @@ async function registerSW(){
     alert('Service Workerに対応していません');
     return false;
   }
+  
+  goBtn.disabled=true;
+  goBtn.textContent='初期化中...';
+  
   try{
     const reg=await navigator.serviceWorker.register('/sites.google.com/uv.sw.js',{
       scope:'/sites.google.com/service/'
     });
+    
     await navigator.serviceWorker.ready;
+    
+    await new Promise(resolve=>setTimeout(resolve,500));
+    
     swReady=true;
+    goBtn.disabled=false;
+    goBtn.innerHTML='<span class="material-symbols-outlined">arrow_forward</span>移動';
+    
     return true;
   }catch(err){
     console.error('SW登録失敗:',err);
-    alert('プロキシの初期化に失敗しました');
+    alert('プロキシの初期化に失敗しました: '+err.message);
+    goBtn.textContent='初期化失敗';
     return false;
   }
 }
@@ -46,16 +58,21 @@ function normalizeURL(input){
 
 function loadURL(url){
   if(!swReady){
-    alert('プロキシの準備ができていません');
+    alert('プロキシの準備ができていません。ページを再読み込みしてください。');
     return;
   }
+  
   loading.classList.remove('hidden');
+  
   const encoded=__uv$config.encodeUrl(url);
   const proxyURL=__uv$config.prefix+encoded;
+  
   proxyFrame.src=proxyURL;
+  
   let loadTimeout=setTimeout(()=>{
     loading.classList.add('hidden');
-  },3000);
+  },4000);
+  
   proxyFrame.onload=()=>{
     clearTimeout(loadTimeout);
     loading.classList.add('hidden');
