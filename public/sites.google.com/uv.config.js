@@ -4,8 +4,8 @@ self.__uv$config={
   bare:'https://uv.holy.how/bare/',
   encodeUrl:Ultraviolet.codec.xor.encode,
   decodeUrl:Ultraviolet.codec.xor.decode,
-  handler:'/sites.google.com/uv.bundle.js',
-  bundle:'/sites.google.com/uv.bundle.js',
+  handler:'/sites.google.com/js/uv.handler.js',
+  bundle:'/sites.google.com/js/uv.bundle.js',
   config:'/sites.google.com/uv.config.js',
   sw:'/sites.google.com/uv.sw.js'
 };
