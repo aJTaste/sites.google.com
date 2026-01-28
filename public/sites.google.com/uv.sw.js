@@ -1,7 +1,6 @@
-// public/sites.google.com/uv.sw.js
-importScripts('/sites.google.com/js/uv.bundle.js');
+importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3/dist/uv.bundle.js');
 importScripts('/sites.google.com/uv.config.js');
-importScripts('/sites.google.com/js/uv.handler.js');
+importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3/dist/uv.handler.js');
 
 const uv=new UVServiceWorker();
 
@@ -14,7 +13,12 @@ self.addEventListener('activate',event=>{
 });
 
 self.addEventListener('fetch',event=>{
-  event.respondWith(
-    uv.fetch(event).catch(()=>fetch(event.request))
-  );
+  if(event.request.url.startsWith(location.origin+__uv$config.prefix)){
+    event.respondWith(
+      uv.fetch(event).catch(err=>{
+        console.error('UV fetch error:',err);
+        return new Response('Proxy Error',{status:500});
+      })
+    );
+  }
 });
