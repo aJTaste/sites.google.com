@@ -14,6 +14,10 @@ const quickLinks=document.querySelectorAll('.quick-link');
 let swReady=false;
 
 async function registerSW(){
+  if(!('serviceWorker'in navigator)){
+    alert('Service Workerに対応していません');
+    return false;
+  async function registerSW(){
   console.log('1. SW登録開始');
   
   if(!('serviceWorker'in navigator)){
@@ -54,6 +58,7 @@ async function registerSW(){
     return false;
   }
 }
+  }
   
   goBtn.disabled=true;
   goBtn.textContent='初期化中...';
