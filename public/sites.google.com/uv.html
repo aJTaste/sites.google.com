@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Ultraviolet Proxy | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/uv.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <div class="main-container">
+      <main class="main-content" style="padding:0;">
+        <div class="uv-container">
+          <!-- ブラウザコントロール -->
+          <div class="browser-controls">
+            <button class="control-btn" id="home-btn" title="ホーム">
+              <span class="material-symbols-outlined">home</span>
+            </button>
+            
+            <div class="url-bar">
+              <span class="lock-icon material-symbols-outlined">lock</span>
+              <input type="text" id="url-input" placeholder="URLを入力してください（例: https://example.com）" autocomplete="off">
+              <button class="go-btn" id="go-btn">
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </button>
+            </div>
+            
+            <button class="control-btn" id="reload-btn" title="再読み込み">
+              <span class="material-symbols-outlined">refresh</span>
+            </button>
+            
+            <button class="control-btn" id="fullscreen-btn" title="全画面">
+              <span class="material-symbols-outlined">fullscreen</span>
+            </button>
+            
+            <button class="server-toggle-btn" id="server-toggle-btn" title="サーバー切替">
+              <span class="material-symbols-outlined">dns</span>
+              <span id="current-server">Server 1</span>
+            </button>
+          </div>
+          
+          <!-- コンテンツエリア -->
+          <div class="browser-content" id="browser-content">
+            <div class="welcome-screen">
+              <div class="welcome-icon">
+                <span class="material-symbols-outlined">security</span>
+              </div>
+              <h2>Ultraviolet Proxy</h2>
+              <p>高性能プロキシでフィルタリングを回避</p>
+              <div class="info-box">
+                <h3>特徴</h3>
+                <ul>
+                  <li>YouTube、Discord、Twitterなど主要サイトに対応</li>
+                  <li>動画・音声の再生もスムーズ</li>
+                  <li>JavaScriptの実行もサポート</li>
+                  <li>複数のサーバーから選択可能</li>
+                </ul>
+              </div>
+              <div class="info-box">
+                <h3>使い方</h3>
+                <ol>
+                  <li>上部のURLバーにアクセスしたいURLを入力</li>
+                  <li>読み込みに失敗した場合は、サーバーを切り替える</li>
+                  <li>全画面ボタンで画面を最大化できます</li>
+                </ol>
+              </div>
+              <div class="server-info">
+                <p><strong>現在のサーバー:</strong> <span class="server-badge">Server 1</span></p>
+                <p class="server-desc">読み込みに失敗した場合は、サーバーを切り替えてお試しください</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script type="module" src="js/uv.js"></script>
+  <script src="common/stealth-mode.js"></script>
+  <script src="common/capture-handler.js"></script>
+</body>
+</html>
