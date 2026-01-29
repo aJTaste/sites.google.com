@@ -75,7 +75,7 @@ function loadUrl(url){
     // iframeで表示
     const iframe=document.createElement('iframe');
     iframe.className='uv-iframe';
-    iframe.src=proxyUrl;
+    iframe.src=proxyUrl + '#youtube.com';
     iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads';
     
     browserContent.innerHTML='';
