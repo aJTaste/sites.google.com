@@ -405,17 +405,18 @@ DEBUG.success('イベントリスナー設定完了');
 // 初期化実行
 // ========================================
 
-// Ultravioletライブラリの読み込みを待つ
-window.addEventListener('load',()=>{
-  DEBUG.log('UV初期化を開始します...');
-  
-  // 念のため少し待つ
-  setTimeout(()=>{
-    if(typeof Ultraviolet==='undefined'){
-      DEBUG.error('Ultravioletが読み込まれていません！');
-      console.error('window.Ultraviolet:',window.Ultraviolet);
-      console.error('グローバルオブジェクト:',Object.keys(window).filter(k=>k.includes('Ultra')||k.includes('uv')));
-    }
+DEBUG.log('UV初期化を開始します...');
+
+// DOMとライブラリの読み込みを待つ
+setTimeout(()=>{
+  if(typeof Ultraviolet==='undefined'){
+    DEBUG.error('Ultravioletが読み込まれていません！');
+    console.error('window.Ultraviolet:',window.Ultraviolet);
+    console.error('グローバルオブジェクト:',Object.keys(window).filter(k=>k.includes('Ultra')||k.includes('uv')));
+    updateStatus('error','FAIL','Ultravioletライブラリが見つかりません');
+    showError('初期化エラー','Ultravioletライブラリの読み込みに失敗しました');
+  }else{
+    DEBUG.log('Ultraviolet確認OK、初期化開始');
     initUV();
-  },100);
-});
+  }
+},500);
