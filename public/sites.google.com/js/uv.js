@@ -149,8 +149,13 @@ async function initUV(){
     updateStatus('sw','OK','準備完了！');
     
     // アクティブ化を待機
-    await navigator.serviceWorker.ready;
-    DEBUG.success('Service Workerアクティブ化完了');
+    DEBUG.log('Service Worker アクティブ化待機中...');
+    try{
+      await navigator.serviceWorker.ready;
+      DEBUG.success('Service Workerアクティブ化完了');
+    }catch(err){
+      DEBUG.warn('Service Worker ready待機エラー（無視して続行）',err);
+    }
     
     // 準備完了
     state.isReady=true;
@@ -159,6 +164,7 @@ async function initUV(){
     statusText.textContent='準備完了';
     
     DEBUG.success('UV初期化完了！');
+    DEBUG.log('state.isReady:',state.isReady);
     
   }catch(error){
     DEBUG.error('UV初期化エラー',error);
