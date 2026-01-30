@@ -18,9 +18,9 @@ self.__uv$config={
   bare:'/bare/',
   encodeUrl:Ultraviolet.codec.xor.encode,
   decodeUrl:Ultraviolet.codec.xor.decode,
-  handler:'/sites.google.com/uv/uv.handler.js',
-  client:'/sites.google.com/uv/uv.client.js',
-  bundle:'/sites.google.com/uv/uv.bundle.js',
+  handler:'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.handler.js',
+  client:'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.client.js',
+  bundle:'https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js',
   config:'/sites.google.com/uv/uv.config.js',
   sw:'/sites.google.com/uv/uv.sw.js'
 };
