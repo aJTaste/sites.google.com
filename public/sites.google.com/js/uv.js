@@ -71,7 +71,31 @@ async function initUV(){
     }
     
     DEBUG.success('Service Worker サポート確認OK');
-    updateStatus('sw','OK','Service Worker登録中...');
+    updateStatus('sw','OK','UVライブラリ確認中...');
+    
+    // Ultravioletオブジェクトの確認（HTMLで読み込み済み）
+    if(typeof Ultraviolet==='undefined'){
+      throw new Error('Ultravioletライブラリが見つかりません');
+    }
+    
+    DEBUG.success('Ultravioletオブジェクト確認OK');
+    state.uvLoaded=true;
+    updateStatus('uv','OK','Service Worker登録中...');
+    
+    // UV設定を定義（Ultraviolet読み込み後）
+    DEBUG.log('UV設定を定義');
+    window.__uv$config={
+      prefix:'/sites.google.com/uv/service/',
+      bare:'https://uv-bare.onrender.com/',
+      encodeUrl:Ultraviolet.codec.xor.encode,
+      decodeUrl:Ultraviolet.codec.xor.decode,
+      handler:'/sites.google.com/uv/uv.handler.js',
+      client:'/sites.google.com/uv/uv.client.js',
+      bundle:'/sites.google.com/uv/uv.bundle.js',
+      config:'/sites.google.com/uv/uv.config.js',
+      sw:'/sites.google.com/uv/uv.sw.js'
+    };
+    DEBUG.success('UV設定完了');
     
     // Service Worker 登録
     DEBUG.log('Service Worker登録開始: /sites.google.com/uv/uv.sw.js');
@@ -86,20 +110,11 @@ async function initUV(){
     
     DEBUG.success('Service Worker登録成功',registration);
     state.swRegistered=true;
-    updateStatus('sw','OK','UVライブラリ読み込み中...');
+    updateStatus('sw','OK','準備完了！');
     
     // アクティブ化を待機
     await navigator.serviceWorker.ready;
     DEBUG.success('Service Workerアクティブ化完了');
-    
-    // UVライブラリ読み込み
-    DEBUG.log('UVライブラリ読み込み開始');
-    
-    await loadScript('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js');
-    
-    DEBUG.success('UVライブラリ読み込み完了');
-    state.uvLoaded=true;
-    updateStatus('uv','OK','準備完了！');
     
     // 準備完了
     state.isReady=true;
