@@ -3,10 +3,29 @@
 console.log('🔧 [UV-SW] Service Worker起動');
 
 // UVライブラリのインポート（CDNから）
-importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js');
-importScripts('/sites.google.com/uv/uv.config.js');
+try{
+  console.log('📥 [UV-SW] ライブラリ読み込み開始...');
+  importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js');
+  console.log('✅ [UV-SW] UVライブラリ読み込み完了');
+}catch(error){
+  console.error('❌ [UV-SW] ライブラリ読み込みエラー:',error);
+  throw error;
+}
 
-console.log('✅ [UV-SW] UVライブラリ読み込み完了');
+// UV設定を定義（Ultravioletが読み込まれた後）
+self.__uv$config={
+  prefix:'/sites.google.com/uv/service/',
+  bare:'/bare/',
+  encodeUrl:Ultraviolet.codec.xor.encode,
+  decodeUrl:Ultraviolet.codec.xor.decode,
+  handler:'/sites.google.com/uv/uv.handler.js',
+  client:'/sites.google.com/uv/uv.client.js',
+  bundle:'/sites.google.com/uv/uv.bundle.js',
+  config:'/sites.google.com/uv/uv.config.js',
+  sw:'/sites.google.com/uv/uv.sw.js'
+};
+
+console.log('✅ [UV-SW] 設定完了',self.__uv$config);
 
 // UVインスタンス作成
 const uv=new UVServiceWorker();
