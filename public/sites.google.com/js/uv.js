@@ -58,6 +58,39 @@ const welcomeHTML=document.querySelector('.welcome-screen').outerHTML;
 DEBUG.log('DOM要素取得完了');
 
 // ========================================
+// Ultravioletライブラリ読み込み待機
+// ========================================
+
+function waitForUltraviolet(){
+  return new Promise((resolve,reject)=>{
+    DEBUG.log('Ultraviolet読み込み待機開始');
+    
+    if(typeof Ultraviolet!=='undefined'){
+      DEBUG.success('Ultraviolet既に読み込み済み');
+      resolve();
+      return;
+    }
+    
+    let attempts=0;
+    const maxAttempts=50;
+    const interval=setInterval(()=>{
+      attempts++;
+      DEBUG.log(`Ultraviolet確認中... (${attempts}/${maxAttempts})`);
+      
+      if(typeof Ultraviolet!=='undefined'){
+        clearInterval(interval);
+        DEBUG.success('Ultraviolet読み込み完了');
+        resolve();
+      }else if(attempts>=maxAttempts){
+        clearInterval(interval);
+        DEBUG.error('Ultraviolet読み込みタイムアウト');
+        reject(new Error('Ultravioletライブラリの読み込みがタイムアウトしました'));
+      }
+    },100);
+  });
+}
+
+// ========================================
 // UV 初期化
 // ========================================
 
@@ -72,6 +105,9 @@ async function initUV(){
     
     DEBUG.success('Service Worker サポート確認OK');
     updateStatus('sw','OK','UVライブラリ確認中...');
+    
+    // Ultraviolet読み込み待機
+    await waitForUltraviolet();
     
     // Ultravioletオブジェクトの確認（HTMLで読み込み済み）
     if(typeof Ultraviolet==='undefined'){
@@ -369,5 +405,17 @@ DEBUG.success('イベントリスナー設定完了');
 // 初期化実行
 // ========================================
 
-DEBUG.log('UV初期化を開始します...');
-initUV();
+// Ultravioletライブラリの読み込みを待つ
+window.addEventListener('load',()=>{
+  DEBUG.log('UV初期化を開始します...');
+  
+  // 念のため少し待つ
+  setTimeout(()=>{
+    if(typeof Ultraviolet==='undefined'){
+      DEBUG.error('Ultravioletが読み込まれていません！');
+      console.error('window.Ultraviolet:',window.Ultraviolet);
+      console.error('グローバルオブジェクト:',Object.keys(window).filter(k=>k.includes('Ultra')||k.includes('uv')));
+    }
+    initUV();
+  },100);
+});
