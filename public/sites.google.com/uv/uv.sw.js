@@ -15,7 +15,7 @@ try{
 // UV設定を定義（Ultravioletが読み込まれた後）
 self.__uv$config={
   prefix:'/sites.google.com/uv/service/',
-  bare:'/bare/',
+  bare:'https://uv-bare.onrender.com/',
   encodeUrl:Ultraviolet.codec.xor.encode,
   decodeUrl:Ultraviolet.codec.xor.decode,
   handler:'/sites.google.com/uv/uv.handler.js',
