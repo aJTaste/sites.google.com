@@ -2,8 +2,8 @@
 
 console.log('🔧 [UV-SW] Service Worker起動');
 
-// UVライブラリのインポート
-importScripts('/sites.google.com/uv/uv.bundle.js');
+// UVライブラリのインポート（CDNから）
+importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js');
 importScripts('/sites.google.com/uv/uv.config.js');
 
 console.log('✅ [UV-SW] UVライブラリ読み込み完了');
