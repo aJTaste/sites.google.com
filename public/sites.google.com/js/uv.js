@@ -146,18 +146,8 @@ async function initUV(){
     
     DEBUG.success('Service Worker登録成功',registration);
     state.swRegistered=true;
-    updateStatus('sw','OK','準備完了！');
     
-    // アクティブ化を待機
-    DEBUG.log('Service Worker アクティブ化待機中...');
-    try{
-      await navigator.serviceWorker.ready;
-      DEBUG.success('Service Workerアクティブ化完了');
-    }catch(err){
-      DEBUG.warn('Service Worker ready待機エラー（無視して続行）',err);
-    }
-    
-    // 準備完了
+    // 準備完了（ready待機は不要）
     state.isReady=true;
     statusBadge.classList.add('ready');
     statusBadge.querySelector('.material-symbols-outlined').textContent='check_circle';
