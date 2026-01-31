@@ -1,0 +1,14 @@
+self.$scramjet={
+  prefix:'/sites.google.com/scramjet/service/',
+  codec:ScramjetCodecs.xor,
+  config:{
+    prefix:'/sites.google.com/scramjet/service/',
+    files:{
+      wasm:'/sites.google.com/scramjet/scramjet.wasm.js',
+      worker:'/sites.google.com/scramjet/scramjet.worker.js',
+      client:'/sites.google.com/scramjet/scramjet.client.js',
+      shared:'/sites.google.com/scramjet/scramjet.shared.js',
+      sync:'/sites.google.com/scramjet/scramjet.sync.js'
+    }
+  }
+};
