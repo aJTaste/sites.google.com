@@ -1,0 +1,17 @@
+{
+  "headers": [
+    {
+      "source": "/sites.google.com/uv/(.*).js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
+      ]
+    }
+  ]
+}
