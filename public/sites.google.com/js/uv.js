@@ -65,8 +65,8 @@ async function initUV(){
     // Service Worker登録
     console.log('🔧 [UV] Service Worker登録開始');
     
-    const registration=await navigator.serviceWorker.register('/uv/uv.sw.js',{
-      scope:'/uv/service/',
+    const registration=await navigator.serviceWorker.register('/sites.google.com/uv/uv.sw.js',{
+      scope:'/sites.google.com/uv/service/',
       updateViaCache:'none'
     });
     
@@ -139,7 +139,7 @@ function loadUrl(url){
   try{
     // UVでエンコード
     const encodedUrl=Ultraviolet.codec.xor.encode(url);
-    const proxyUrl='/uv/service/'+encodedUrl;
+    const proxyUrl='/sites.google.com/uv/service/'+encodedUrl;
     
     console.log('✅ [UV] プロキシURL:',proxyUrl);
     
