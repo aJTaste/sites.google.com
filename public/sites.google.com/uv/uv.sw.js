@@ -1,51 +1,63 @@
-// Ultraviolet Service Worker - シンプル版
+// Ultraviolet Service Worker - 完全書き直し版
 
 console.log('🔧 [UV-SW] Service Worker起動');
 
-// CDNからUltravioletライブラリをインポート
+// UVライブラリをCDNからインポート
 importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.bundle.js');
-console.log('✅ [UV-SW] UVライブラリ読み込み完了');
+importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.handler.js');
+importScripts('https://cdn.jsdelivr.net/npm/@titaniumnetwork-dev/ultraviolet@3.2.7/dist/uv.sw.js');
+
+console.log('✅ [UV-SW] ライブラリ読み込み完了');
 
 // 設定
-const config={
-  prefix:'/sites.google.com/uv/service/',
+const uvConfig={
+  prefix:'/uv/service/',
   bare:'https://uv-bare.onrender.com/',
   encodeUrl:Ultraviolet.codec.xor.encode,
-  decodeUrl:Ultraviolet.codec.xor.decode,
-  handler:'/sites.google.com/uv/uv.handler.js',
-  client:'/sites.google.com/uv/uv.client.js',
-  bundle:'/sites.google.com/uv/uv.bundle.js',
-  config:'/sites.google.com/uv/uv.config.js',
-  sw:'/sites.google.com/uv/uv.sw.js'
+  decodeUrl:Ultraviolet.codec.xor.decode
 };
 
-self.__uv$config=config;
-console.log('✅ [UV-SW] 設定完了');
+self.__uv$config=uvConfig;
 
-// UVインスタンス作成
+// UVインスタンス
 const uv=new UVServiceWorker();
-console.log('✅ [UV-SW] UVインスタンス作成完了');
 
-// fetchイベント
+// インストールイベント
+self.addEventListener('install',(event)=>{
+  console.log('📦 [UV-SW] インストール');
+  event.waitUntil(self.skipWaiting());
+});
+
+// アクティベーションイベント
+self.addEventListener('activate',(event)=>{
+  console.log('🚀 [UV-SW] アクティブ化');
+  event.waitUntil(self.clients.claim());
+});
+
+// Fetchイベント
 self.addEventListener('fetch',(event)=>{
-  if(event.request.url.startsWith(location.origin+config.prefix)){
+  const url=new URL(event.request.url);
+  
+  // UVプレフィックスで始まるリクエストのみ処理
+  if(url.pathname.startsWith(uvConfig.prefix)){
+    console.log('🌐 [UV-SW] プロキシリクエスト:',url.pathname);
+    
     event.respondWith(
       (async()=>{
         try{
-          return await uv.fetch(event);
+          const response=await uv.fetch(event);
+          console.log('✅ [UV-SW] レスポンス成功');
+          return response;
         }catch(err){
           console.error('❌ [UV-SW] Fetch Error:',err);
-          return new Response('Proxy Error',{status:500});
+          return new Response(`プロキシエラー: ${err.message}`,{
+            status:500,
+            headers:{'Content-Type':'text/plain;charset=utf-8'}
+          });
         }
       })()
     );
   }
-});
-
-// アクティベーション
-self.addEventListener('activate',(event)=>{
-  console.log('🚀 [UV-SW] アクティブ化');
-  event.waitUntil(self.clients.claim());
 });
 
 console.log('✅ [UV-SW] セットアップ完了');
