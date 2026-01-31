@@ -1,14 +1,17 @@
 self.$scramjet={
   prefix:'/sites.google.com/scramjet/service/',
-  codec:ScramjetCodecs.xor,
+  codec:typeof ScramjetCodecs!=='undefined'?ScramjetCodecs.xor:{
+    encode:(str)=>encodeURIComponent(str),
+    decode:(str)=>decodeURIComponent(str)
+  },
   config:{
     prefix:'/sites.google.com/scramjet/service/',
     files:{
-      wasm:'/sites.google.com/scramjet/scramjet.wasm.js',
-      worker:'/sites.google.com/scramjet/scramjet.worker.js',
-      client:'/sites.google.com/scramjet/scramjet.client.js',
-      shared:'/sites.google.com/scramjet/scramjet.shared.js',
-      sync:'/sites.google.com/scramjet/scramjet.sync.js'
+      wasm:'https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.wasm.js',
+      worker:'https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.worker.js',
+      client:'https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.client.js',
+      shared:'https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.shared.js',
+      sync:'https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.sync.js'
     }
   }
 };
