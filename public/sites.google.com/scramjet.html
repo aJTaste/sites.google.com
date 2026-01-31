@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Scramjet | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/scramjet.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <div class="main-container">
+      <main class="main-content" style="padding:0;">
+        <div class="scramjet-container">
+          <div class="scramjet-controls">
+            <button class="control-btn" id="home-btn" title="ホーム">
+              <span class="material-symbols-outlined">home</span>
+            </button>
+            <div class="url-bar">
+              <span class="lock-icon material-symbols-outlined">lock</span>
+              <input type="text" id="url-input" placeholder="URLを入力してください" autocomplete="off">
+              <button class="go-btn" id="go-btn">
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </button>
+            </div>
+            <button class="control-btn" id="reload-btn" title="再読み込み">
+              <span class="material-symbols-outlined">refresh</span>
+            </button>
+            <button class="control-btn" id="fullscreen-btn" title="全画面">
+              <span class="material-symbols-outlined">fullscreen</span>
+            </button>
+          </div>
+          <div class="scramjet-status" id="scramjet-status">
+            <span class="material-symbols-outlined">info</span>
+            <span id="status-text">Service Worker登録中...</span>
+          </div>
+          <div class="scramjet-content" id="scramjet-content">
+            <div class="welcome-screen">
+              <div class="welcome-icon">
+                <span class="material-symbols-outlined">rocket_launch</span>
+              </div>
+              <h2>Scramjet Proxy</h2>
+              <p>軽量で高速なWebプロキシ</p>
+              <div class="info-box">
+                <h3>使い方</h3>
+                <ol>
+                  <li>Service Workerの登録が完了するまで待つ</li>
+                  <li>URLバーにアクセスしたいURLを入力</li>
+                  <li>全画面ボタンで最大化できます</li>
+                </ol>
+              </div>
+              <div class="feature-list">
+                <div class="feature-item">
+                  <span class="material-symbols-outlined">bolt</span>
+                  <span>超高速処理</span>
+                </div>
+                <div class="feature-item">
+                  <span class="material-symbols-outlined">code</span>
+                  <span>最新Web技術対応</span>
+                </div>
+                <div class="feature-item">
+                  <span class="material-symbols-outlined">security</span>
+                  <span>安全なプロキシ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+  <script>eruda.init();</script>
+  <script src="https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.codecs.js"></script>
+  <script src="https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.config.js"></script>
+  <script src="scramjet/scramjet.config.js"></script>
+  <script type="module" src="js/scramjet.js"></script>
+  <script src="common/stealth-mode.js"></script>
+  <script src="common/capture-handler.js"></script>
+</body>
+</html>
