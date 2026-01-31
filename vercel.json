@@ -7,7 +7,7 @@
   ],
   "headers":[
     {
-      "source":"/uv/uv.sw.js",
+      "source":"/sites.google.com/uv/uv.sw.js",
       "headers":[
         {
           "key":"Content-Type",
@@ -24,7 +24,7 @@
       ]
     },
     {
-      "source":"/uv/service/(.*)",
+      "source":"/sites.google.com/uv/service/(.*)",
       "headers":[
         {
           "key":"Cross-Origin-Embedder-Policy",
