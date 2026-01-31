@@ -15,6 +15,8 @@ const statusText=document.getElementById('status-text');
 const scramjetContainer=document.querySelector('.scramjet-container');
 async function registerServiceWorker(){
   console.log('[Scramjet] Service Worker登録開始');
+  console.log('[Scramjet] パス:','/sites.google.com/scramjet/scramjet.sw.js');
+  console.log('[Scramjet] スコープ:','/sites.google.com/scramjet/service/');
   try{
     if(!('serviceWorker' in navigator)){
       throw new Error('このブラウザはService Workerに対応していません');
@@ -27,10 +29,14 @@ async function registerServiceWorker(){
       }
     );
     console.log('[Scramjet] Service Worker登録成功:',registration);
+    console.log('[Scramjet] registration.installing:',registration.installing);
+    console.log('[Scramjet] registration.waiting:',registration.waiting);
+    console.log('[Scramjet] registration.active:',registration.active);
     if(registration.installing){
       console.log('[Scramjet] Service Workerインストール中...');
       await new Promise((resolve)=>{
         registration.installing.addEventListener('statechange',(e)=>{
+          console.log('[Scramjet] state変更:',e.target.state);
           if(e.target.state==='activated'){
             resolve();
           }
@@ -49,8 +55,11 @@ async function registerServiceWorker(){
     return registration;
   }catch(error){
     console.error('[Scramjet] Service Worker登録エラー:',error);
-    updateStatus('error',`エラー: ${error.message}`);
-    showError('Service Worker登録失敗',error.message);
+    console.error('[Scramjet] エラー名:',error.name);
+    console.error('[Scramjet] エラーメッセージ:',error.message);
+    console.error('[Scramjet] エラースタック:',error.stack);
+    updateStatus('error',`エラー: ${error.name} - ${error.message}`);
+    showError('Service Worker登録失敗',`${error.name}: ${error.message || 'Unknown error'}`);
     throw error;
   }
 }
@@ -99,6 +108,9 @@ function showError(title,message){
       </div>
       <h2>${title}</h2>
       <p>${message}</p>
+      <p style="font-size:12px;color:var(--text-tertiary);margin-top:16px;">
+        Erudaコンソールで詳細なエラーログを確認できます
+      </p>
       <div class="error-actions">
         <button class="btn-primary" onclick="location.reload()">再読み込み</button>
         <button class="btn-secondary" id="error-home">ホームに戻る</button>
@@ -181,6 +193,8 @@ document.addEventListener('keydown',(e)=>{
   }
 });
 console.log('[Scramjet] 初期化開始');
+console.log('[Scramjet] window.location:',window.location);
+console.log('[Scramjet] Service Worker対応:',('serviceWorker' in navigator));
 registerServiceWorker().then(()=>{
   console.log('[Scramjet] 初期化完了');
 }).catch((error)=>{
