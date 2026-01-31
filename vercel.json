@@ -7,15 +7,19 @@
   ],
   "headers":[
     {
-      "source":"/uv/(.*).js",
+      "source":"/uv/uv.sw.js",
       "headers":[
         {
           "key":"Content-Type",
-          "value":"application/javascript"
+          "value":"application/javascript; charset=utf-8"
         },
         {
           "key":"Service-Worker-Allowed",
           "value":"/"
+        },
+        {
+          "key":"Cache-Control",
+          "value":"no-cache"
         }
       ]
     },
