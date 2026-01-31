@@ -21,10 +21,9 @@ async function registerServiceWorker(){
     }
     console.log('[Scramjet] Service Workerサポート確認OK');
     const registration=await navigator.serviceWorker.register(
-      'https://unpkg.com/@mercuryworkshop/scramjet/dist/scramjet.sw.js',
+      '/sites.google.com/scramjet/scramjet.sw.js',
       {
-        scope:'/sites.google.com/scramjet/service/',
-        type:'module'
+        scope:'/sites.google.com/scramjet/service/'
       }
     );
     console.log('[Scramjet] Service Worker登録成功:',registration);
@@ -43,6 +42,7 @@ async function registerServiceWorker(){
     }else if(registration.active){
       console.log('[Scramjet] Service Worker既にアクティブ');
     }
+    await new Promise(resolve=>setTimeout(resolve,1000));
     state.swReady=true;
     updateStatus('ready','Service Worker準備完了');
     console.log('[Scramjet] Service Worker準備完了');
@@ -76,8 +76,8 @@ async function loadUrl(url){
   urlInput.value=url;
   console.log('[Scramjet] URL読み込み:',url);
   try{
-    const encodedUrl=$scramjet.codec.encode(url);
-    const proxyUrl=$scramjet.prefix+encodedUrl;
+    const encodedUrl=self.$scramjet.codec.encode(url);
+    const proxyUrl=self.$scramjet.prefix+encodedUrl;
     console.log('[Scramjet] プロキシURL:',proxyUrl);
     const iframe=document.createElement('iframe');
     iframe.className='scramjet-iframe';
@@ -113,7 +113,38 @@ function reload(){
   }
 }
 function goHome(){
-  scramjetContent.innerHTML=document.querySelector('.welcome-screen').outerHTML;
+  const welcome=`
+    <div class="welcome-screen">
+      <div class="welcome-icon">
+        <span class="material-symbols-outlined">rocket_launch</span>
+      </div>
+      <h2>Scramjet Proxy</h2>
+      <p>軽量で高速なWebプロキシ</p>
+      <div class="info-box">
+        <h3>使い方</h3>
+        <ol>
+          <li>Service Workerの登録が完了するまで待つ</li>
+          <li>URLバーにアクセスしたいURLを入力</li>
+          <li>全画面ボタンで最大化できます</li>
+        </ol>
+      </div>
+      <div class="feature-list">
+        <div class="feature-item">
+          <span class="material-symbols-outlined">bolt</span>
+          <span>超高速処理</span>
+        </div>
+        <div class="feature-item">
+          <span class="material-symbols-outlined">code</span>
+          <span>最新Web技術対応</span>
+        </div>
+        <div class="feature-item">
+          <span class="material-symbols-outlined">security</span>
+          <span>安全なプロキシ</span>
+        </div>
+      </div>
+    </div>
+  `;
+  scramjetContent.innerHTML=welcome;
   state.currentUrl='';
   urlInput.value='';
 }
