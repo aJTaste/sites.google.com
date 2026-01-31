@@ -49,6 +49,22 @@ async function registerServiceWorker(){
       console.log('[Scramjet] Service Worker既にアクティブ');
     }
     await new Promise(resolve=>setTimeout(resolve,1000));
+
+    // registration を受け取った直後（登録成功ログのあと）
+// registration を受け取った直後に挿入（registration は register() の戻り値）
+if(!navigator.serviceWorker.controller && registration && registration.active && !sessionStorage.getItem('scramjet_sw_reloaded')){
+  sessionStorage.setItem('scramjet_sw_reloaded','1');
+  console.log('[Scramjet] ページを Service Worker 管理下にするためリロードします');
+  try{
+    // 一度だけリロードしてページをコントローラ下に入れる
+    location.reload();
+  }catch(e){
+    console.warn('[Scramjet] リロードに失敗しました:', e);
+  }
+}
+
+
+    
     state.swReady=true;
     updateStatus('ready','Service Worker準備完了');
     console.log('[Scramjet] Service Worker準備完了');
