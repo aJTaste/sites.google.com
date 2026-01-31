@@ -1,5 +1,4 @@
-// Ultraviolet Service Worker - 完全書き直し版
-
+// Ultraviolet Service Worker
 console.log('🔧 [UV-SW] Service Worker起動');
 
 // UVライブラリをCDNからインポート
@@ -38,7 +37,6 @@ self.addEventListener('activate',(event)=>{
 self.addEventListener('fetch',(event)=>{
   const url=new URL(event.request.url);
   
-  // UVプレフィックスで始まるリクエストのみ処理
   if(url.pathname.startsWith(uvConfig.prefix)){
     console.log('🌐 [UV-SW] プロキシリクエスト:',url.pathname);
     
