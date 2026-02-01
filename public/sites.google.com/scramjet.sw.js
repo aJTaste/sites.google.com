@@ -13,6 +13,19 @@ function swLog(...args){
     });
 }
 
+self.addEventListener('fetch',event=>{
+  const url=new URL(event.request.url);
+  if(url.pathname==='/sites.google.com/scramjet/service/test'){
+    swLog('[SW] test endpoint hit');
+    return event.respondWith(
+      new Response('SW OK',{
+        headers:{'Content-Type':'text/plain'}
+      })
+    );
+  }
+});
+
+
 
 self.addEventListener("install",e=>{
   swLog('[SW] インストール開始');
