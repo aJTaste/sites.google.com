@@ -216,3 +216,10 @@ registerServiceWorker().then(()=>{
 }).catch((error)=>{
   console.error('[Scramjet] 初期化失敗:',error);
 });
+
+navigator.serviceWorker.addEventListener('message',e=>{
+  if(e.data && e.data.type==='SW_LOG'){
+    console.log(e.data.data);
+  }
+});
+
