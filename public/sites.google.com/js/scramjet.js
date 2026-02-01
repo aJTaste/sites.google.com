@@ -75,29 +75,41 @@ function updateStatus(type,message){
 async function loadUrl(url){
   if(!url)return;
   if(!state.swReady){
-    alert('Service Workerの登録が完了していません。しばらく待ってから再試行してください。');
+    alert('Service Workerの登録が完了していません。');
     return;
   }
   if(!url.startsWith('http'))url='https://'+url;
+
   state.currentUrl=url;
   urlInput.value=url;
   console.log('[Scramjet] URL読み込み:',url);
+
+  const encoded=encodeURIComponent(url);
+  const proxyUrl='/sites.google.com/scramjet/service/'+encoded;
+  console.log('[Scramjet] プロキシURL:',proxyUrl);
+
   try{
-    const encodedUrl=window.$scramjet.codec.encode(url);
-    const proxyUrl=window.$scramjet.prefix+encodedUrl;
-    console.log('[Scramjet] プロキシURL:',proxyUrl);
+    const resp=await fetch(proxyUrl);
+    const text=await resp.text();
+
+    const blob=new Blob([text],{type:'text/html'});
+    const blobUrl=URL.createObjectURL(blob);
+
     const iframe=document.createElement('iframe');
     iframe.className='scramjet-iframe';
-    iframe.src=proxyUrl;
-    iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox';
+    iframe.src=blobUrl;
+    iframe.sandbox='allow-scripts allow-same-origin allow-forms allow-popups';
+
     scramjetContent.innerHTML='';
     scramjetContent.appendChild(iframe);
-    console.log('[Scramjet] iframe生成完了');
-  }catch(error){
-    console.error('[Scramjet] URL読み込みエラー:',error);
-    showError('読み込み失敗',error.message);
+
+    console.log('[Scramjet] iframe生成完了(blob)');
+  }catch(e){
+    console.error('[Scramjet] fetch失敗',e);
+    showError('読み込み失敗',String(e));
   }
 }
+
 
 function showError(title,message){
   scramjetContent.innerHTML=`
