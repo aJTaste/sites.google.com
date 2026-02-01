@@ -1,10 +1,26 @@
+function swLog(...args){
+  self.clients.matchAll({includeUncontrolled:true,type:'window'})
+    .then(clients=>{
+      for(const client of clients){
+        client.postMessage({
+          type:'SW_LOG',
+          data:args.map(a=>{
+            try{return typeof a==='string'?a:JSON.stringify(a);}
+            catch{return String(a);}
+          }).join(' ')
+        });
+      }
+    });
+}
+
+
 self.addEventListener("install",e=>{
-  console.log('[SW] インストール開始');
+  swLog('[SW] インストール開始');
   self.skipWaiting();
 });
 
 self.addEventListener("activate",e=>{
-  console.log('[SW] アクティベート開始');
+  swLog('[SW] アクティベート開始');
   e.waitUntil(self.clients.claim());
 });
 
@@ -23,31 +39,31 @@ self.addEventListener('fetch',event=>{
   const reqUrl=new URL(event.request.url);
   
   // 全てのリクエストをログ出力
-  console.log('[SW] fetch event:',reqUrl.pathname);
+  swLog('[SW] fetch event:',reqUrl.pathname);
   
   try{
     const prefix=getPrefix();
-    console.log('[SW] 使用プレフィックス:',prefix);
+    swLog('[SW] 使用プレフィックス:',prefix);
     
     if(!reqUrl.pathname.startsWith(prefix)){
-      console.log('[SW] プレフィックス不一致 - スキップ');
+      swLog('[SW] プレフィックス不一致 - スキップ');
       return;
     }
     
-    console.log('[SW] プロキシ処理開始');
+    swLog('[SW] プロキシ処理開始');
     
     const encoded=reqUrl.pathname.slice(prefix.length);
-    console.log('[SW] エンコード済みURL:',encoded);
+    swLog('[SW] エンコード済みURL:',encoded);
     
     if(!encoded){
-      console.log('[SW] エンコードURL空 - スキップ');
+      swLog('[SW] エンコードURL空 - スキップ');
       return;
     }
     
     let target;
     try{
       target=decodeURIComponent(encoded);
-      console.log('[SW] デコード後URL:',target);
+      swLog('[SW] デコード後URL:',target);
     }catch(e){
       console.error('[SW] デコードエラー:',e);
       return;
@@ -56,7 +72,7 @@ self.addEventListener('fetch',event=>{
     let targetUrl;
     try{
       targetUrl=new URL(target);
-      console.log('[SW] パース後URL:',targetUrl.href);
+      swLog('[SW] パース後URL:',targetUrl.href);
       
       if(!['http:','https:'].includes(targetUrl.protocol)){
         throw new Error('invalid protocol');
@@ -66,23 +82,23 @@ self.addEventListener('fetch',event=>{
       return;
     }
     
-    console.log('[SW] fetch実行:',targetUrl.href);
+    swLog('[SW] fetch実行:',targetUrl.href);
     
     event.respondWith((async()=>{
       try{
         let resp;
         try{
-          console.log('[SW] CORS fetch試行');
+          swLog('[SW] CORS fetch試行');
           resp=await fetch(targetUrl.href,{mode:'cors',credentials:'omit'});
         }catch(e){
-          console.log('[SW] CORS失敗、no-cors試行:',e.message);
+          swLog('[SW] CORS失敗、no-cors試行:',e.message);
           resp=await fetch(targetUrl.href,{mode:'no-cors',credentials:'omit'});
         }
         
-        console.log('[SW] fetch成功:',resp.type,resp.status);
+        swLog('[SW] fetch成功:',resp.type,resp.status);
         
         if(resp.type==='opaque'||resp.type==='opaque-stream'){
-          console.log('[SW] opaque response返却');
+          swLog('[SW] opaque response返却');
           return resp;
         }
         
@@ -92,7 +108,7 @@ self.addEventListener('fetch',event=>{
         headers.delete('frame-options');
         
         const body=await resp.arrayBuffer();
-        console.log('[SW] レスポンス返却:',body.byteLength,'bytes');
+        swLog('[SW] レスポンス返却:',body.byteLength,'bytes');
         
         return new Response(body,{
           status:resp.status,
@@ -113,4 +129,4 @@ self.addEventListener('fetch',event=>{
   }
 });
 
-console.log('[SW] Service Workerスクリプト読み込み完了');
+swLog('[SW] Service Workerスクリプト読み込み完了');
