@@ -1,3 +1,13 @@
+self.addEventListener('fetch',event=>{
+  const url=new URL(event.request.url);
+  if(url.pathname==='/sites.google.com/scramjet/service/test'){
+    event.respondWith(new Response('SW OK',{status:200}));
+  }
+});
+
+
+
+
 // scramjet.sw.js (配置: /sites.google.com/scramjet.sw.js)
 self.addEventListener("install",e=>self.skipWaiting());
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
