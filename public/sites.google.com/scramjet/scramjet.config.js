@@ -1,5 +1,5 @@
 self.$scramjet={
-  prefix:'/sites.google.com/scramjet/service/',
+  prefix:'/sites.google.com/scramjet/service/',  // これはそのまま
   codec:typeof ScramjetCodecs!=='undefined'?ScramjetCodecs.xor:{
     encode:(str)=>encodeURIComponent(str),
     decode:(str)=>decodeURIComponent(str)
