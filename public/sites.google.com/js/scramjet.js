@@ -25,7 +25,7 @@ async function registerServiceWorker(){
     const registration=await navigator.serviceWorker.register(
       '/sites.google.com/scramjet.sw.js',
       {
-        scope:'/sites.google.com/'
+        scope:'/sites.google.com/scramjet/'
       }
     );
     console.log('[Scramjet] Service Worker登録成功:',registration);
