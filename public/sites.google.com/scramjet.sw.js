@@ -8,7 +8,7 @@ self.addEventListener("activate",e=>{
   e.waitUntil(self.clients.claim());
 });
 
-const DEFAULT_PREFIX='/sites.google.com/';
+const DEFAULT_PREFIX='/sites.google.com/scramjet/service/';
 
 function getPrefix(){
   try{
