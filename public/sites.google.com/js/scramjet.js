@@ -15,8 +15,8 @@ const statusText=document.getElementById('status-text');
 const scramjetContainer=document.querySelector('.scramjet-container');
 async function registerServiceWorker(){
   console.log('[Scramjet] Service Worker登録開始');
-  console.log('[Scramjet] パス:','/sites.google.com/scramjet/scramjet.sw.js');
-  console.log('[Scramjet] スコープ:','/sites.google.com/scramjet/service/');
+  console.log('[Scramjet] パス:','/sites.google.com/scramjet.sw.js');
+  console.log('[Scramjet] スコープ:','/sites.google.com/');  // 変更
   try{
     if(!('serviceWorker' in navigator)){
       throw new Error('このブラウザはService Workerに対応していません');
@@ -25,7 +25,7 @@ async function registerServiceWorker(){
     const registration=await navigator.serviceWorker.register(
       '/sites.google.com/scramjet.sw.js',
       {
-        scope:'/sites.google.com/scramjet/'
+        scope:'/sites.google.com/'  // scramjet/ を削除
       }
     );
     console.log('[Scramjet] Service Worker登録成功:',registration);
