@@ -23,7 +23,7 @@ async function registerServiceWorker(){
     }
     console.log('[Scramjet] Service Workerサポート確認OK');
     const registration=await navigator.serviceWorker.register(
-      '/sites.google.com/scramjet.sw.js',
+      './scramjet.sw.js',
       {
         scope:'/sites.google.com/'  // scramjet/ を削除
       }
