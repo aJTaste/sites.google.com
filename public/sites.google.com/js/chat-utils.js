@@ -1,53 +1,8 @@
 // チャット機能のユーティリティ関数
 
-// DM IDを生成
-export function getDmId(userId1,userId2){
-  return[userId1,userId2].sort().join('_');
-}
-
-// 通知権限をリクエスト
-export async function requestNotificationPermission(){
-  if('Notification'in window&&Notification.permission==='default'){
-    await Notification.requestPermission();
-  }
-}
-
-// 時刻フォーマット（秒単位）
-export function formatMessageTime(timestamp){
-  const date=new Date(timestamp);
-  const now=new Date();
-  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
-  const messageDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
-  
-  if(messageDate.getTime()===today.getTime()){
-    return date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  }else if(messageDate.getTime()===today.getTime()-86400000){
-    return '昨日 '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  }else{
-    return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'})+' '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
-  }
-}
-
-// 最終ログイン時刻フォーマット（リアルタイム更新対応）
-export function formatLastOnline(timestamp){
-  if(!timestamp)return '不明';
-  
-  const date=new Date(timestamp);
-  const now=new Date();
-  const diff=now-date;
-  const seconds=Math.floor(diff/1000);
-  const minutes=Math.floor(diff/60000);
-  const hours=Math.floor(diff/3600000);
-  const days=Math.floor(diff/86400000);
-  
-  if(seconds<10)return 'たった今';
-  if(seconds<60)return `${seconds}秒前`;
-  if(minutes<60)return `${minutes}分前`;
-  if(hours<24)return `${hours}時間前`;
-  if(days<7)return `${days}日前`;
-  
-  return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
-}
+// ========================================
+// XSS対策
+// ========================================
 
 // HTMLエスケープ + URLリンク化
 export function escapeHtml(text){
@@ -62,18 +17,106 @@ export function escapeHtml(text){
   return escaped;
 }
 
-// 通知を表示
+// 属性値用エスケープ（onclick等での使用時にクォートをエスケープ）
+export function escapeForAttribute(text){
+  if(!text)return'';
+  return text
+    .replace(/\\/g,'\\\\')  // バックスラッシュを最初にエスケープ
+    .replace(/'/g,"\\'")    // シングルクォート
+    .replace(/"/g,'&quot;') // ダブルクォート
+    .replace(/\n/g,'\\n')   // 改行
+    .replace(/\r/g,'\\r');  // キャリッジリターン
+}
+
+// ========================================
+// 時刻フォーマット
+// ========================================
+
+// メッセージ時刻フォーマット（秒単位表示）
+export function formatMessageTime(timestamp){
+  const date=new Date(timestamp);
+  const now=new Date();
+  const today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const messageDate=new Date(date.getFullYear(),date.getMonth(),date.getDate());
+  
+  if(messageDate.getTime()===today.getTime()){
+    // 今日: HH:MM:SS
+    return date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }else if(messageDate.getTime()===today.getTime()-86400000){
+    // 昨日
+    return '昨日 '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }else{
+    // それ以前: M月D日 HH:MM:SS
+    return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'})+' '+date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  }
+}
+
+// 最終ログイン時刻フォーマット（リアルタイム更新対応の相対時刻）
+export function formatLastOnline(timestamp){
+  if(!timestamp)return'不明';
+  
+  const date=new Date(timestamp);
+  const now=new Date();
+  const diff=now-date;
+  const seconds=Math.floor(diff/1000);
+  const minutes=Math.floor(diff/60000);
+  const hours=Math.floor(diff/3600000);
+  const days=Math.floor(diff/86400000);
+  
+  if(seconds<10)return'たった今';
+  if(seconds<60)return`${seconds}秒前`;
+  if(minutes<60)return`${minutes}分前`;
+  if(hours<24)return`${hours}時間前`;
+  if(days<7)return`${days}日前`;
+  
+  return date.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
+}
+
+// オンライン判定（last_activeが2分以内ならオンライン）
+export function isUserOnline(lastActive){
+  if(!lastActive)return false;
+  const now=new Date();
+  const lastActiveDate=new Date(lastActive);
+  const diffMinutes=(now-lastActiveDate)/1000/60;
+  return diffMinutes<2;
+}
+
+// ========================================
+// DM関連
+// ========================================
+
+// DM IDを生成（ユーザーID2つをソートして結合）
+export function getDmId(userId1,userId2){
+  return[userId1,userId2].sort().join('_');
+}
+
+// ========================================
+// 通知
+// ========================================
+
+// 通知権限をリクエスト
+export async function requestNotificationPermission(){
+  if('Notification'in window&&Notification.permission==='default'){
+    await Notification.requestPermission();
+  }
+}
+
+// 通知を表示（非アクティブ時のみ）
 export function showNotification(title,body,icon){
   if('Notification'in window&&Notification.permission==='granted'&&document.hidden){
     new Notification(title,{
       body:body,
-      icon:icon||'assets/favicon1.svg',
+      icon:icon||'/sites.google.com/assets/favicon1.svg',
       tag:'chat-message'
     });
   }
 }
 
-// 画像ファイルを処理
+// ========================================
+// 画像処理
+// ========================================
+
+// 画像ファイルを処理（2MB制限、Base64変換）
 export function handleImageFile(file,callback){
   if(!file.type.startsWith('image/')){
     alert('画像ファイルを選択してください');
