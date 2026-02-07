@@ -1,3 +1,4 @@
+// chat.js
 // チャットアプリのメインファイル（Supabase版）
 
 import{initPage,supabase}from'../common/core.js';

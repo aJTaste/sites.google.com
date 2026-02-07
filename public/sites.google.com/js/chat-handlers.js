@@ -1,3 +1,4 @@
+// chat-handlers.js
 // イベントハンドラー関連（Supabase版）
 
 import{supabase}from'../common/supabase-config.js';
