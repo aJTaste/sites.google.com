@@ -1,35 +1,37 @@
 <!DOCTYPE html>
 <html style="width:100%;height:100%;background-color:black;">
-	<head>
-	<meta charset="UTF-8">
-  	<title>Eaglercraft JS</title>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
+    <head>
+    <meta charset="UTF-8">
+    <title>Eaglercraft JS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0">
     <link rel="icon" href="../assets/favicon1.png">
-		<script src="https://raw.githubusercontent.com/Magurock/Eaglercraft-for-Japan/refs/heads/main/Play/1122-Lat/classes.js"></script>
-		<script>
-			"use strict";
-			window.addEventListener("load", function() {
-				if(window.location.href.indexOf("file:") === 0) {
-					alert("ホスティングしろ");
-				}else {
-					var relayId = Math.floor(Math.random() * 3);
-					window.eaglercraftXOpts = {
-						demoMode: false,
-						container: "game_frame",
-						assetsURI: "https://raw.githubusercontent.com/Magurock/Eaglercraft-for-Japan/refs/heads/main/Play/1122-Lat/assets.epk",
-						localesURI: "lang/",
-						worldsDB: "worlds",
-						servers: [
-							{ addr: "wss://c905e84f-063e-4131-b223-dbc5bcd6e2b5-00-2pxqqs5ihhicd.sisko.replit.dev:3000/", name: "旧共同サーバー" },
-							{ addr: "wss://a43bacbd-f107-4e04-b1f3-5a442f698846-00-20hqsxcddkfnv.pike.replit.dev/", name: "サバイバルサーバー"},
-							{ addr: "wss://a43bacbd-f107-4e04-b1f3-5a442f698846-00-20hqsxcddkfnv.pike.replit.dev/", name: "PvPサーバー"}
-    				]
-					};
-					main();
-				}
-			});
-		</script>
-	</head>
-	<body style="margin:0px;width:100%;height:100%;overflow:hidden;background-color:black;" id="game_frame">
-	</body>
+        
+        <script src="https://cdn.jsdelivr.net/gh/Magurock/Eaglercraft-for-Japan@main/Play/1122-Lat/classes.js"></script>
+        
+        <script>
+            "use strict";
+            window.addEventListener("load", function() {
+                if(window.location.href.indexOf("file:") === 0) {
+                    alert("ホスティングしろ");
+                } else {
+                    window.eaglercraftXOpts = {
+                        demoMode: false,
+                        container: "game_frame",
+                        // ★修正ポイント2: assetsも同様にjsDelivrを通すと読み込みが安定します
+                        assetsURI: "https://cdn.jsdelivr.net/gh/Magurock/Eaglercraft-for-Japan@main/Play/1122-Lat/assets.epk",
+                        localesURI: "lang/",
+                        worldsDB: "worlds",
+                        servers: [
+                            { addr: "wss://c905e84f-063e-4131-b223-dbc5bcd6e2b5-00-2pxqqs5ihhicd.sisko.replit.dev:3000/", name: "旧共同サーバー" },
+                            { addr: "wss://a43bacbd-f107-4e04-b1f3-5a442f698846-00-20hqsxcddkfnv.pike.replit.dev/", name: "サバイバルサーバー"},
+                            { addr: "wss://a43bacbd-f107-4e04-b1f3-5a442f698846-00-20hqsxcddkfnv.pike.replit.dev/", name: "PvPサーバー"}
+                        ]
+                    };
+                    main();
+                }
+            });
+        </script>
+    </head>
+    <body style="margin:0px;width:100%;height:100%;overflow:hidden;background-color:black;" id="game_frame">
+    </body>
 </html>
