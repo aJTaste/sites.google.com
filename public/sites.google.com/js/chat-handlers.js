@@ -1,4 +1,4 @@
-// イベントハンドラー関連（Supabase版）
+// イベントハンドラー関連（Supabase版）- 入力中表示機能追加
 
 import{supabase}from'../common/supabase-config.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
@@ -9,11 +9,121 @@ import{canAccessChannel}from'../common/permissions.js';
 
 console.log('chat-handlers.js読み込み開始');
 
+// ========================================
+// 入力中表示の管理
+// ========================================
+
+let typingTimeout=null;
+let typingCheckInterval=null;
+
+// 入力中状態を送信
+async function sendTypingStatus(isTyping){
+  const targetId=state.selectedUserId||state.selectedChannelId;
+  if(!targetId)return;
+  
+  try{
+    await supabase
+      .from('typing_status')
+      .upsert({
+        user_id:state.currentProfile.id,
+        target_id:targetId,
+        is_typing:isTyping,
+        updated_at:new Date().toISOString()
+      },{onConflict:'user_id,target_id'});
+  }catch(error){
+    console.error('入力中ステータス送信エラー:',error);
+  }
+}
+
+// 入力中状態を監視
+function startTypingMonitor(targetId){
+  // 既存の監視を停止
+  if(typingCheckInterval){
+    clearInterval(typingCheckInterval);
+  }
+  
+  // 3秒ごとに入力中状態をチェック
+  typingCheckInterval=setInterval(async()=>{
+    try{
+      const{data:typingUsers,error}=await supabase
+        .from('typing_status')
+        .select('user_id,is_typing,updated_at')
+        .eq('target_id',targetId)
+        .eq('is_typing',true)
+        .neq('user_id',state.currentProfile.id);
+      
+      if(error)throw error;
+      
+      // 古い入力中ステータスを除外（10秒以上前）
+      const now=Date.now();
+      const activeTyping=(typingUsers||[]).filter(t=>{
+        const updatedAt=new Date(t.updated_at).getTime();
+        return now-updatedAt<10000;
+      });
+      
+      displayTypingIndicator(activeTyping);
+    }catch(error){
+      console.error('入力中状態チェックエラー:',error);
+    }
+  },3000);
+}
+
+// 入力中インジケーターを表示
+function displayTypingIndicator(typingUsers){
+  const chatMessages=document.getElementById('chat-messages');
+  if(!chatMessages)return;
+  
+  // 既存のインジケーターを削除
+  const existing=chatMessages.querySelector('.typing-indicator');
+  if(existing){
+    existing.remove();
+  }
+  
+  if(typingUsers.length===0)return;
+  
+  // ユーザー名を取得
+  const names=typingUsers.map(t=>{
+    const user=state.allUsers.find(u=>u.id===t.user_id);
+    return user?user.display_name:'誰か';
+  });
+  
+  // インジケーターを作成
+  const indicator=document.createElement('div');
+  indicator.className='typing-indicator';
+  
+  if(names.length===1){
+    indicator.innerHTML=`
+      <span class="typing-text">${names[0]} が入力中</span>
+      <span class="typing-dots">
+        <span>.</span><span>.</span><span>.</span>
+      </span>
+    `;
+  }else{
+    indicator.innerHTML=`
+      <span class="typing-text">${names.length} 人が入力中</span>
+      <span class="typing-dots">
+        <span>.</span><span>.</span><span>.</span>
+      </span>
+    `;
+  }
+  
+  chatMessages.appendChild(indicator);
+  
+  // スクロールを最下部に
+  chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+
+// ========================================
 // ユーザーを選択
+// ========================================
+
 export async function selectUser(userId){
   console.log('selectUser()実行:',userId);
   updateState('selectedUserId',userId);
   updateState('selectedChannelId',null);
+  
+  // 入力中モニター開始
+  startTypingMonitor(userId);
   
   // 既読を更新
   await supabase
@@ -41,7 +151,10 @@ export async function selectUser(userId){
   loadMessages(userId);
 }
 
+// ========================================
 // チャンネルを選択
+// ========================================
+
 export async function selectChannel(channelId){
   console.log('selectChannel()実行:',channelId);
   
@@ -60,6 +173,9 @@ export async function selectChannel(channelId){
   
   updateState('selectedChannelId',channelId);
   updateState('selectedUserId',null);
+  
+  // 入力中モニター開始
+  startTypingMonitor(channelId);
   
   // 既読を更新
   await supabase
@@ -84,7 +200,10 @@ export async function selectChannel(channelId){
 window.selectUser=selectUser;
 window.selectChannel=selectChannel;
 
+// ========================================
 // チャット入力のセットアップ
+// ========================================
+
 function setupChatInput(){
   const chatInput=document.getElementById('chat-input');
   if(!chatInput){
@@ -93,36 +212,18 @@ function setupChatInput(){
   }
   
   // 入力中ステータスの送信
-  let typingTimeout=null;
   chatInput.addEventListener('input',async()=>{
     chatInput.style.height='auto';
     chatInput.style.height=Math.min(chatInput.scrollHeight,120)+'px';
     
     // 入力中ステータスを送信
-    const targetId=state.selectedUserId||state.selectedChannelId;
-    if(targetId){
-      await supabase
-        .from('typing_status')
-        .upsert({
-          user_id:state.currentProfile.id,
-          target_id:targetId,
-          is_typing:true,
-          updated_at:new Date().toISOString()
-        },{onConflict:'user_id,target_id'});
-      
-      // 3秒後に入力中を解除
-      if(typingTimeout)clearTimeout(typingTimeout);
-      typingTimeout=setTimeout(async()=>{
-        await supabase
-          .from('typing_status')
-          .upsert({
-            user_id:state.currentProfile.id,
-            target_id:targetId,
-            is_typing:false,
-            updated_at:new Date().toISOString()
-          },{onConflict:'user_id,target_id'});
-      },3000);
-    }
+    await sendTypingStatus(true);
+    
+    // 3秒後に入力中を解除
+    if(typingTimeout)clearTimeout(typingTimeout);
+    typingTimeout=setTimeout(async()=>{
+      await sendTypingStatus(false);
+    },3000);
   });
   
   chatInput.addEventListener('keydown',(e)=>{
@@ -130,6 +231,8 @@ function setupChatInput(){
       e.preventDefault();
       if(!state.isSending){
         sendMessage();
+        // 入力中ステータスを解除
+        sendTypingStatus(false);
       }
     }
   });
@@ -156,6 +259,8 @@ function setupChatInput(){
     sendBtn.addEventListener('click',()=>{
       if(!state.isSending){
         sendMessage();
+        // 入力中ステータスを解除
+        sendTypingStatus(false);
       }
     });
   }

@@ -833,3 +833,83 @@
   -webkit-box-orient:vertical;
   line-clamp:3;
 }
+
+/* 入力中インジケーター */
+.typing-indicator{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  margin:8px 0;
+  background:var(--bg-primary);
+  border-radius:8px;
+  font-size:13px;
+  color:var(--text-secondary);
+  animation:fadeIn 0.3s ease;
+}
+
+.typing-text{
+  font-weight:600;
+}
+
+.typing-dots{
+  display:inline-flex;
+  gap:2px;
+}
+
+.typing-dots span{
+  animation:typingDot 1.4s infinite;
+  opacity:0;
+}
+
+.typing-dots span:nth-child(1){
+  animation-delay:0s;
+}
+
+.typing-dots span:nth-child(2){
+  animation-delay:0.2s;
+}
+
+.typing-dots span:nth-child(3){
+  animation-delay:0.4s;
+}
+
+@keyframes typingDot{
+  0%,80%,100%{opacity:0;}
+  40%{opacity:1;}
+}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* 既読バッジ */
+.message-read{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 8px;
+  background:#d1f4e0;
+  color:#2da44e;
+  font-size:11px;
+  font-weight:600;
+  border-radius:4px;
+  margin-left:8px;
+}
+
+/* メッセージテキスト内の改行とURL */
+.message-text{
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  line-height:1.5;
+}
+
+.message-text a{
+  color:var(--main);
+  text-decoration:underline;
+  word-break:break-all;
+}
+
+.message-text a:hover{
+  color:var(--main-hover);
+}
