@@ -5,6 +5,21 @@ import{state,updateState,resetMessageState}from'./chat-state.js';
 import{getDmId,formatMessageTime,showNotification}from'./chat-utils.js';
 import{displayUsers}from'./chat-ui.js';
 
+
+// ★ 追加：ステルスモードの状態をチェックする関数
+function isStealthModeActive() {
+  const saved = localStorage.getItem('stealthModeState');
+  if (saved) {
+    try {
+      return JSON.parse(saved).stealthMode;
+    } catch (e) {
+      return false;
+    }
+  }
+  return false;
+}
+
+
 // ========================================
 // テキスト処理関数
 // ========================================
@@ -88,9 +103,10 @@ export function loadMessages(userId){
         }
         
         // 新着メッセージ通知
+        // 新着メッセージ通知
         if(payload.new.sender_id!==state.currentProfile.id){
           const sender=state.allUsers.find(u=>u.id===payload.new.sender_id);
-          if(sender){
+          if(sender && !isStealthModeActive()){ 
             showNotification(
               `${sender.display_name}からのメッセージ`,
               payload.new.text||'画像を送信しました',
@@ -196,11 +212,13 @@ export function loadChannelMessages(channelId){
         // 新着メッセージ通知（グループチャットでも通知）
         if(payload.new.sender_id!==state.currentProfile.id){
           const sender=state.allUsers.find(u=>u.id===payload.new.sender_id)||{display_name:'不明'};
-          showNotification(
-            `${channelId}: ${sender.display_name}`,
-            payload.new.text||'画像を送信しました',
-            sender.avatar_url||null
-          );
+          if(!isStealthModeActive()){
+            showNotification(
+              `${channelId}: ${sender.display_name}`,
+              payload.new.text||'画像を送信しました',
+              sender.avatar_url||null
+            );
+          }
         }
       }else if(payload.eventType==='UPDATE'){
         updateMessageInDOM(payload.new.id,payload.new,null);
