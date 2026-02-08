@@ -102,8 +102,7 @@ export function loadMessages(userId){
           await markAsRead(userId);
         }
         
-        // 新着メッセージ通知
-        // 新着メッセージ通知
+        // 新着メッセージ通知（★修正：ステルスモード中はスキップ）
         if(payload.new.sender_id!==state.currentProfile.id){
           const sender=state.allUsers.find(u=>u.id===payload.new.sender_id);
           if(sender && !isStealthModeActive()){ 
@@ -209,7 +208,7 @@ export function loadChannelMessages(channelId){
           await markAsRead(channelId);
         }
         
-        // 新着メッセージ通知（グループチャットでも通知）
+        // 新着メッセージ通知（★修正：グループチャットでも通知＆ステルスモードチェック追加）
         if(payload.new.sender_id!==state.currentProfile.id){
           const sender=state.allUsers.find(u=>u.id===payload.new.sender_id)||{display_name:'不明'};
           if(!isStealthModeActive()){
