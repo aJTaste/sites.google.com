@@ -7,8 +7,15 @@ export function getDmId(userId1,userId2){
 
 // 通知権限をリクエスト
 export async function requestNotificationPermission(){
-  if('Notification'in window&&Notification.permission==='default'){
-    await Notification.requestPermission();
+  if('Notification'in window){
+    if(Notification.permission==='default'){
+      const permission=await Notification.requestPermission();
+      console.log('通知権限:',permission);
+    }else{
+      console.log('通知権限（既存）:',Notification.permission);
+    }
+  }else{
+    console.warn('このブラウザは通知をサポートしていません');
   }
 }
 
@@ -62,14 +69,47 @@ export function escapeHtml(text){
   return escaped;
 }
 
-// 通知を表示
+// 通知を表示（改善版）
 export function showNotification(title,body,icon){
-  if('Notification'in window&&Notification.permission==='granted'&&document.hidden){
-    new Notification(title,{
-      body:body,
-      icon:icon||'assets/favicon1.svg',
-      tag:'chat-message'
-    });
+  // 通知権限がない場合は何もしない
+  if(!('Notification'in window)){
+    console.warn('このブラウザは通知をサポートしていません');
+    return;
+  }
+  
+  if(Notification.permission!=='granted'){
+    console.warn('通知権限が許可されていません');
+    return;
+  }
+  
+  // ページが非表示の場合のみ通知を表示
+  if(document.hidden){
+    try{
+      const notification=new Notification(title,{
+        body:body,
+        icon:icon||'/sites.google.com/assets/favicon1.svg',
+        tag:'chat-message',
+        requireInteraction:false,
+        silent:false
+      });
+      
+      // 通知をクリックしたらウィンドウをフォーカス
+      notification.onclick=function(){
+        window.focus();
+        notification.close();
+      };
+      
+      // 5秒後に自動で閉じる
+      setTimeout(()=>{
+        notification.close();
+      },5000);
+      
+      console.log('通知を表示しました:',title);
+    }catch(error){
+      console.error('通知表示エラー:',error);
+    }
+  }else{
+    console.log('ページが表示中のため通知をスキップ');
   }
 }
 

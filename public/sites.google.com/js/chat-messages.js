@@ -3,6 +3,7 @@
 import{supabase}from'../common/supabase-config.js';
 import{state,updateState,resetMessageState}from'./chat-state.js';
 import{getDmId,formatMessageTime,escapeHtml,showNotification}from'./chat-utils.js';
+import{displayUsers}from'./chat-ui.js';
 
 // メッセージを読み込み（DM）
 export function loadMessages(userId){
@@ -28,6 +29,11 @@ export function loadMessages(userId){
       if(payload.eventType==='INSERT'){
         await displaySingleMessage(payload.new,userId,true);
         
+        // 既読を即座に更新（会話を開いている場合のみ）
+        if(state.selectedUserId===userId){
+          await markAsRead(userId);
+        }
+        
         // 新着メッセージ通知
         if(payload.new.sender_id!==state.currentProfile.id){
           const sender=state.allUsers.find(u=>u.id===payload.new.sender_id);
@@ -48,6 +54,27 @@ export function loadMessages(userId){
     .subscribe();
   
   updateState('messageSubscription',subscription);
+}
+
+// 既読を更新
+async function markAsRead(targetId){
+  try{
+    await supabase
+      .from('read_status')
+      .upsert({
+        user_id:state.currentProfile.id,
+        target_id:targetId,
+        last_read_at:new Date().toISOString()
+      },{onConflict:'user_id,target_id'});
+    
+    // 未読数をリセット
+    state.unreadCounts[targetId]=0;
+    
+    // UI更新
+    displayUsers();
+  }catch(error){
+    console.error('既読更新エラー:',error);
+  }
 }
 
 // 初回メッセージ読み込み（DM）
@@ -72,18 +99,10 @@ async function loadInitialMessages(dmId,userId){
       }
       
       // スクロールを最下部に
-      setTimeout(()=>{
-        chatMessages.scrollTop=chatMessages.scrollHeight;
-      },10);
+      scrollToBottom(chatMessages,true);
       
       // 既読を更新
-      await supabase
-        .from('read_status')
-        .upsert({
-          user_id:state.currentProfile.id,
-          target_id:userId,
-          last_read_at:new Date().toISOString()
-        },{onConflict:'user_id,target_id'});
+      await markAsRead(userId);
     }
   }catch(error){
     console.error('メッセージ読み込みエラー:',error);
@@ -112,6 +131,11 @@ export function loadChannelMessages(channelId){
     },async(payload)=>{
       if(payload.eventType==='INSERT'){
         await displaySingleChannelMessage(payload.new);
+        
+        // 既読を即座に更新（チャンネルを開いている場合のみ）
+        if(state.selectedChannelId===channelId){
+          await markAsRead(channelId);
+        }
         
         // 新着メッセージ通知
         if(payload.new.sender_id!==state.currentProfile.id){
@@ -157,23 +181,33 @@ async function loadInitialChannelMessages(channelId){
       }
       
       // スクロールを最下部に
-      setTimeout(()=>{
-        chatMessages.scrollTop=chatMessages.scrollHeight;
-      },10);
+      scrollToBottom(chatMessages,true);
       
       // 既読を更新
-      await supabase
-        .from('read_status')
-        .upsert({
-          user_id:state.currentProfile.id,
-          target_id:channelId,
-          last_read_at:new Date().toISOString()
-        },{onConflict:'user_id,target_id'});
+      await markAsRead(channelId);
     }
   }catch(error){
     console.error('メッセージ読み込みエラー:',error);
     chatMessages.innerHTML='<div style="text-align:center;color:var(--text-tertiary);padding:40px;">メッセージの読み込みに失敗しました</div>';
   }
+}
+
+// スクロールを最下部に移動
+function scrollToBottom(element,immediate=false){
+  if(immediate){
+    element.scrollTop=element.scrollHeight;
+  }else{
+    element.scrollTo({
+      top:element.scrollHeight,
+      behavior:'smooth'
+    });
+  }
+}
+
+// ユーザーが最下部にいるかチェック
+function isAtBottom(element){
+  const threshold=50; // 50px以内なら最下部とみなす
+  return element.scrollHeight-element.scrollTop-element.clientHeight<=threshold;
 }
 
 // 単一メッセージを表示（DM）
@@ -246,12 +280,16 @@ async function displaySingleMessage(msg,otherUserId,shouldScroll){
     ${actionsHtml}
   `;
   
+  // ユーザーが最下部にいるかチェック
+  const wasAtBottom=isAtBottom(chatMessages);
+  
   chatMessages.appendChild(messageEl);
   
+  // 新着メッセージの場合、自動スクロール
   if(shouldScroll){
-    const wasAtBottom=chatMessages.scrollHeight-chatMessages.scrollTop<=chatMessages.clientHeight+50;
-    if(wasAtBottom){
-      chatMessages.scrollTop=chatMessages.scrollHeight;
+    // 自分のメッセージ、または最下部にいる場合は自動スクロール
+    if(isCurrentUser||wasAtBottom){
+      scrollToBottom(chatMessages,false);
     }
   }
 }
@@ -326,11 +364,14 @@ async function displaySingleChannelMessage(msg){
     ${actionsHtml}
   `;
   
+  // ユーザーが最下部にいるかチェック
+  const wasAtBottom=isAtBottom(chatMessages);
+  
   chatMessages.appendChild(messageEl);
   
-  const wasAtBottom=chatMessages.scrollHeight-chatMessages.scrollTop<=chatMessages.clientHeight+50;
-  if(wasAtBottom){
-    chatMessages.scrollTop=chatMessages.scrollHeight;
+  // 自分のメッセージ、または最下部にいる場合は自動スクロール
+  if(isCurrentUser||wasAtBottom){
+    scrollToBottom(chatMessages,false);
   }
 }
 

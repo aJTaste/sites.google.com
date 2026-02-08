@@ -13,24 +13,7 @@ await initPage('chat','チャット',{
     updateState('currentProfile',profile);
     
     // オンライン状態更新
-    await supabase
-      .from('profiles')
-      .update({
-        is_online:true,
-        last_online:new Date().toISOString()
-      })
-      .eq('id',profile.id);
-    
-    // オフライン時の処理
-    window.addEventListener('beforeunload',async()=>{
-      await supabase
-        .from('profiles')
-        .update({
-          is_online:false,
-          last_online:new Date().toISOString()
-        })
-        .eq('id',profile.id);
-    });
+    await updateOnlineStatus(true);
     
     // 通知権限リクエスト
     await requestNotificationPermission();
@@ -43,8 +26,77 @@ await initPage('chat','チャット',{
     
     // 最終ログイン時刻の定期更新
     startLastOnlineUpdateTimer();
+    
+    // オンライン状態の定期更新（15秒ごと）
+    startOnlineHeartbeat();
+    
+    // ページ非表示時・クローズ時の処理
+    setupVisibilityHandlers();
   }
 });
+
+// オンライン状態を更新
+async function updateOnlineStatus(isOnline){
+  try{
+    await supabase
+      .from('profiles')
+      .update({
+        is_online:isOnline,
+        last_online:new Date().toISOString()
+      })
+      .eq('id',state.currentProfile.id);
+  }catch(error){
+    console.error('オンライン状態更新エラー:',error);
+  }
+}
+
+// オンライン状態のハートビート（15秒ごと）
+function startOnlineHeartbeat(){
+  if(state.onlineHeartbeatInterval){
+    clearInterval(state.onlineHeartbeatInterval);
+  }
+  
+  const interval=setInterval(async()=>{
+    if(!document.hidden){
+      await updateOnlineStatus(true);
+    }
+  },15000);
+  
+  updateState('onlineHeartbeatInterval',interval);
+}
+
+// ページ非表示時・クローズ時の処理
+function setupVisibilityHandlers(){
+  // ページが非表示になった時
+  document.addEventListener('visibilitychange',async()=>{
+    if(document.hidden){
+      await updateOnlineStatus(false);
+    }else{
+      await updateOnlineStatus(true);
+    }
+  });
+  
+  // ページを閉じる時（確実にオフラインにする）
+  window.addEventListener('beforeunload',async()=>{
+    // Beaconを使って確実に送信
+    const data=JSON.stringify({
+      id:state.currentProfile.id,
+      is_online:false,
+      last_online:new Date().toISOString()
+    });
+    
+    // Supabase REST APIに直接送信
+    navigator.sendBeacon(
+      `${supabase.supabaseUrl}/rest/v1/profiles?id=eq.${state.currentProfile.id}`,
+      new Blob([data],{type:'application/json'})
+    );
+  });
+  
+  // ページを閉じる時（フォールバック）
+  window.addEventListener('pagehide',async()=>{
+    await updateOnlineStatus(false);
+  });
+}
 
 // ユーザー一覧を読み込み
 async function loadUsers(){

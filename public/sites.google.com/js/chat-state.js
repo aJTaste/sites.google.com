@@ -20,6 +20,7 @@ export const state={
   isSending:false,
   unreadCounts:{},
   lastOnlineUpdateInterval:null,
+  onlineHeartbeatInterval:null,
   selectedImage:null,
   replyToMessage:null,
   editingMessageId:null
