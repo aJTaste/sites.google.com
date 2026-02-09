@@ -11,11 +11,7 @@ const state={
   selectedPostId:null,
   mediaFiles:[],
   posts:[],
-  notifications:[],
-  isLoading:false,
-  explorePosts:[],
-  userPosts:[],
-  userProfile:null
+  notifications:[]
 };
 
 // ========================================
@@ -74,9 +70,7 @@ function setupEventListeners(){
   // 文字数カウント
   document.getElementById('post-text').addEventListener('input',(e)=>{
     const remaining=280-e.target.value.length;
-    const countEl=document.getElementById('char-count');
-    countEl.textContent=remaining;
-    countEl.style.color=remaining<0?'#cf222e':remaining<20?'#f97316':'var(--text-tertiary)';
+    document.getElementById('char-count').textContent=remaining;
   });
   
   // 投稿送信
@@ -87,16 +81,6 @@ function setupEventListeners(){
     document.getElementById('detail-modal').classList.remove('show');
   });
   
-  // 検索
-  const searchInput=document.getElementById('search-input');
-  let searchTimeout;
-  searchInput.addEventListener('input',(e)=>{
-    clearTimeout(searchTimeout);
-    searchTimeout=setTimeout(()=>{
-      handleSearch(e.target.value.trim());
-    },300);
-  });
-  
   // モーダル外クリック
   document.querySelectorAll('.gate-modal').forEach(modal=>{
     modal.addEventListener('click',(e)=>{
@@ -105,29 +89,6 @@ function setupEventListeners(){
       }
     });
   });
-}
-
-// ========================================
-// 検索機能
-// ========================================
-
-async function handleSearch(query){
-  if(!query)return;
-  
-  try{
-    const{data:users,error}=await supabase
-      .from('profiles')
-      .select('*')
-      .or(`display_name.ilike.%${query}%,user_id.ilike.%${query}%`)
-      .limit(10);
-    
-    if(error)throw error;
-    
-    // 検索結果を表示（ここでは簡易的にコンソール出力）
-    console.log('検索結果:',users);
-  }catch(error){
-    console.error('検索エラー:',error);
-  }
 }
 
 // ========================================
@@ -143,8 +104,6 @@ function switchView(view){
   
   if(view==='home'){
     loadPosts();
-  }else if(view==='explore'){
-    showExplore();
   }else if(view==='notifications'){
     showNotifications();
   }else if(view==='profile'){
@@ -167,9 +126,6 @@ function switchFeed(feed){
 // ========================================
 
 async function loadPosts(){
-  if(state.isLoading)return;
-  state.isLoading=true;
-  
   const timeline=document.getElementById('timeline');
   timeline.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>読み込み中...</p></div>';
   
@@ -178,7 +134,7 @@ async function loadPosts(){
       .from('posts')
       .select(`
         *,
-        profiles!posts_user_id_fkey(id,user_id,display_name,avatar_url,avatar_color),
+        profiles!posts_user_id_fkey(id,display_name,avatar_url,avatar_color),
         likes(count),
         comments(count),
         reposts(count)
@@ -193,10 +149,9 @@ async function loadPosts(){
         .select('following_id')
         .eq('follower_id',state.currentProfile.id);
       
-      const followingIds=following?.map(f=>f.following_id)||[];
+      const followingIds=following.map(f=>f.following_id);
       if(followingIds.length===0){
         timeline.innerHTML='<div class="timeline-loading"><p>フォロー中のユーザーがいません</p></div>';
-        state.isLoading=false;
         return;
       }
       
@@ -212,8 +167,6 @@ async function loadPosts(){
   }catch(error){
     console.error('投稿読み込みエラー:',error);
     timeline.innerHTML='<div class="timeline-loading"><p>読み込みに失敗しました</p></div>';
-  }finally{
-    state.isLoading=false;
   }
 }
 
@@ -239,16 +192,16 @@ function createPostCard(post){
   card.dataset.postId=post.id;
   
   const profile=post.profiles;
-  const avatarHtml=profile?.avatar_url
+  const avatarHtml=profile.avatar_url
     ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
-    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
+    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${profile.display_name.charAt(0).toUpperCase()}</div>`;
   
   const timeAgo=getTimeAgo(post.created_at);
   
   // いいね・リポスト・コメント数
-  const likesCount=post.likes?.[0]?.count||0;
-  const repostsCount=post.reposts?.[0]?.count||0;
-  const commentsCount=post.comments?.[0]?.count||0;
+  const likesCount=post.likes[0]?.count||0;
+  const repostsCount=post.reposts[0]?.count||0;
+  const commentsCount=post.comments[0]?.count||0;
   
   // メディア表示
   let mediaHtml='';
@@ -260,11 +213,11 @@ function createPostCard(post){
     
     mediaHtml=`<div class="post-media ${mediaClass}">`;
     post.media_urls.forEach((url,i)=>{
-      const type=post.media_types?.[i]||'image';
+      const type=post.media_types[i];
       if(type==='image'){
-        mediaHtml+=`<div class="media-item"><img src="${url}" alt="投稿画像" loading="lazy"></div>`;
+        mediaHtml+=`<div class="media-item"><img src="${url}" alt="投稿画像"></div>`;
       }else{
-        mediaHtml+=`<div class="media-item"><video src="${url}" controls preload="metadata"></video></div>`;
+        mediaHtml+=`<div class="media-item"><video src="${url}" controls></video></div>`;
       }
     });
     mediaHtml+='</div>';
@@ -275,8 +228,8 @@ function createPostCard(post){
       <div class="post-avatar">${avatarHtml}</div>
       <div class="post-author-info">
         <div>
-          <span class="post-author-name">${profile?.display_name||'不明'}</span>
-          <span class="post-author-id">@${profile?.user_id||'unknown'}</span>
+          <span class="post-author-name">${profile.display_name}</span>
+          <span class="post-author-id">@${profile.display_name.toLowerCase()}</span>
           <span class="post-time">${timeAgo}</span>
         </div>
       </div>
@@ -309,20 +262,17 @@ function createPostCard(post){
   });
   
   // アクションボタン
-  const likeBtn=card.querySelector('.like-btn');
-  likeBtn.addEventListener('click',(e)=>{
+  card.querySelector('.like-btn').addEventListener('click',(e)=>{
     e.stopPropagation();
     toggleLike(post.id);
   });
   
-  const repostBtn=card.querySelector('.repost-btn');
-  repostBtn.addEventListener('click',(e)=>{
+  card.querySelector('.repost-btn').addEventListener('click',(e)=>{
     e.stopPropagation();
     toggleRepost(post.id);
   });
   
-  const commentBtn=card.querySelector('.comment-btn');
-  commentBtn.addEventListener('click',(e)=>{
+  card.querySelector('.comment-btn').addEventListener('click',(e)=>{
     e.stopPropagation();
     openPostDetail(post.id);
   });
@@ -346,7 +296,7 @@ async function openPostDetail(postId){
       .from('posts')
       .select(`
         *,
-        profiles!posts_user_id_fkey(id,user_id,display_name,avatar_url,avatar_color)
+        profiles!posts_user_id_fkey(id,display_name,avatar_url,avatar_color)
       `)
       .eq('id',postId)
       .single();
@@ -357,7 +307,7 @@ async function openPostDetail(postId){
       .from('comments')
       .select(`
         *,
-        profiles!comments_user_id_fkey(id,user_id,display_name,avatar_url,avatar_color)
+        profiles!comments_user_id_fkey(id,display_name,avatar_url,avatar_color)
       `)
       .eq('post_id',postId)
       .order('created_at',{ascending:true});
@@ -374,16 +324,17 @@ async function openPostDetail(postId){
     const commentsSection=document.createElement('div');
     commentsSection.className='comments-section';
     
-    const currentAvatarHtml=state.currentProfile.avatar_url
-      ?`<img src="${state.currentProfile.avatar_url}" alt="${state.currentProfile.display_name}">`
-      :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${state.currentProfile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${state.currentProfile.display_name.charAt(0).toUpperCase()}</div>`;
-    
     commentsSection.innerHTML=`
       <h4>コメント</h4>
       <div class="comment-input-container">
-        <div class="comment-input-avatar">${currentAvatarHtml}</div>
+        <div class="comment-input-avatar">
+          ${state.currentProfile.avatar_url
+            ?`<img src="${state.currentProfile.avatar_url}" alt="${state.currentProfile.display_name}">`
+            :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${state.currentProfile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${state.currentProfile.display_name.charAt(0).toUpperCase()}</div>`
+          }
+        </div>
         <div class="comment-input-wrapper">
-          <textarea id="comment-input" placeholder="コメントを入力" maxlength="280"></textarea>
+          <textarea id="comment-input" placeholder="コメントを入力"></textarea>
           <button class="comment-submit-btn" id="comment-submit-btn">コメント</button>
         </div>
       </div>
@@ -394,7 +345,7 @@ async function openPostDetail(postId){
     
     // コメント表示
     const commentsList=document.getElementById('comments-list');
-    (comments||[]).forEach(comment=>{
+    comments.forEach(comment=>{
       const commentCard=createCommentCard(comment);
       commentsList.appendChild(commentCard);
     });
@@ -414,16 +365,16 @@ function createCommentCard(comment){
   card.className='comment-card';
   
   const profile=comment.profiles;
-  const avatarHtml=profile?.avatar_url
+  const avatarHtml=profile.avatar_url
     ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
-    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:14px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
+    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:14px;border-radius:50%;">${profile.display_name.charAt(0).toUpperCase()}</div>`;
   
   const timeAgo=getTimeAgo(comment.created_at);
   
   card.innerHTML=`
     <div class="comment-avatar">${avatarHtml}</div>
     <div class="comment-content">
-      <div class="comment-author">${profile?.display_name||'不明'}</div>
+      <div class="comment-author">${profile.display_name}</div>
       <div class="comment-text">${escapeHtml(comment.text)}</div>
       <div class="comment-time">${timeAgo}</div>
     </div>
@@ -437,10 +388,6 @@ async function submitComment(postId){
   const text=input.value.trim();
   
   if(!text)return;
-  
-  const submitBtn=document.getElementById('comment-submit-btn');
-  submitBtn.disabled=true;
-  submitBtn.textContent='送信中...';
   
   try{
     const{error}=await supabase
@@ -462,7 +409,7 @@ async function submitComment(postId){
       .eq('id',postId)
       .single();
     
-    if(post?.user_id&&post.user_id!==state.currentProfile.id){
+    if(post.user_id!==state.currentProfile.id){
       await createNotification(post.user_id,'comment',postId);
     }
     
@@ -471,8 +418,6 @@ async function submitComment(postId){
   }catch(error){
     console.error('コメント投稿エラー:',error);
     alert('コメントの投稿に失敗しました');
-    submitBtn.disabled=false;
-    submitBtn.textContent='コメント';
   }
 }
 
@@ -490,7 +435,6 @@ function closePostModal(){
   document.getElementById('post-text').value='';
   document.getElementById('post-media-preview').innerHTML='';
   document.getElementById('char-count').textContent='280';
-  document.getElementById('char-count').style.color='var(--text-tertiary)';
   state.mediaFiles=[];
 }
 
@@ -504,7 +448,7 @@ function handleMediaSelect(e){
   
   files.forEach(file=>{
     if(file.size>20*1024*1024){
-      alert(`${file.name}のファイルサイズは20MB以下にしてください`);
+      alert('ファイルサイズは20MB以下にしてください');
       return;
     }
     
@@ -512,7 +456,6 @@ function handleMediaSelect(e){
   });
   
   displayMediaPreview();
-  e.target.value='';
 }
 
 function displayMediaPreview(){
@@ -559,11 +502,6 @@ async function submitPost(){
     return;
   }
   
-  if(text.length>280){
-    alert('テキストは280文字以内にしてください');
-    return;
-  }
-  
   const submitBtn=document.getElementById('post-submit');
   submitBtn.disabled=true;
   submitBtn.textContent='投稿中...';
@@ -607,7 +545,8 @@ async function submitPost(){
     loadPosts();
   }catch(error){
     console.error('投稿エラー:',error);
-    alert('投稿に失敗しました: '+error.message);
+    alert('投稿に失敗しました');
+  }finally{
     submitBtn.disabled=false;
     submitBtn.textContent='投稿';
   }
@@ -624,7 +563,7 @@ async function toggleLike(postId){
       .select('id')
       .eq('post_id',postId)
       .eq('user_id',state.currentProfile.id)
-      .maybeSingle();
+      .single();
     
     if(existing){
       await supabase.from('likes').delete().eq('id',existing.id);
@@ -641,7 +580,7 @@ async function toggleLike(postId){
         .eq('id',postId)
         .single();
       
-      if(post?.user_id&&post.user_id!==state.currentProfile.id){
+      if(post.user_id!==state.currentProfile.id){
         await createNotification(post.user_id,'like',postId);
       }
     }
@@ -659,7 +598,7 @@ async function toggleRepost(postId){
       .select('id')
       .eq('post_id',postId)
       .eq('user_id',state.currentProfile.id)
-      .maybeSingle();
+      .single();
     
     if(existing){
       await supabase.from('reposts').delete().eq('id',existing.id);
@@ -676,7 +615,7 @@ async function toggleRepost(postId){
         .eq('id',postId)
         .single();
       
-      if(post?.user_id&&post.user_id!==state.currentProfile.id){
+      if(post.user_id!==state.currentProfile.id){
         await createNotification(post.user_id,'repost',postId);
       }
     }
@@ -716,7 +655,7 @@ async function loadSuggestedUsers(){
         .select('id')
         .eq('follower_id',state.currentProfile.id)
         .eq('following_id',user.id)
-        .maybeSingle();
+        .single();
       
       const isFollowing=!!followStatus;
       
@@ -724,7 +663,7 @@ async function loadSuggestedUsers(){
         <div class="user-suggestion-avatar">${avatarHtml}</div>
         <div class="user-suggestion-info">
           <div class="user-suggestion-name">${user.display_name}</div>
-          <div class="user-suggestion-id">@${user.user_id}</div>
+          <div class="user-suggestion-id">@${user.display_name.toLowerCase()}</div>
         </div>
         <button class="follow-btn ${isFollowing?'following':''}" data-user-id="${user.id}">
           ${isFollowing?'フォロー中':'フォロー'}
@@ -749,7 +688,7 @@ async function toggleFollow(userId){
       .select('id')
       .eq('follower_id',state.currentProfile.id)
       .eq('following_id',userId)
-      .maybeSingle();
+      .single();
     
     if(existing){
       await supabase.from('follows').delete().eq('id',existing.id);
@@ -792,7 +731,7 @@ async function loadNotifications(){
       .from('notifications')
       .select(`
         *,
-        profiles!notifications_actor_id_fkey(id,user_id,display_name,avatar_url,avatar_color)
+        profiles!notifications_actor_id_fkey(id,display_name,avatar_url,avatar_color)
       `)
       .eq('user_id',state.currentProfile.id)
       .order('created_at',{ascending:false})
@@ -831,9 +770,9 @@ function showNotifications(){
     card.className='post-card';
     
     const profile=notif.profiles;
-    const avatarHtml=profile?.avatar_url
+    const avatarHtml=profile.avatar_url
       ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
-      :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
+      :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${profile.display_name.charAt(0).toUpperCase()}</div>`;
     
     const typeText=notif.type==='like'?'があなたの投稿にいいねしました'
       :notif.type==='comment'?'があなたの投稿にコメントしました'
@@ -847,7 +786,7 @@ function showNotifications(){
         <div class="post-avatar">${avatarHtml}</div>
         <div class="post-author-info">
           <div>
-            <span class="post-author-name">${profile?.display_name||'不明'}</span>
+            <span class="post-author-name">${profile.display_name}</span>
             <span class="post-author-id">${typeText}</span>
           </div>
           <div class="post-time">${timeAgo}</div>
@@ -895,127 +834,12 @@ async function markNotificationsAsRead(){
 }
 
 // ========================================
-// 探索画面
+// プロフィール
 // ========================================
 
-async function showExplore(){
+function showProfile(){
   const timeline=document.getElementById('timeline');
-  timeline.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>読み込み中...</p></div>';
-  
-  try{
-    // 人気の投稿を取得（いいね数でソート）
-    const{data:posts,error}=await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles!posts_user_id_fkey(id,user_id,display_name,avatar_url,avatar_color),
-        likes(count),
-        comments(count),
-        reposts(count)
-      `)
-      .order('created_at',{ascending:false})
-      .limit(30);
-    
-    if(error)throw error;
-    
-    // いいね数でソート
-    const sortedPosts=(posts||[]).sort((a,b)=>{
-      const aLikes=a.likes?.[0]?.count||0;
-      const bLikes=b.likes?.[0]?.count||0;
-      return bLikes-aLikes;
-    });
-    
-    state.explorePosts=sortedPosts;
-    displayPosts(sortedPosts);
-  }catch(error){
-    console.error('探索読み込みエラー:',error);
-    timeline.innerHTML='<div class="timeline-loading"><p>読み込みに失敗しました</p></div>';
-  }
-}
-
-// ========================================
-// プロフィール画面
-// ========================================
-
-async function showProfile(){
-  const timeline=document.getElementById('timeline');
-  timeline.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>読み込み中...</p></div>';
-  
-  try{
-    // 自分の投稿を取得
-    const{data:posts,error}=await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles!posts_user_id_fkey(id,user_id,display_name,avatar_url,avatar_color),
-        likes(count),
-        comments(count),
-        reposts(count)
-      `)
-      .eq('user_id',state.currentProfile.id)
-      .order('created_at',{ascending:false})
-      .limit(50);
-    
-    if(error)throw error;
-    
-    // プロフィールヘッダーを作成
-    const header=document.createElement('div');
-    header.className='profile-header';
-    header.style.cssText='padding:24px;background:var(--bg-primary);border-bottom:1px solid var(--border);margin-bottom:16px;';
-    
-    const avatarHtml=state.currentProfile.avatar_url
-      ?`<img src="${state.currentProfile.avatar_url}" alt="${state.currentProfile.display_name}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-      :`<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;background:${state.currentProfile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:32px;border-radius:50%;">${state.currentProfile.display_name.charAt(0).toUpperCase()}</div>`;
-    
-    // フォロワー・フォロー中数を取得
-    const{data:followers}=await supabase
-      .from('follows')
-      .select('id',{count:'exact',head:true})
-      .eq('following_id',state.currentProfile.id);
-    
-    const{data:following}=await supabase
-      .from('follows')
-      .select('id',{count:'exact',head:true})
-      .eq('follower_id',state.currentProfile.id);
-    
-    const followersCount=followers?.length||0;
-    const followingCount=following?.length||0;
-    
-    header.innerHTML=`
-      <div style="display:flex;gap:20px;align-items:flex-start;">
-        ${avatarHtml}
-        <div style="flex:1;">
-          <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">${state.currentProfile.display_name}</h2>
-          <p style="color:var(--text-secondary);margin-bottom:12px;">@${state.currentProfile.user_id}</p>
-          <div style="display:flex;gap:20px;font-size:14px;">
-            <div><strong>${(posts||[]).length}</strong> <span style="color:var(--text-secondary);">投稿</span></div>
-            <div><strong>${followingCount}</strong> <span style="color:var(--text-secondary);">フォロー中</span></div>
-            <div><strong>${followersCount}</strong> <span style="color:var(--text-secondary);">フォロワー</span></div>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    timeline.innerHTML='';
-    timeline.appendChild(header);
-    
-    state.userPosts=posts||[];
-    
-    if(posts&&posts.length>0){
-      posts.forEach(post=>{
-        const postEl=createPostCard(post);
-        timeline.appendChild(postEl);
-      });
-    }else{
-      const empty=document.createElement('div');
-      empty.className='timeline-loading';
-      empty.innerHTML='<p>まだ投稿がありません</p>';
-      timeline.appendChild(empty);
-    }
-  }catch(error){
-    console.error('プロフィール読み込みエラー:',error);
-    timeline.innerHTML='<div class="timeline-loading"><p>読み込みに失敗しました</p></div>';
-  }
+  timeline.innerHTML='<div class="timeline-loading"><p>プロフィール機能は準備中です</p></div>';
 }
 
 // ========================================
@@ -1033,10 +857,6 @@ function subscribeToUpdates(){
     },()=>{
       if(state.currentView==='home'){
         loadPosts();
-      }else if(state.currentView==='explore'){
-        showExplore();
-      }else if(state.currentView==='profile'){
-        showProfile();
       }
     })
     .subscribe();
@@ -1053,47 +873,6 @@ function subscribeToUpdates(){
       loadNotifications();
     })
     .subscribe();
-  
-  // コメントの変更を監視
-  supabase
-    .channel('comments-changes')
-    .on('postgres_changes',{
-      event:'*',
-      schema:'public',
-      table:'comments'
-    },()=>{
-      if(state.currentView==='home'){
-        loadPosts();
-      }
-    })
-    .subscribe();
-  
-  // いいね・リポストの変更を監視
-  supabase
-    .channel('likes-changes')
-    .on('postgres_changes',{
-      event:'*',
-      schema:'public',
-      table:'likes'
-    },()=>{
-      if(state.currentView==='home'){
-        loadPosts();
-      }
-    })
-    .subscribe();
-  
-  supabase
-    .channel('reposts-changes')
-    .on('postgres_changes',{
-      event:'*',
-      schema:'public',
-      table:'reposts'
-    },()=>{
-      if(state.currentView==='home'){
-        loadPosts();
-      }
-    })
-    .subscribe();
 }
 
 // ========================================
@@ -1103,16 +882,7 @@ function subscribeToUpdates(){
 function escapeHtml(text){
   const div=document.createElement('div');
   div.textContent=text;
-  let escaped=div.innerHTML;
-  
-  // URLをリンク化
-  const urlRegex=/(https?:\/\/[^\s]+)/g;
-  escaped=escaped.replace(urlRegex,'<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--main);text-decoration:underline;">$1</a>');
-  
-  // 改行を<br>に
-  escaped=escaped.replace(/\n/g,'<br>');
-  
-  return escaped;
+  return div.innerHTML;
 }
 
 function getTimeAgo(timestamp){

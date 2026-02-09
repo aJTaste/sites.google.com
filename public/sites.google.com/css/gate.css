@@ -1,10 +1,10 @@
 /* ========================================
-   aJTGate - プロ仕様SNSスタイル（改善版）
+   aJTGate - プロ仕様SNSスタイル
    ======================================== */
 
 .gate-container{
   display:grid;
-  grid-template-columns:240px 1fr 300px;
+  grid-template-columns:280px 1fr 350px;
   height:100vh;
   background:var(--bg-secondary);
   overflow:hidden;
@@ -17,28 +17,50 @@
 .gate-sidebar{
   background:var(--bg-primary);
   border-right:1px solid var(--border);
-  padding:12px;
+  padding:20px;
   display:flex;
   flex-direction:column;
-  gap:20px;
+  gap:24px;
   overflow-y:auto;
+}
+
+.gate-logo{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px;
+}
+
+.gate-logo-icon{
+  width:36px;
+  height:36px;
+}
+
+.gate-logo h1{
+  font-size:24px;
+  font-weight:700;
+  color:var(--text-primary);
+  background:linear-gradient(135deg,#ff6b35,#f97316);
+  -webkit-background-clip:text;
+  background-clip: text;
+  -webkit-text-fill-color:transparent;
 }
 
 .gate-nav{
   display:flex;
   flex-direction:column;
-  gap:4px;
+  gap:8px;
 }
 
 .gate-nav-btn{
   display:flex;
   align-items:center;
   gap:16px;
-  padding:12px 16px;
+  padding:14px 20px;
   background:transparent;
   border:none;
-  border-radius:24px;
-  font-size:17px;
+  border-radius:28px;
+  font-size:18px;
   font-weight:600;
   color:var(--text-primary);
   cursor:pointer;
@@ -56,13 +78,13 @@
 }
 
 .gate-nav-btn .material-symbols-outlined{
-  font-size:26px;
+  font-size:28px;
 }
 
 .nav-badge{
   position:absolute;
-  top:6px;
-  left:32px;
+  top:8px;
+  left:36px;
   min-width:20px;
   height:20px;
   padding:0 6px;
@@ -82,25 +104,23 @@
   align-items:center;
   justify-content:center;
   gap:8px;
-  padding:14px;
+  padding:16px;
   background:var(--main);
   border:none;
-  border-radius:24px;
+  border-radius:28px;
   font-size:16px;
   font-weight:700;
   color:#fff;
   cursor:pointer;
-  transition:all 0.2s;
+  transition:background 0.2s;
 }
 
 .gate-post-btn:hover{
   background:var(--main-hover);
-  transform:translateY(-1px);
-  box-shadow:0 4px 12px rgba(255,107,53,0.3);
 }
 
 .gate-post-btn .material-symbols-outlined{
-  font-size:22px;
+  font-size:24px;
 }
 
 /* ========================================
@@ -126,7 +146,7 @@
 
 .gate-tab{
   flex:1;
-  padding:14px;
+  padding:16px;
   background:transparent;
   border:none;
   font-size:15px;
@@ -192,7 +212,7 @@
 .post-card{
   background:var(--bg-primary);
   border-bottom:1px solid var(--border);
-  padding:14px 18px;
+  padding:16px 20px;
   cursor:pointer;
   transition:background 0.15s;
 }
@@ -204,12 +224,12 @@
 .post-header{
   display:flex;
   gap:12px;
-  margin-bottom:10px;
+  margin-bottom:12px;
 }
 
 .post-avatar{
-  width:44px;
-  height:44px;
+  width:48px;
+  height:48px;
   border-radius:50%;
   overflow:hidden;
   flex-shrink:0;
@@ -241,16 +261,16 @@
 .post-time{
   font-size:14px;
   color:var(--text-tertiary);
-  margin-left:6px;
+  margin-left:8px;
 }
 
 .post-content{
-  margin-bottom:10px;
+  margin-bottom:12px;
 }
 
 .post-text{
   font-size:15px;
-  line-height:1.5;
+  line-height:1.6;
   color:var(--text-primary);
   white-space:pre-wrap;
   word-wrap:break-word;
@@ -320,18 +340,18 @@
 .post-actions{
   display:flex;
   align-items:center;
-  gap:2px;
-  margin-top:10px;
+  gap:4px;
+  margin-top:12px;
 }
 
 .post-action-btn{
   display:flex;
   align-items:center;
   gap:6px;
-  padding:6px 10px;
+  padding:8px 12px;
   background:transparent;
   border:none;
-  border-radius:18px;
+  border-radius:20px;
   font-size:13px;
   color:var(--text-secondary);
   cursor:pointer;
@@ -361,7 +381,7 @@
 
 .gate-right-sidebar{
   background:var(--bg-secondary);
-  padding:16px 12px;
+  padding:20px;
   overflow-y:auto;
 }
 
@@ -369,17 +389,11 @@
   display:flex;
   align-items:center;
   gap:12px;
-  padding:10px 14px;
+  padding:12px 16px;
   background:var(--bg-primary);
   border:1px solid var(--border);
-  border-radius:24px;
-  margin-bottom:16px;
-  transition:all 0.2s;
-}
-
-.search-box:focus-within{
-  border-color:var(--main);
-  box-shadow:0 0 0 3px var(--main-light);
+  border-radius:28px;
+  margin-bottom:20px;
 }
 
 .search-box .material-symbols-outlined{
@@ -399,23 +413,23 @@
 .widget{
   background:var(--bg-primary);
   border:1px solid var(--border);
-  border-radius:14px;
-  padding:14px;
-  margin-bottom:14px;
+  border-radius:16px;
+  padding:16px;
+  margin-bottom:16px;
 }
 
 .widget h3{
-  font-size:17px;
+  font-size:18px;
   font-weight:700;
   color:var(--text-primary);
-  margin-bottom:14px;
+  margin-bottom:16px;
 }
 
 .user-suggestion{
   display:flex;
   align-items:center;
-  gap:10px;
-  padding:10px 0;
+  gap:12px;
+  padding:12px 0;
   border-bottom:1px solid var(--border-light);
 }
 
@@ -455,10 +469,10 @@
 }
 
 .follow-btn{
-  padding:6px 14px;
+  padding:6px 16px;
   background:var(--main);
   border:none;
-  border-radius:18px;
+  border-radius:20px;
   font-size:13px;
   font-weight:700;
   color:#fff;
@@ -492,12 +506,6 @@
   z-index:2000;
   align-items:center;
   justify-content:center;
-  animation:fadeIn 0.2s ease;
-}
-
-@keyframes fadeIn{
-  from{opacity:0;}
-  to{opacity:1;}
 }
 
 .gate-modal.show{
@@ -513,12 +521,6 @@
   max-height:90vh;
   display:flex;
   flex-direction:column;
-  animation:slideUp 0.3s ease;
-}
-
-@keyframes slideUp{
-  from{transform:translateY(50px);opacity:0;}
-  to{transform:translateY(0);opacity:1;}
 }
 
 .detail-modal-content{
@@ -529,7 +531,7 @@
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:14px 18px;
+  padding:16px 20px;
   border-bottom:1px solid var(--border);
 }
 
@@ -540,8 +542,8 @@
 }
 
 .gate-modal-close{
-  width:34px;
-  height:34px;
+  width:36px;
+  height:36px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -558,13 +560,13 @@
 }
 
 .gate-modal-close .material-symbols-outlined{
-  font-size:22px;
+  font-size:24px;
 }
 
 .gate-modal-body{
   flex:1;
   overflow-y:auto;
-  padding:18px;
+  padding:20px;
 }
 
 #post-text{
@@ -573,7 +575,7 @@
   border:none;
   background:transparent;
   font-size:16px;
-  line-height:1.5;
+  line-height:1.6;
   color:var(--text-primary);
   resize:none;
   outline:none;
@@ -588,7 +590,7 @@
   display:grid;
   grid-template-columns:repeat(2,1fr);
   gap:8px;
-  margin-top:14px;
+  margin-top:16px;
 }
 
 .media-preview-item{
@@ -625,11 +627,6 @@
   border-radius:50%;
   color:#fff;
   cursor:pointer;
-  transition:background 0.2s;
-}
-
-.media-preview-remove:hover{
-  background:rgba(0,0,0,0.9);
 }
 
 .media-preview-remove .material-symbols-outlined{
@@ -640,14 +637,14 @@
   display:flex;
   align-items:center;
   justify-content:space-between;
-  margin-top:14px;
-  padding-top:14px;
+  margin-top:16px;
+  padding-top:16px;
   border-top:1px solid var(--border);
 }
 
 .post-action-btn{
-  width:34px;
-  height:34px;
+  width:36px;
+  height:36px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -672,8 +669,8 @@
   display:flex;
   align-items:center;
   justify-content:flex-end;
-  gap:10px;
-  padding:14px 18px;
+  gap:12px;
+  padding:16px 20px;
   border-top:1px solid var(--border);
 }
 
@@ -682,8 +679,8 @@
    ======================================== */
 
 .comments-section{
-  margin-top:20px;
-  padding-top:20px;
+  margin-top:24px;
+  padding-top:24px;
   border-top:1px solid var(--border);
 }
 
@@ -691,13 +688,13 @@
   font-size:16px;
   font-weight:700;
   color:var(--text-primary);
-  margin-bottom:14px;
+  margin-bottom:16px;
 }
 
 .comment-card{
   display:flex;
-  gap:10px;
-  padding:10px 0;
+  gap:12px;
+  padding:12px 0;
   border-bottom:1px solid var(--border-light);
 }
 
@@ -706,8 +703,8 @@
 }
 
 .comment-avatar{
-  width:34px;
-  height:34px;
+  width:36px;
+  height:36px;
   border-radius:50%;
   overflow:hidden;
   background:var(--bg-secondary);
@@ -734,7 +731,7 @@
   font-size:14px;
   color:var(--text-primary);
   margin-top:4px;
-  line-height:1.4;
+  line-height:1.5;
 }
 
 .comment-time{
@@ -745,13 +742,13 @@
 
 .comment-input-container{
   display:flex;
-  gap:10px;
-  margin-top:14px;
+  gap:12px;
+  margin-top:16px;
 }
 
 .comment-input-avatar{
-  width:38px;
-  height:38px;
+  width:40px;
+  height:40px;
   border-radius:50%;
   overflow:hidden;
   background:var(--bg-secondary);
@@ -774,7 +771,7 @@
 #comment-input{
   width:100%;
   min-height:60px;
-  padding:10px;
+  padding:12px;
   border:1px solid var(--border);
   border-radius:12px;
   background:var(--bg-secondary);
@@ -783,7 +780,6 @@
   resize:none;
   outline:none;
   font-family:inherit;
-  transition:border-color 0.2s;
 }
 
 #comment-input:focus{
@@ -792,99 +788,30 @@
 
 .comment-submit-btn{
   align-self:flex-end;
-  padding:8px 18px;
+  padding:8px 20px;
   background:var(--main);
   border:none;
-  border-radius:18px;
+  border-radius:20px;
   font-size:14px;
   font-weight:700;
   color:#fff;
   cursor:pointer;
-  transition:all 0.2s;
+  transition:background 0.2s;
 }
 
 .comment-submit-btn:hover{
   background:var(--main-hover);
-  transform:translateY(-1px);
-}
-
-.comment-submit-btn:disabled{
-  opacity:0.5;
-  cursor:not-allowed;
-}
-
-/* プロフィール表示 */
-.profile-header{
-  padding:20px;
-  background:var(--bg-primary);
-  border-bottom:1px solid var(--border);
-}
-
-.profile-avatar-large{
-  width:120px;
-  height:120px;
-  border-radius:50%;
-  overflow:hidden;
-  background:var(--bg-secondary);
-  margin:0 auto 16px;
-}
-
-.profile-avatar-large img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-.profile-name{
-  font-size:24px;
-  font-weight:700;
-  color:var(--text-primary);
-  text-align:center;
-  margin-bottom:8px;
-}
-
-.profile-id{
-  font-size:16px;
-  color:var(--text-secondary);
-  text-align:center;
-  margin-bottom:16px;
-}
-
-.profile-stats{
-  display:flex;
-  justify-content:center;
-  gap:32px;
-  padding:16px 0;
-}
-
-.profile-stat{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-}
-
-.profile-stat-value{
-  font-size:20px;
-  font-weight:700;
-  color:var(--text-primary);
-}
-
-.profile-stat-label{
-  font-size:14px;
-  color:var(--text-secondary);
 }
 
 /* ========================================
    レスポンシブ
    ======================================== */
 
+/* ① 左サイドバーをアイコン化するタイミング（1000px以下） */
 @media(max-width:1000px){
   .gate-container{
-    grid-template-columns:70px 1fr;
-  }
-  
-  .gate-sidebar{
-    padding:8px;
+    /* 左を80px、右サイドバーを表示したままにする設定 */
+    grid-template-columns:80px 1fr 300px;
   }
   
   .gate-nav-btn span:not(.material-symbols-outlined):not(.nav-badge){
@@ -894,12 +821,21 @@
   .gate-post-btn span:not(.material-symbols-outlined){
     display:none;
   }
+}
+
+/* ② 右サイドバーを隠すタイミング（ここも1000pxに揃える！） */
+@media(max-width:1000px){
+  .gate-container{
+    /* 左80px、右なしにする */
+    grid-template-columns:80px 1fr;
+  }
   
   .gate-right-sidebar{
     display:none;
   }
 }
 
+/* ③ スマホ用レイアウト（768px以下） */
 @media(max-width:768px){
   .gate-container{
     grid-template-columns:1fr;
@@ -919,6 +855,10 @@
     z-index:100;
   }
   
+  .gate-logo{
+    display:none;
+  }
+  
   .gate-nav{
     flex:1;
     flex-direction:row;
@@ -927,13 +867,13 @@
   
   .gate-nav-btn{
     flex-direction:column;
-    gap:2px;
-    padding:10px;
-    font-size:11px;
+    gap:4px;
+    padding:12px;
+    font-size:12px;
   }
   
   .gate-nav-btn .material-symbols-outlined{
-    font-size:22px;
+    font-size:24px;
   }
   
   .gate-nav-btn span:not(.material-symbols-outlined):not(.nav-badge){
@@ -942,7 +882,7 @@
   
   .gate-post-btn{
     position:fixed;
-    bottom:70px;
+    bottom:80px;
     right:16px;
     width:56px;
     height:56px;
@@ -957,6 +897,6 @@
   }
   
   .gate-main{
-    padding-bottom:60px;
+    padding-bottom:64px;
   }
 }
