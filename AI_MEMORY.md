@@ -1,48 +1,53 @@
 # AI Memory - AppHub開発履歴
 
 ## 最終更新
-- 日時: 2026-02-08 21:01
-- バージョン: 1.5.1
+- 日時: 2026-02-09 10:24
+- バージョン: 1.5.2
 - 担当AI: Claude (Sonnet 4.5)
 
 ---
 
-## 今回の実装 (v1.5.1)
+## 今回の実装 (v1.5.2)
 
 ### 実装内容
-**重大なセキュリティホールの修正**
+**UX改善: メッセージ削除と送信ボタンの視覚的フィードバック**
 
-#### 1. ステルスモード中の通知問題を解決
-- **問題**: ステルスモード（まなびポケット偽装）中でも通知が表示され、学校での使用時にバレるリスクがあった
-- **修正**: `chat-messages.js`に`isStealthModeActive()`関数を追加し、偽装中は通知を完全にブロック
-- **影響範囲**: DMとグループチャット両方
+#### 1. メッセージ削除の確認ダイアログ改善
+- **問題**: 削除モーダルが通常のモーダルと区別がつきにくかった
+- **改善**: 警告感のあるデザインに変更（赤系の配色、警告アイコン追加）
+- **影響範囲**: `chat.css`の削除モーダルスタイル
 
-#### 2. 通知システムの改善
-- グループチャットでも通知が正しく届くように修正
-- 通知表示の条件を厳密化
+#### 2. 送信ボタンの状態表示改善
+- **問題**: メッセージ送信中に視覚的フィードバックがなかった
+- **改善**: 送信中アニメーション追加（パルスエフェクト）
+- **影響範囲**: `chat.css`と`chat-messages.js`
 
 ### 変更ファイル
-1. `public/sites.google.com/js/chat-messages.js` - ステルスモードチェック追加
-2. `public/sites.google.com/common/updates.js` - バージョン1.5.1を追加
+1. `public/sites.google.com/css/chat.css` - 削除モーダルと送信ボタンのスタイル改善
+2. `public/sites.google.com/js/chat-messages.js` - 送信ボタンにsendingクラス追加
+3. `public/sites.google.com/common/updates.js` - バージョン1.5.2を追加
 
 ### 技術的詳細
-```javascript
-// ステルスモード状態チェック関数
-function isStealthModeActive() {
-  const saved = localStorage.getItem('stealthModeState');
-  if (saved) {
-    try {
-      return JSON.parse(saved).stealthMode;
-    } catch (e) {
-      return false;
-    }
-  }
-  return false;
+```css
+/* 削除モーダルの警告スタイル */
+#delete-modal .modal-header{
+  background:#fff4f4;
+  border-bottom-color:#ffdddd;
 }
 
-// 通知表示前にチェック
-if(sender && !isStealthModeActive()){ 
-  showNotification(...)
+#delete-modal .modal-body p::before{
+  content:'⚠️';
+  font-size:20px;
+}
+
+/* 送信中のアニメーション */
+.send-btn.sending .material-symbols-outlined{
+  animation:sendPulse 0.6s infinite;
+}
+
+@keyframes sendPulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.1);}
 }
 ```
 
@@ -91,6 +96,8 @@ public/sites.google.com/
 - ✅ ステルスモード中の通知表示（v1.5.1で修正）
 - ✅ グループチャットで通知が届かない（v1.5.0で修正）
 - ✅ 入力中インジケーター未実装（v1.5.0で実装）
+- ✅ 削除確認ダイアログが目立たない（v1.5.2で改善）
+- ✅ 送信中の視覚的フィードバック不足（v1.5.2で改善）
 
 ### 未解決（優先度順）
 1. **なし（現時点で重大な問題なし）**
@@ -195,9 +202,9 @@ if ( condition ) {
 3. Supabaseのクエリ数が無料枠を超えていないか
 
 ### 推奨アクション
-1. **まずは観察**: ユーザーフィードバックを待つ
-2. **小さく改善**: 一度に大きな変更をしない
-3. **テスト重視**: 特にステルスモード関連は慎重に
+1. **小さく改善**: 今回のような小規模なUX改善を継続
+2. **ユーザーフィードバック重視**: 実際の使用感を確認
+3. **パフォーマンス監視**: 特にメッセージ読み込み速度
 
 ### 避けるべきこと
 - ステルスモード機能の大幅な変更
@@ -207,6 +214,11 @@ if ( condition ) {
 ---
 
 ## メモ
+
+### v1.5.2での気づき
+- 小規模なUI改善でも体験は大きく向上する
+- CSSアニメーションは軽量で効果的
+- モーダルの警告感は色と絵文字で十分表現可能
 
 ### 技術的負債
 - 現時点ではなし（コードベースはクリーン）
@@ -218,5 +230,5 @@ if ( condition ) {
 
 ---
 
-最終更新: 2026-02-08 21:01
+最終更新: 2026-02-09 10:24
 次回更新者: このファイルを最初に読み、作業後に必ず更新してください。

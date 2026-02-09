@@ -603,6 +603,33 @@
   border-top:1px solid var(--border);
 }
 
+/* 削除モーダルの警告スタイル */
+#delete-modal .modal-header{
+  background:#fff4f4;
+  border-bottom-color:#ffdddd;
+}
+
+#delete-modal .modal-header h3{
+  color:#cf222e;
+}
+
+#delete-modal .modal-body{
+  background:#fff8f8;
+}
+
+#delete-modal .modal-body p{
+  color:#cf222e;
+  font-weight:500;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+#delete-modal .modal-body p::before{
+  content:'⚠️';
+  font-size:20px;
+}
+
 .channel-item{
   display:flex;
   align-items:center;
@@ -743,17 +770,32 @@
   border-radius:6px;
   color:#ffffff;
   cursor:pointer;
-  transition:background-color 0.15s;
+  transition:all 0.15s;
   flex-shrink:0;
+  position:relative;
 }
 
-.send-btn:hover{
+.send-btn:hover:not(:disabled){
   background:var(--main-hover);
 }
 
 .send-btn:disabled{
   opacity:0.5;
   cursor:not-allowed;
+}
+
+/* 送信中のアニメーション */
+.send-btn.sending{
+  pointer-events:none;
+}
+
+.send-btn.sending .material-symbols-outlined{
+  animation:sendPulse 0.6s infinite;
+}
+
+@keyframes sendPulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.1);}
 }
 
 .send-btn .material-symbols-outlined{
@@ -773,9 +815,6 @@
     transform:translateX(0);
   }
 }
-/* chat.html 固有のスタイル */
-
-/* ... 既存のスタイルは省略 ... */
 
 /* モデレーター専用チャンネルのスタイル */
 .channel-item.moderator-only{

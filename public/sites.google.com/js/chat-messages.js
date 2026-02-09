@@ -637,6 +637,7 @@ export async function sendMessage(){
   updateState('isSending',true);
   chatInput.disabled=true;
   sendBtn.disabled=true;
+  sendBtn.classList.add('sending');
   
   const messageText=text;
   const messageImage=state.selectedImage;
@@ -719,6 +720,7 @@ export async function sendMessage(){
     updateState('isSending',false);
     chatInput.disabled=false;
     sendBtn.disabled=false;
+    sendBtn.classList.remove('sending');
     chatInput.focus();
   }
 }
