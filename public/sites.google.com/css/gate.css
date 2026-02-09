@@ -807,8 +807,10 @@
    レスポンシブ
    ======================================== */
 
-@media(max-width:1280px){
+/* ① 左サイドバーをアイコン化するタイミング（1000px以下） */
+@media(max-width:1000px){
   .gate-container{
+    /* 左を80px、右サイドバーを表示したままにする設定 */
     grid-template-columns:80px 1fr 300px;
   }
   
@@ -821,8 +823,10 @@
   }
 }
 
-@media(max-width:1024px){
+/* ② 右サイドバーを隠すタイミング（ここも1000pxに揃える！） */
+@media(max-width:1000px){
   .gate-container{
+    /* 左80px、右なしにする */
     grid-template-columns:80px 1fr;
   }
   
@@ -831,6 +835,7 @@
   }
 }
 
+/* ③ スマホ用レイアウト（768px以下） */
 @media(max-width:768px){
   .gate-container{
     grid-template-columns:1fr;
