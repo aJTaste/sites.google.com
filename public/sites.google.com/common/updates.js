@@ -3,6 +3,14 @@
 
 export const UPDATES=[
   {
+    version:"1.6.0",
+    date:"2026-02-09 21:33",
+    changes:[
+      "AppHubコミュニティサービス「aJTGate」を実装しました。",
+      "aJTGate・アジットゲート"
+    ]
+  },
+  {
     version:'1.5.2',
     date:'2026-02-09 10:25',
     changes:[
