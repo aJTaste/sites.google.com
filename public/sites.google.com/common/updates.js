@@ -7,7 +7,9 @@ export const UPDATES=[
     date:"2026-02-09 21:33",
     changes:[
       "AppHubコミュニティサービス「aJTGate」を実装しました。",
-      "aJTGate・アジットゲート"
+      "▶ aJTGate・アジットゲート",
+      "「Piano」ツールを削除しました。",
+      "▶無限リロード問題を「直した」ため。"
     ]
   },
   {
