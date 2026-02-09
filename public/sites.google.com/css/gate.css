@@ -14,36 +14,49 @@
    左サイドバー
    ======================================== */
 
-.gate-sidebar{
-  background:var(--bg-primary);
-  border-right:1px solid var(--border);
-  padding:12px;
-  display:flex;
-  flex-direction:column;
-  gap:20px;
-  overflow-y:auto;
+.gate-sidebar {
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  /* overflow-y: auto; ← これを削除または hidden に変更 */
+  overflow: hidden; /* サイドバー全体のスクロールを防ぐ */
+  height: 100%; /* 親グリッドの高さを確実に継承 */
 }
 
-.gate-nav{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
+.gate-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* ▼ 以下を追加：ナビゲーション部分を伸縮可能にし、ここだけスクロールさせる */
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0; /* Firefox等のためのFlexボックスはみ出し防止策 */
+  
+  /* スクロールバーを目立たなくする（お好みで） */
+  scrollbar-width: none; /* Firefox */
+}
+.gate-nav::-webkit-scrollbar {
+  display: none; /* Chrome/Safari */
 }
 
-.gate-nav-btn{
-  display:flex;
-  align-items:center;
-  gap:16px;
-  padding:12px 16px;
-  background:transparent;
-  border:none;
-  border-radius:24px;
-  font-size:17px;
-  font-weight:600;
-  color:var(--text-primary);
-  cursor:pointer;
-  transition:all 0.2s;
-  position:relative;
+.gate-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 24px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  flex-shrink: 0; /* ボタンが潰れないようにする */
 }
 
 .gate-nav-btn:hover{
@@ -76,21 +89,25 @@
   border-radius:10px;
 }
 
-.gate-post-btn{
-  margin-top:auto;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding:14px;
-  background:var(--main);
-  border:none;
-  border-radius:24px;
-  font-size:16px;
-  font-weight:700;
-  color:#fff;
-  cursor:pointer;
-  transition:all 0.2s;
+.gate-post-btn {
+  /* margin-top: auto; ← gate-navがflex:1で広がるので不要ですが、残しておいてもOK */
+  margin-top: auto; 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  background: var(--main);
+  border: none;
+  border-radius: 24px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  /* ▼ 以下を追加：ボタンが潰れないように固定 */
+  flex-shrink: 0;
+  z-index: 5; /* ナビゲーションより手前に表示 */
 }
 
 .gate-post-btn:hover{
