@@ -112,9 +112,10 @@ function setupEventListeners(){
 // ========================================
 
 async function handleSearch(query){
-  if(!query)return;
+  if(!query) return; // 空なら何もしない（あるいは結果をクリアする処理を入れても良い）
   
   try{
+    // 検索クエリ実行
     const{data:users,error}=await supabase
       .from('profiles')
       .select('*')
@@ -123,8 +124,60 @@ async function handleSearch(query){
     
     if(error)throw error;
     
-    // 検索結果を表示（ここでは簡易的にコンソール出力）
-    console.log('検索結果:',users);
+    console.log('検索結果:', users);
+
+    // ---------------------------------------------------
+    // 【追加】ここから画面表示処理
+    // ---------------------------------------------------
+    
+    // 検索結果を表示する場所を取得（例: timelineを一時的に検索結果にする、または専用のdivを用意する）
+    // ここでは既存の timeline を利用して表示する例を書きます
+    const timeline = document.getElementById('timeline');
+    timeline.innerHTML = ''; // 一旦クリア
+    
+    // ヘッダーを表示
+    const header = document.createElement('h3');
+    header.style.padding = '16px';
+    header.textContent = `"${query}" の検索結果`;
+    timeline.appendChild(header);
+
+    if(!users || users.length === 0){
+      timeline.innerHTML += '<div class="timeline-loading"><p>ユーザーが見つかりませんでした</p></div>';
+      return;
+    }
+
+    // ユーザーリストを表示
+    users.forEach(user => {
+      const userCard = document.createElement('div');
+      userCard.className = 'user-suggestion'; // 既存のCSSクラスを流用
+      userCard.style.padding = '16px';
+      userCard.style.borderBottom = '1px solid var(--border)';
+
+      const avatarHtml = user.avatar_url
+        ? `<img src="${user.avatar_url}" alt="${user.display_name}">`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${user.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${user.display_name.charAt(0).toUpperCase()}</div>`;
+
+      userCard.innerHTML = `
+        <div class="user-suggestion-avatar" style="width:40px;height:40px;">${avatarHtml}</div>
+        <div class="user-suggestion-info">
+          <div class="user-suggestion-name">${escapeHtml(user.display_name)}</div>
+          <div class="user-suggestion-id">@${escapeHtml(user.user_id)}</div>
+        </div>
+        <button class="follow-btn" onclick="window.alert('プロフィールへ遷移する処理などをここに実装')">
+          表示
+        </button>
+      `;
+      
+      // クリックしたらその人のプロフィールへ飛ぶなどの処理
+      userCard.addEventListener('click', () => {
+        // state.currentProfile = user; // 必要に応じて
+        // showProfile(user.id); // もし他人のプロフを見る機能があれば
+        console.log('選択されたユーザー:', user);
+      });
+
+      timeline.appendChild(userCard);
+    });
+
   }catch(error){
     console.error('検索エラー:',error);
   }
