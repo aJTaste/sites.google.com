@@ -3,6 +3,13 @@
 
 export const UPDATES=[
   {
+    version:"1.6.2",
+    date:"2026-02-10 15:13",
+    changes:[
+      "内部構造を改善しました",
+    ]
+  },
+  {
     version:"1.6.1",
     date:"2026-02-10 12:03",
     changes:[
