@@ -967,19 +967,18 @@ async function showProfile(){
       ?`<img src="${state.currentProfile.avatar_url}" alt="${state.currentProfile.display_name}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
       :`<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;background:${state.currentProfile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:32px;border-radius:50%;">${state.currentProfile.display_name.charAt(0).toUpperCase()}</div>`;
     
-    // フォロワー・フォロー中数を取得
-    const{data:followers}=await supabase
+    // 【修正】フォロワー・フォロー中数を取得 (dataではなくcountを直接取得する)
+    const{count:followersCount}=await supabase
       .from('follows')
-      .select('id',{count:'exact',head:true})
+      .select('*',{count:'exact',head:true})
       .eq('following_id',state.currentProfile.id);
     
-    const{data:following}=await supabase
+    const{count:followingCount}=await supabase
       .from('follows')
-      .select('id',{count:'exact',head:true})
+      .select('*',{count:'exact',head:true})
       .eq('follower_id',state.currentProfile.id);
     
-    const followersCount=followers?.length||0;
-    const followingCount=following?.length||0;
+    // 修正前の .length 計算コードは削除済み
     
     header.innerHTML=`
       <div style="display:flex;gap:20px;align-items:flex-start;">
@@ -989,8 +988,8 @@ async function showProfile(){
           <p style="color:var(--text-secondary);margin-bottom:12px;">@${state.currentProfile.user_id}</p>
           <div style="display:flex;gap:20px;font-size:14px;">
             <div><strong>${(posts||[]).length}</strong> <span style="color:var(--text-secondary);">投稿</span></div>
-            <div><strong>${followingCount}</strong> <span style="color:var(--text-secondary);">フォロー中</span></div>
-            <div><strong>${followersCount}</strong> <span style="color:var(--text-secondary);">フォロワー</span></div>
+            <div><strong>${followingCount||0}</strong> <span style="color:var(--text-secondary);">フォロー中</span></div>
+            <div><strong>${followersCount||0}</strong> <span style="color:var(--text-secondary);">フォロワー</span></div>
           </div>
         </div>
       </div>
