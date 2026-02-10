@@ -3,6 +3,13 @@
 
 export const UPDATES=[
   {
+    version:"1.6.1",
+    date:"2026-02-10 12:03",
+    changes:[
+      "aJTGateのフォロー中及びフォローワー数が正しく反映されない問題を修正しました。",
+    ]
+  },
+  {
     version:"1.6.0",
     date:"2026-02-09 21:33",
     changes:[
