@@ -656,26 +656,7 @@ export async function sendMessage(){
     let imageUrl=null;
     
     if(messageImage){
-      const fileName=`${state.currentProfile.id}_${Date.now()}.png`;
-      const base64Data=messageImage.split(',')[1];
-      const binaryData=atob(base64Data);
-      const bytes=new Uint8Array(binaryData.length);
-      for(let i=0;i<binaryData.length;i++){
-        bytes[i]=binaryData.charCodeAt(i);
-      }
-      const blob=new Blob([bytes],{type:'image/png'});
-      
-      const{error:uploadError}=await supabase.storage
-        .from('chat-images')
-        .upload(fileName,blob);
-      
-      if(uploadError)throw uploadError;
-      
-      const{data:urlData}=supabase.storage
-        .from('chat-images')
-        .getPublicUrl(fileName);
-      
-      imageUrl=urlData.publicUrl;
+      imageUrl=await uploadBase64ToCloudinary(messageImage,'chat');
     }
     
     const now=new Date().toISOString();

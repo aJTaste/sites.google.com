@@ -1,4 +1,5 @@
 import{initPage,supabase,getCurrentProfile}from'../common/core.js';
+import{uploadToCloudinary}from'../common/cloudinary.js';
 
 // ========================================
 // 状態管理
@@ -606,44 +607,33 @@ function removeMedia(index){
 
 async function submitPost(){
   const text=document.getElementById('post-text').value.trim();
-  
+
   if(!text&&state.mediaFiles.length===0){
     alert('テキストまたはメディアを入力してください');
     return;
   }
-  
+
   if(text.length>280){
     alert('テキストは280文字以内にしてください');
     return;
   }
-  
+
   const submitBtn=document.getElementById('post-submit');
   submitBtn.disabled=true;
   submitBtn.textContent='投稿中...';
-  
+
   try{
     let mediaUrls=[];
     let mediaTypes=[];
-    
-    // メディアアップロード
+
+    // ★ Cloudinaryにアップロード（Supabase Storageから変更）
     for(const file of state.mediaFiles){
-      const fileName=`${state.currentProfile.id}_${Date.now()}_${Math.random().toString(36).substr(2,9)}`;
-      const fileExt=file.name.split('.').pop();
-      
-      const{error:uploadError}=await supabase.storage
-        .from('gate-media')
-        .upload(`${fileName}.${fileExt}`,file);
-      
-      if(uploadError)throw uploadError;
-      
-      const{data:urlData}=supabase.storage
-        .from('gate-media')
-        .getPublicUrl(`${fileName}.${fileExt}`);
-      
-      mediaUrls.push(urlData.publicUrl);
-      mediaTypes.push(file.type.startsWith('video')?'video':'image');
+      const type=file.type.startsWith('video')?'video':'image';
+      const url=await uploadToCloudinary(file,'gate');
+      mediaUrls.push(url);
+      mediaTypes.push(type);
     }
-    
+
     // 投稿作成
     const{error}=await supabase
       .from('posts')
@@ -653,9 +643,9 @@ async function submitPost(){
         media_urls:mediaUrls.length>0?mediaUrls:null,
         media_types:mediaTypes.length>0?mediaTypes:null
       });
-    
+
     if(error)throw error;
-    
+
     closePostModal();
     loadPosts();
   }catch(error){
