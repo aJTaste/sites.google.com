@@ -3,6 +3,13 @@
 
 export const UPDATES=[
   {
+    version:"1.6.4",
+    date:"2026-02-10 20:29",
+    changes:[
+      "aJTGateの未実装機能を正式に実装しました。"
+    ]
+  },
+  {
     version:"1.6.3",
     date:"2026-02-10 16:32",
     changes:[

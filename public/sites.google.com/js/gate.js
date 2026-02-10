@@ -16,7 +16,9 @@ const state={
   isLoading:false,
   explorePosts:[],
   userPosts:[],
-  userProfile:null
+  userProfile:null,
+  searchQuery:'',
+  viewingUserId:null
 };
 
 // ========================================
@@ -26,16 +28,12 @@ const state={
 await initPage('gate','aJTGate',{
   onUserLoaded:async(profile)=>{
     state.currentProfile=profile;
-    
-    // 初期データ読み込み
+
     await loadPosts();
     await loadSuggestedUsers();
     await loadNotifications();
-    
-    // リアルタイム監視
+
     subscribeToUpdates();
-    
-    // イベントリスナー設定
     setupEventListeners();
   }
 });
@@ -45,60 +43,59 @@ await initPage('gate','aJTGate',{
 // ========================================
 
 function setupEventListeners(){
-  // ナビゲーション
   document.querySelectorAll('.gate-nav-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       const view=btn.dataset.view;
       switchView(view);
     });
   });
-  
-  // タブ切り替え
+
   document.querySelectorAll('.gate-tab').forEach(tab=>{
     tab.addEventListener('click',()=>{
       const feed=tab.dataset.feed;
       switchFeed(feed);
     });
   });
-  
-  // 投稿モーダル
+
   document.getElementById('new-post-btn').addEventListener('click',openPostModal);
   document.getElementById('post-modal-close').addEventListener('click',closePostModal);
   document.getElementById('post-cancel').addEventListener('click',closePostModal);
   document.getElementById('add-media-btn').addEventListener('click',()=>{
     document.getElementById('media-input').click();
   });
-  
-  // メディアアップロード
+
   document.getElementById('media-input').addEventListener('change',handleMediaSelect);
-  
-  // 文字数カウント
+
   document.getElementById('post-text').addEventListener('input',(e)=>{
     const remaining=280-e.target.value.length;
     const countEl=document.getElementById('char-count');
     countEl.textContent=remaining;
     countEl.style.color=remaining<0?'#cf222e':remaining<20?'#f97316':'var(--text-tertiary)';
   });
-  
-  // 投稿送信
+
   document.getElementById('post-submit').addEventListener('click',submitPost);
-  
-  // 詳細モーダル
+
   document.getElementById('detail-modal-close').addEventListener('click',()=>{
     document.getElementById('detail-modal').classList.remove('show');
   });
-  
+
   // 検索
   const searchInput=document.getElementById('search-input');
   let searchTimeout;
   searchInput.addEventListener('input',(e)=>{
+    const query=e.target.value.trim();
+    state.searchQuery=query;
     clearTimeout(searchTimeout);
+    if(query===''){
+      // 検索クリア → 元の表示に戻す
+      restoreCurrentView();
+      return;
+    }
     searchTimeout=setTimeout(()=>{
-      handleSearch(e.target.value.trim());
+      handleSearch(query);
     },300);
   });
-  
-  // モーダル外クリック
+
   document.querySelectorAll('.gate-modal').forEach(modal=>{
     modal.addEventListener('click',(e)=>{
       if(e.target===modal){
@@ -109,78 +106,288 @@ function setupEventListeners(){
 }
 
 // ========================================
+// 現在のビューを再表示
+// ========================================
+
+function restoreCurrentView(){
+  if(state.currentView==='home'){
+    loadPosts();
+  }else if(state.currentView==='explore'){
+    showExplore();
+  }else if(state.currentView==='notifications'){
+    showNotifications();
+  }else if(state.currentView==='profile'){
+    if(state.viewingUserId&&state.viewingUserId!==state.currentProfile.id){
+      showUserProfile(state.viewingUserId);
+    }else{
+      showProfile();
+    }
+  }
+}
+
+// ========================================
 // 検索機能
 // ========================================
 
 async function handleSearch(query){
-  if(!query) return; // 空なら何もしない（あるいは結果をクリアする処理を入れても良い）
-  
+  const timeline=document.getElementById('timeline');
+  timeline.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>検索中...</p></div>';
+
   try{
-    // 検索クエリ実行
-    const{data:users,error}=await supabase
+    // ユーザー検索
+    const{data:users,error:userErr}=await supabase
       .from('profiles')
       .select('*')
       .or(`display_name.ilike.%${query}%,user_id.ilike.%${query}%`)
       .limit(10);
-    
-    if(error)throw error;
-    
-    console.log('検索結果:', users);
 
-    // ---------------------------------------------------
-    // 【追加】ここから画面表示処理
-    // ---------------------------------------------------
-    
-    // 検索結果を表示する場所を取得（例: timelineを一時的に検索結果にする、または専用のdivを用意する）
-    // ここでは既存の timeline を利用して表示する例を書きます
-    const timeline = document.getElementById('timeline');
-    timeline.innerHTML = ''; // 一旦クリア
-    
-    // ヘッダーを表示
-    const header = document.createElement('h3');
-    header.style.padding = '16px';
-    header.textContent = `"${query}" の検索結果`;
+    if(userErr)throw userErr;
+
+    // 投稿検索
+    const{data:posts,error:postErr}=await supabase
+      .from('posts')
+      .select(`
+        *,
+        profiles!posts_user_id_fkey(id,user_id,display_name,avatar_url,avatar_color),
+        likes(count),
+        comments(count),
+        reposts(count)
+      `)
+      .ilike('text',`%${query}%`)
+      .order('created_at',{ascending:false})
+      .limit(20);
+
+    if(postErr)throw postErr;
+
+    timeline.innerHTML='';
+
+    // 検索ヘッダー
+    const header=document.createElement('div');
+    header.style.cssText='padding:14px 18px;font-size:15px;font-weight:700;color:var(--text-primary);border-bottom:1px solid var(--border);background:var(--bg-primary);';
+    header.textContent=`"${query}" の検索結果`;
     timeline.appendChild(header);
 
-    if(!users || users.length === 0){
-      timeline.innerHTML += '<div class="timeline-loading"><p>ユーザーが見つかりませんでした</p></div>';
+    const hasUsers=users&&users.length>0;
+    const hasPosts=posts&&posts.length>0;
+
+    if(!hasUsers&&!hasPosts){
+      const empty=document.createElement('div');
+      empty.className='timeline-loading';
+      empty.innerHTML='<p>検索結果がありません</p>';
+      timeline.appendChild(empty);
       return;
     }
 
-    // ユーザーリストを表示
-    users.forEach(user => {
-      const userCard = document.createElement('div');
-      userCard.className = 'user-suggestion'; // 既存のCSSクラスを流用
-      userCard.style.padding = '16px';
-      userCard.style.borderBottom = '1px solid var(--border)';
+    // ユーザー結果
+    if(hasUsers){
+      const sectionTitle=document.createElement('div');
+      sectionTitle.style.cssText='padding:10px 18px;font-size:13px;font-weight:700;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border);';
+      sectionTitle.textContent='ユーザー';
+      timeline.appendChild(sectionTitle);
 
-      const avatarHtml = user.avatar_url
-        ? `<img src="${user.avatar_url}" alt="${user.display_name}">`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${user.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${user.display_name.charAt(0).toUpperCase()}</div>`;
-
-      userCard.innerHTML = `
-        <div class="user-suggestion-avatar" style="width:40px;height:40px;">${avatarHtml}</div>
-        <div class="user-suggestion-info">
-          <div class="user-suggestion-name">${escapeHtml(user.display_name)}</div>
-          <div class="user-suggestion-id">@${escapeHtml(user.user_id)}</div>
-        </div>
-        <button class="follow-btn" onclick="window.alert('プロフィールへ遷移する処理などをここに実装')">
-          表示
-        </button>
-      `;
-      
-      // クリックしたらその人のプロフィールへ飛ぶなどの処理
-      userCard.addEventListener('click', () => {
-        // state.currentProfile = user; // 必要に応じて
-        // showProfile(user.id); // もし他人のプロフを見る機能があれば
-        console.log('選択されたユーザー:', user);
+      users.forEach(user=>{
+        const item=createUserSearchCard(user);
+        timeline.appendChild(item);
       });
+    }
 
-      timeline.appendChild(userCard);
-    });
+    // 投稿結果
+    if(hasPosts){
+      const sectionTitle=document.createElement('div');
+      sectionTitle.style.cssText='padding:10px 18px;font-size:13px;font-weight:700;color:var(--text-secondary);background:var(--bg-secondary);border-bottom:1px solid var(--border);';
+      sectionTitle.textContent='投稿';
+      timeline.appendChild(sectionTitle);
+
+      posts.forEach(post=>{
+        const postEl=createPostCard(post);
+        timeline.appendChild(postEl);
+      });
+    }
 
   }catch(error){
     console.error('検索エラー:',error);
+    timeline.innerHTML='<div class="timeline-loading"><p>検索に失敗しました</p></div>';
+  }
+}
+
+// ユーザー検索カード
+function createUserSearchCard(user){
+  const item=document.createElement('div');
+  item.className='post-card';
+  item.style.cursor='pointer';
+
+  const avatarHtml=user.avatar_url
+    ?`<img src="${user.avatar_url}" alt="${user.display_name}">`
+    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${user.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${user.display_name.charAt(0).toUpperCase()}</div>`;
+
+  const isSelf=user.id===state.currentProfile.id;
+
+  item.innerHTML=`
+    <div style="display:flex;align-items:center;gap:14px;">
+      <div style="width:48px;height:48px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bg-secondary);">${avatarHtml}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:16px;font-weight:700;color:var(--text-primary);">${escapeHtml(user.display_name)}</div>
+        <div style="font-size:14px;color:var(--text-secondary);">@${escapeHtml(user.user_id)}</div>
+      </div>
+      ${!isSelf?`<button class="follow-btn" data-user-id="${user.id}" style="flex-shrink:0;">フォロー</button>`:''}
+    </div>
+  `;
+
+  // フォローボタン
+  if(!isSelf){
+    const followBtn=item.querySelector('.follow-btn');
+    // フォロー状態を非同期で確認
+    checkFollowStatus(user.id).then(isFollowing=>{
+      if(isFollowing){
+        followBtn.textContent='フォロー中';
+        followBtn.classList.add('following');
+      }
+    });
+    followBtn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      toggleFollow(user.id,followBtn);
+    });
+  }
+
+  // カードクリックでプロフィール表示
+  item.addEventListener('click',(e)=>{
+    if(!e.target.closest('.follow-btn')){
+      showUserProfile(user.id);
+    }
+  });
+
+  return item;
+}
+
+// フォロー状態確認
+async function checkFollowStatus(userId){
+  const{data}=await supabase
+    .from('follows')
+    .select('id')
+    .eq('follower_id',state.currentProfile.id)
+    .eq('following_id',userId)
+    .maybeSingle();
+  return!!data;
+}
+
+// ========================================
+// 他ユーザーのプロフィール表示
+// ========================================
+
+async function showUserProfile(userId){
+  state.viewingUserId=userId;
+  const timeline=document.getElementById('timeline');
+  timeline.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>読み込み中...</p></div>';
+
+  // ナビをprofileにする（視覚的に切り替え）
+  document.querySelectorAll('.gate-nav-btn').forEach(btn=>{
+    btn.classList.toggle('active',btn.dataset.view==='profile');
+  });
+
+  try{
+    const{data:profile,error:profileErr}=await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id',userId)
+      .single();
+
+    if(profileErr)throw profileErr;
+
+    const{data:posts,error:postsErr}=await supabase
+      .from('posts')
+      .select(`
+        *,
+        profiles!posts_user_id_fkey(id,user_id,display_name,avatar_url,avatar_color),
+        likes(count),
+        comments(count),
+        reposts(count)
+      `)
+      .eq('user_id',userId)
+      .order('created_at',{ascending:false})
+      .limit(50);
+
+    if(postsErr)throw postsErr;
+
+    const{count:followersCount}=await supabase
+      .from('follows')
+      .select('*',{count:'exact',head:true})
+      .eq('following_id',userId);
+
+    const{count:followingCount}=await supabase
+      .from('follows')
+      .select('*',{count:'exact',head:true})
+      .eq('follower_id',userId);
+
+    const isFollowing=await checkFollowStatus(userId);
+    const isSelf=userId===state.currentProfile.id;
+
+    const avatarHtml=profile.avatar_url
+      ?`<img src="${profile.avatar_url}" alt="${profile.display_name}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
+      :`<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;background:${profile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:32px;border-radius:50%;">${profile.display_name.charAt(0).toUpperCase()}</div>`;
+
+    timeline.innerHTML='';
+
+    const header=document.createElement('div');
+    header.style.cssText='padding:20px 18px;background:var(--bg-primary);border-bottom:1px solid var(--border);';
+
+    header.innerHTML=`
+      <div style="display:flex;gap:20px;align-items:flex-start;">
+        ${avatarHtml}
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <h2 style="font-size:22px;font-weight:700;">${escapeHtml(profile.display_name)}</h2>
+            ${!isSelf?`<button class="follow-btn${isFollowing?' following':''}" id="profile-follow-btn" data-user-id="${userId}">${isFollowing?'フォロー中':'フォロー'}</button>`:'<span style="padding:6px 14px;background:var(--bg-secondary);border:1px solid var(--border);border-radius:18px;font-size:13px;font-weight:600;color:var(--text-secondary);">自分</span>'}
+          </div>
+          <p style="color:var(--text-secondary);font-size:14px;margin-bottom:12px;">@${escapeHtml(profile.user_id)}</p>
+          <div style="display:flex;gap:20px;font-size:14px;">
+            <div><strong>${(posts||[]).length}</strong> <span style="color:var(--text-secondary);">投稿</span></div>
+            <div><strong>${followingCount||0}</strong> <span style="color:var(--text-secondary);">フォロー中</span></div>
+            <div><strong>${followersCount||0}</strong> <span style="color:var(--text-secondary);">フォロワー</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    timeline.appendChild(header);
+
+    // フォローボタンのイベント
+    const followBtn=header.querySelector('#profile-follow-btn');
+    if(followBtn){
+      followBtn.addEventListener('click',()=>{
+        toggleFollow(userId,followBtn);
+      });
+    }
+
+    // 戻るボタン
+    if(state.searchQuery){
+      const backBtn=document.createElement('button');
+      backBtn.style.cssText='margin:12px 18px;display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--bg-primary);border:1px solid var(--border);border-radius:18px;font-size:13px;font-weight:600;color:var(--text-secondary);cursor:pointer;';
+      backBtn.innerHTML='<span class="material-symbols-outlined" style="font-size:16px;">arrow_back</span>検索結果に戻る';
+      backBtn.addEventListener('click',()=>{
+        handleSearch(state.searchQuery);
+      });
+      timeline.insertBefore(backBtn,header);
+      timeline.removeChild(backBtn);
+      timeline.appendChild(backBtn);
+      // headerの後に挿入
+      header.insertAdjacentElement('afterend',backBtn);
+    }
+
+    if(posts&&posts.length>0){
+      posts.forEach(post=>{
+        const postEl=createPostCard(post);
+        timeline.appendChild(postEl);
+      });
+    }else{
+      const empty=document.createElement('div');
+      empty.className='timeline-loading';
+      empty.innerHTML='<p>まだ投稿がありません</p>';
+      timeline.appendChild(empty);
+    }
+
+  }catch(error){
+    console.error('プロフィール読み込みエラー:',error);
+    timeline.innerHTML='<div class="timeline-loading"><p>読み込みに失敗しました</p></div>';
   }
 }
 
@@ -190,11 +397,17 @@ async function handleSearch(query){
 
 function switchView(view){
   state.currentView=view;
-  
+  state.viewingUserId=null;
+
+  // 検索クリア
+  const searchInput=document.getElementById('search-input');
+  if(searchInput)searchInput.value='';
+  state.searchQuery='';
+
   document.querySelectorAll('.gate-nav-btn').forEach(btn=>{
     btn.classList.toggle('active',btn.dataset.view===view);
   });
-  
+
   if(view==='home'){
     loadPosts();
   }else if(view==='explore'){
@@ -208,11 +421,11 @@ function switchView(view){
 
 function switchFeed(feed){
   state.currentFeed=feed;
-  
+
   document.querySelectorAll('.gate-tab').forEach(tab=>{
     tab.classList.toggle('active',tab.dataset.feed===feed);
   });
-  
+
   loadPosts();
 }
 
@@ -223,10 +436,10 @@ function switchFeed(feed){
 async function loadPosts(){
   if(state.isLoading)return;
   state.isLoading=true;
-  
+
   const timeline=document.getElementById('timeline');
   timeline.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>読み込み中...</p></div>';
-  
+
   try{
     let query=supabase
       .from('posts')
@@ -239,28 +452,27 @@ async function loadPosts(){
       `)
       .order('created_at',{ascending:false})
       .limit(50);
-    
-    // フォロー中フィルター
+
     if(state.currentFeed==='following'){
       const{data:following}=await supabase
         .from('follows')
         .select('following_id')
         .eq('follower_id',state.currentProfile.id);
-      
+
       const followingIds=following?.map(f=>f.following_id)||[];
       if(followingIds.length===0){
         timeline.innerHTML='<div class="timeline-loading"><p>フォロー中のユーザーがいません</p></div>';
         state.isLoading=false;
         return;
       }
-      
+
       query=query.in('user_id',followingIds);
     }
-    
+
     const{data:posts,error}=await query;
-    
+
     if(error)throw error;
-    
+
     state.posts=posts||[];
     displayPosts(posts||[]);
   }catch(error){
@@ -273,14 +485,14 @@ async function loadPosts(){
 
 function displayPosts(posts){
   const timeline=document.getElementById('timeline');
-  
+
   if(posts.length===0){
     timeline.innerHTML='<div class="timeline-loading"><p>投稿がありません</p></div>';
     return;
   }
-  
+
   timeline.innerHTML='';
-  
+
   posts.forEach(post=>{
     const postEl=createPostCard(post);
     timeline.appendChild(postEl);
@@ -291,27 +503,25 @@ function createPostCard(post){
   const card=document.createElement('div');
   card.className='post-card';
   card.dataset.postId=post.id;
-  
+
   const profile=post.profiles;
   const avatarHtml=profile?.avatar_url
     ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
     :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
-  
+
   const timeAgo=getTimeAgo(post.created_at);
-  
-  // いいね・リポスト・コメント数
+
   const likesCount=post.likes?.[0]?.count||0;
   const repostsCount=post.reposts?.[0]?.count||0;
   const commentsCount=post.comments?.[0]?.count||0;
-  
-  // メディア表示
+
   let mediaHtml='';
   if(post.media_urls&&post.media_urls.length>0){
     const mediaClass=post.media_urls.length===1?'single'
       :post.media_urls.length===2?'double'
       :post.media_urls.length===3?'triple'
       :'quad';
-    
+
     mediaHtml=`<div class="post-media ${mediaClass}">`;
     post.media_urls.forEach((url,i)=>{
       const type=post.media_types?.[i]||'image';
@@ -323,13 +533,13 @@ function createPostCard(post){
     });
     mediaHtml+='</div>';
   }
-  
+
   card.innerHTML=`
     <div class="post-header">
-      <div class="post-avatar">${avatarHtml}</div>
+      <div class="post-avatar" style="cursor:pointer;" data-user-id="${profile?.id||''}">${avatarHtml}</div>
       <div class="post-author-info">
         <div>
-          <span class="post-author-name">${profile?.display_name||'不明'}</span>
+          <span class="post-author-name" style="cursor:pointer;" data-user-id="${profile?.id||''}">${profile?.display_name||'不明'}</span>
           <span class="post-author-id">@${profile?.user_id||'unknown'}</span>
           <span class="post-time">${timeAgo}</span>
         </div>
@@ -354,33 +564,40 @@ function createPostCard(post){
       </button>
     </div>
   `;
-  
-  // イベントリスナー
+
+  // アバター・名前クリックでプロフィール表示
+  card.querySelectorAll('[data-user-id]').forEach(el=>{
+    el.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      const uid=el.dataset.userId;
+      if(uid)showUserProfile(uid);
+    });
+  });
+
   card.addEventListener('click',(e)=>{
-    if(!e.target.closest('.post-action-btn')){
+    if(!e.target.closest('.post-action-btn')&&!e.target.closest('[data-user-id]')){
       openPostDetail(post.id);
     }
   });
-  
-  // アクションボタン
+
   const likeBtn=card.querySelector('.like-btn');
   likeBtn.addEventListener('click',(e)=>{
     e.stopPropagation();
     toggleLike(post.id);
   });
-  
+
   const repostBtn=card.querySelector('.repost-btn');
   repostBtn.addEventListener('click',(e)=>{
     e.stopPropagation();
     toggleRepost(post.id);
   });
-  
+
   const commentBtn=card.querySelector('.comment-btn');
   commentBtn.addEventListener('click',(e)=>{
     e.stopPropagation();
     openPostDetail(post.id);
   });
-  
+
   return card;
 }
 
@@ -391,10 +608,10 @@ function createPostCard(post){
 async function openPostDetail(postId){
   const modal=document.getElementById('detail-modal');
   const body=document.getElementById('detail-modal-body');
-  
+
   body.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>読み込み中...</p></div>';
   modal.classList.add('show');
-  
+
   try{
     const{data:post,error}=await supabase
       .from('posts')
@@ -404,9 +621,9 @@ async function openPostDetail(postId){
       `)
       .eq('id',postId)
       .single();
-    
+
     if(error)throw error;
-    
+
     const{data:comments}=await supabase
       .from('comments')
       .select(`
@@ -415,23 +632,21 @@ async function openPostDetail(postId){
       `)
       .eq('post_id',postId)
       .order('created_at',{ascending:true});
-    
+
     body.innerHTML='';
-    
-    // 投稿本体
+
     const postCard=createPostCard(post);
     postCard.style.borderBottom='none';
     postCard.style.cursor='default';
     body.appendChild(postCard);
-    
-    // コメントセクション
+
     const commentsSection=document.createElement('div');
     commentsSection.className='comments-section';
-    
+
     const currentAvatarHtml=state.currentProfile.avatar_url
       ?`<img src="${state.currentProfile.avatar_url}" alt="${state.currentProfile.display_name}">`
       :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${state.currentProfile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${state.currentProfile.display_name.charAt(0).toUpperCase()}</div>`;
-    
+
     commentsSection.innerHTML=`
       <h4>コメント</h4>
       <div class="comment-input-container">
@@ -443,17 +658,15 @@ async function openPostDetail(postId){
       </div>
       <div id="comments-list"></div>
     `;
-    
+
     body.appendChild(commentsSection);
-    
-    // コメント表示
+
     const commentsList=document.getElementById('comments-list');
     (comments||[]).forEach(comment=>{
       const commentCard=createCommentCard(comment);
       commentsList.appendChild(commentCard);
     });
-    
-    // コメント送信
+
     document.getElementById('comment-submit-btn').addEventListener('click',()=>{
       submitComment(postId);
     });
@@ -466,14 +679,14 @@ async function openPostDetail(postId){
 function createCommentCard(comment){
   const card=document.createElement('div');
   card.className='comment-card';
-  
+
   const profile=comment.profiles;
   const avatarHtml=profile?.avatar_url
     ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
     :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:14px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
-  
+
   const timeAgo=getTimeAgo(comment.created_at);
-  
+
   card.innerHTML=`
     <div class="comment-avatar">${avatarHtml}</div>
     <div class="comment-content">
@@ -482,20 +695,20 @@ function createCommentCard(comment){
       <div class="comment-time">${timeAgo}</div>
     </div>
   `;
-  
+
   return card;
 }
 
 async function submitComment(postId){
   const input=document.getElementById('comment-input');
   const text=input.value.trim();
-  
+
   if(!text)return;
-  
+
   const submitBtn=document.getElementById('comment-submit-btn');
   submitBtn.disabled=true;
   submitBtn.textContent='送信中...';
-  
+
   try{
     const{error}=await supabase
       .from('comments')
@@ -504,23 +717,21 @@ async function submitComment(postId){
         user_id:state.currentProfile.id,
         text:text
       });
-    
+
     if(error)throw error;
-    
+
     input.value='';
-    
-    // 通知を作成
+
     const{data:post}=await supabase
       .from('posts')
       .select('user_id')
       .eq('id',postId)
       .single();
-    
+
     if(post?.user_id&&post.user_id!==state.currentProfile.id){
       await createNotification(post.user_id,'comment',postId);
     }
-    
-    // 再読み込み
+
     openPostDetail(postId);
   }catch(error){
     console.error('コメント投稿エラー:',error);
@@ -550,21 +761,20 @@ function closePostModal(){
 
 function handleMediaSelect(e){
   const files=Array.from(e.target.files);
-  
+
   if(state.mediaFiles.length+files.length>4){
     alert('メディアは最大4つまでです');
     return;
   }
-  
+
   files.forEach(file=>{
     if(file.size>20*1024*1024){
       alert(`${file.name}のファイルサイズは20MB以下にしてください`);
       return;
     }
-    
     state.mediaFiles.push(file);
   });
-  
+
   displayMediaPreview();
   e.target.value='';
 }
@@ -572,13 +782,13 @@ function handleMediaSelect(e){
 function displayMediaPreview(){
   const preview=document.getElementById('post-media-preview');
   preview.innerHTML='';
-  
+
   state.mediaFiles.forEach((file,index)=>{
     const reader=new FileReader();
     reader.onload=(e)=>{
       const item=document.createElement('div');
       item.className='media-preview-item';
-      
+
       const isVideo=file.type.startsWith('video');
       item.innerHTML=`
         ${isVideo
@@ -589,11 +799,11 @@ function displayMediaPreview(){
           <span class="material-symbols-outlined">close</span>
         </button>
       `;
-      
+
       item.querySelector('.media-preview-remove').addEventListener('click',()=>{
         removeMedia(index);
       });
-      
+
       preview.appendChild(item);
     };
     reader.readAsDataURL(file);
@@ -626,7 +836,6 @@ async function submitPost(){
     let mediaUrls=[];
     let mediaTypes=[];
 
-    // ★ Cloudinaryにアップロード（Supabase Storageから変更）
     for(const file of state.mediaFiles){
       const type=file.type.startsWith('video')?'video':'image';
       const url=await uploadToCloudinary(file,'gate');
@@ -634,7 +843,6 @@ async function submitPost(){
       mediaTypes.push(type);
     }
 
-    // 投稿作成
     const{error}=await supabase
       .from('posts')
       .insert({
@@ -668,7 +876,7 @@ async function toggleLike(postId){
       .eq('post_id',postId)
       .eq('user_id',state.currentProfile.id)
       .maybeSingle();
-    
+
     if(existing){
       await supabase.from('likes').delete().eq('id',existing.id);
     }else{
@@ -676,19 +884,18 @@ async function toggleLike(postId){
         post_id:postId,
         user_id:state.currentProfile.id
       });
-      
-      // 通知作成
+
       const{data:post}=await supabase
         .from('posts')
         .select('user_id')
         .eq('id',postId)
         .single();
-      
+
       if(post?.user_id&&post.user_id!==state.currentProfile.id){
         await createNotification(post.user_id,'like',postId);
       }
     }
-    
+
     loadPosts();
   }catch(error){
     console.error('いいねエラー:',error);
@@ -703,7 +910,7 @@ async function toggleRepost(postId){
       .eq('post_id',postId)
       .eq('user_id',state.currentProfile.id)
       .maybeSingle();
-    
+
     if(existing){
       await supabase.from('reposts').delete().eq('id',existing.id);
     }else{
@@ -711,19 +918,18 @@ async function toggleRepost(postId){
         post_id:postId,
         user_id:state.currentProfile.id
       });
-      
-      // 通知作成
+
       const{data:post}=await supabase
         .from('posts')
         .select('user_id')
         .eq('id',postId)
         .single();
-      
+
       if(post?.user_id&&post.user_id!==state.currentProfile.id){
         await createNotification(post.user_id,'repost',postId);
       }
     }
-    
+
     loadPosts();
   }catch(error){
     console.error('リポストエラー:',error);
@@ -741,31 +947,23 @@ async function loadSuggestedUsers(){
       .select('*')
       .neq('id',state.currentProfile.id)
       .limit(5);
-    
+
     const suggestedUsersEl=document.getElementById('suggested-users');
     suggestedUsersEl.innerHTML='';
-    
+
     for(const user of users||[]){
       const item=document.createElement('div');
       item.className='user-suggestion';
-      
+
       const avatarHtml=user.avatar_url
         ?`<img src="${user.avatar_url}" alt="${user.display_name}">`
         :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${user.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${user.display_name.charAt(0).toUpperCase()}</div>`;
-      
-      // フォロー状態チェック
-      const{data:followStatus}=await supabase
-        .from('follows')
-        .select('id')
-        .eq('follower_id',state.currentProfile.id)
-        .eq('following_id',user.id)
-        .maybeSingle();
-      
-      const isFollowing=!!followStatus;
-      
+
+      const isFollowing=await checkFollowStatus(user.id);
+
       item.innerHTML=`
-        <div class="user-suggestion-avatar">${avatarHtml}</div>
-        <div class="user-suggestion-info">
+        <div class="user-suggestion-avatar" style="cursor:pointer;" data-user-id="${user.id}">${avatarHtml}</div>
+        <div class="user-suggestion-info" style="cursor:pointer;" data-user-id="${user.id}">
           <div class="user-suggestion-name">${user.display_name}</div>
           <div class="user-suggestion-id">@${user.user_id}</div>
         </div>
@@ -773,11 +971,20 @@ async function loadSuggestedUsers(){
           ${isFollowing?'フォロー中':'フォロー'}
         </button>
       `;
-      
-      item.querySelector('.follow-btn').addEventListener('click',()=>{
-        toggleFollow(user.id);
+
+      item.querySelectorAll('[data-user-id]').forEach(el=>{
+        el.addEventListener('click',(e)=>{
+          if(!e.target.closest('.follow-btn')){
+            showUserProfile(user.id);
+          }
+        });
       });
-      
+
+      item.querySelector('.follow-btn').addEventListener('click',(e)=>{
+        e.stopPropagation();
+        toggleFollow(user.id,e.currentTarget);
+      });
+
       suggestedUsersEl.appendChild(item);
     }
   }catch(error){
@@ -785,7 +992,7 @@ async function loadSuggestedUsers(){
   }
 }
 
-async function toggleFollow(userId){
+async function toggleFollow(userId,btn){
   try{
     const{data:existing}=await supabase
       .from('follows')
@@ -793,20 +1000,29 @@ async function toggleFollow(userId){
       .eq('follower_id',state.currentProfile.id)
       .eq('following_id',userId)
       .maybeSingle();
-    
+
     if(existing){
       await supabase.from('follows').delete().eq('id',existing.id);
+      if(btn){
+        btn.textContent='フォロー';
+        btn.classList.remove('following');
+      }
     }else{
       await supabase.from('follows').insert({
         follower_id:state.currentProfile.id,
         following_id:userId
       });
-      
-      // 通知作成
+      if(btn){
+        btn.textContent='フォロー中';
+        btn.classList.add('following');
+      }
       await createNotification(userId,'follow',null);
     }
-    
-    loadSuggestedUsers();
+
+    // おすすめユーザーを更新（プロフィール画面でなければ）
+    if(!state.viewingUserId){
+      loadSuggestedUsers();
+    }
   }catch(error){
     console.error('フォローエラー:',error);
   }
@@ -840,7 +1056,7 @@ async function loadNotifications(){
       .eq('user_id',state.currentProfile.id)
       .order('created_at',{ascending:false})
       .limit(50);
-    
+
     state.notifications=notifications||[];
     updateNotificationBadge();
   }catch(error){
@@ -851,7 +1067,7 @@ async function loadNotifications(){
 function updateNotificationBadge(){
   const unreadCount=state.notifications.filter(n=>!n.is_read).length;
   const badge=document.getElementById('notif-badge');
-  
+
   if(unreadCount>0){
     badge.textContent=unreadCount>99?'99+':unreadCount;
     badge.style.display='flex';
@@ -863,28 +1079,28 @@ function updateNotificationBadge(){
 function showNotifications(){
   const timeline=document.getElementById('timeline');
   timeline.innerHTML='';
-  
+
   if(state.notifications.length===0){
     timeline.innerHTML='<div class="timeline-loading"><p>通知はありません</p></div>';
     return;
   }
-  
+
   state.notifications.forEach(notif=>{
     const card=document.createElement('div');
     card.className='post-card';
-    
+
     const profile=notif.profiles;
     const avatarHtml=profile?.avatar_url
       ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
       :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
-    
+
     const typeText=notif.type==='like'?'があなたの投稿にいいねしました'
       :notif.type==='comment'?'があなたの投稿にコメントしました'
       :notif.type==='repost'?'があなたの投稿をリポストしました'
       :'があなたをフォローしました';
-    
+
     const timeAgo=getTimeAgo(notif.created_at);
-    
+
     card.innerHTML=`
       <div class="post-header">
         <div class="post-avatar">${avatarHtml}</div>
@@ -897,18 +1113,17 @@ function showNotifications(){
         </div>
       </div>
     `;
-    
+
     if(notif.post_id){
       card.style.cursor='pointer';
       card.addEventListener('click',()=>{
         openPostDetail(notif.post_id);
       });
     }
-    
+
     timeline.appendChild(card);
   });
-  
-  // 既読にする
+
   markNotificationsAsRead();
 }
 
@@ -917,19 +1132,19 @@ async function markNotificationsAsRead(){
     const unreadIds=state.notifications
       .filter(n=>!n.is_read)
       .map(n=>n.id);
-    
+
     if(unreadIds.length>0){
       await supabase
         .from('notifications')
         .update({is_read:true})
         .in('id',unreadIds);
-      
+
       state.notifications.forEach(n=>{
         if(unreadIds.includes(n.id)){
           n.is_read=true;
         }
       });
-      
+
       updateNotificationBadge();
     }
   }catch(error){
@@ -944,9 +1159,8 @@ async function markNotificationsAsRead(){
 async function showExplore(){
   const timeline=document.getElementById('timeline');
   timeline.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>読み込み中...</p></div>';
-  
+
   try{
-    // 人気の投稿を取得（いいね数でソート）
     const{data:posts,error}=await supabase
       .from('posts')
       .select(`
@@ -958,16 +1172,15 @@ async function showExplore(){
       `)
       .order('created_at',{ascending:false})
       .limit(30);
-    
+
     if(error)throw error;
-    
-    // いいね数でソート
+
     const sortedPosts=(posts||[]).sort((a,b)=>{
       const aLikes=a.likes?.[0]?.count||0;
       const bLikes=b.likes?.[0]?.count||0;
       return bLikes-aLikes;
     });
-    
+
     state.explorePosts=sortedPosts;
     displayPosts(sortedPosts);
   }catch(error){
@@ -977,87 +1190,12 @@ async function showExplore(){
 }
 
 // ========================================
-// プロフィール画面
+// 自分のプロフィール画面
 // ========================================
 
 async function showProfile(){
-  const timeline=document.getElementById('timeline');
-  timeline.innerHTML='<div class="timeline-loading"><div class="loading-spinner"></div><p>読み込み中...</p></div>';
-  
-  try{
-    // 自分の投稿を取得
-    const{data:posts,error}=await supabase
-      .from('posts')
-      .select(`
-        *,
-        profiles!posts_user_id_fkey(id,user_id,display_name,avatar_url,avatar_color),
-        likes(count),
-        comments(count),
-        reposts(count)
-      `)
-      .eq('user_id',state.currentProfile.id)
-      .order('created_at',{ascending:false})
-      .limit(50);
-    
-    if(error)throw error;
-    
-    // プロフィールヘッダーを作成
-    const header=document.createElement('div');
-    header.className='profile-header';
-    header.style.cssText='padding:24px;background:var(--bg-primary);border-bottom:1px solid var(--border);margin-bottom:16px;';
-    
-    const avatarHtml=state.currentProfile.avatar_url
-      ?`<img src="${state.currentProfile.avatar_url}" alt="${state.currentProfile.display_name}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-      :`<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;background:${state.currentProfile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:32px;border-radius:50%;">${state.currentProfile.display_name.charAt(0).toUpperCase()}</div>`;
-    
-    // 【修正】フォロワー・フォロー中数を取得 (dataではなくcountを直接取得する)
-    const{count:followersCount}=await supabase
-      .from('follows')
-      .select('*',{count:'exact',head:true})
-      .eq('following_id',state.currentProfile.id);
-    
-    const{count:followingCount}=await supabase
-      .from('follows')
-      .select('*',{count:'exact',head:true})
-      .eq('follower_id',state.currentProfile.id);
-    
-    // 修正前の .length 計算コードは削除済み
-    
-    header.innerHTML=`
-      <div style="display:flex;gap:20px;align-items:flex-start;">
-        ${avatarHtml}
-        <div style="flex:1;">
-          <h2 style="font-size:24px;font-weight:700;margin-bottom:4px;">${state.currentProfile.display_name}</h2>
-          <p style="color:var(--text-secondary);margin-bottom:12px;">@${state.currentProfile.user_id}</p>
-          <div style="display:flex;gap:20px;font-size:14px;">
-            <div><strong>${(posts||[]).length}</strong> <span style="color:var(--text-secondary);">投稿</span></div>
-            <div><strong>${followingCount||0}</strong> <span style="color:var(--text-secondary);">フォロー中</span></div>
-            <div><strong>${followersCount||0}</strong> <span style="color:var(--text-secondary);">フォロワー</span></div>
-          </div>
-        </div>
-      </div>
-    `;
-    
-    timeline.innerHTML='';
-    timeline.appendChild(header);
-    
-    state.userPosts=posts||[];
-    
-    if(posts&&posts.length>0){
-      posts.forEach(post=>{
-        const postEl=createPostCard(post);
-        timeline.appendChild(postEl);
-      });
-    }else{
-      const empty=document.createElement('div');
-      empty.className='timeline-loading';
-      empty.innerHTML='<p>まだ投稿がありません</p>';
-      timeline.appendChild(empty);
-    }
-  }catch(error){
-    console.error('プロフィール読み込みエラー:',error);
-    timeline.innerHTML='<div class="timeline-loading"><p>読み込みに失敗しました</p></div>';
-  }
+  state.viewingUserId=state.currentProfile.id;
+  await showUserProfile(state.currentProfile.id);
 }
 
 // ========================================
@@ -1065,7 +1203,6 @@ async function showProfile(){
 // ========================================
 
 function subscribeToUpdates(){
-  // 投稿の変更を監視
   supabase
     .channel('posts-changes')
     .on('postgres_changes',{
@@ -1073,17 +1210,14 @@ function subscribeToUpdates(){
       schema:'public',
       table:'posts'
     },()=>{
-      if(state.currentView==='home'){
+      if(state.currentView==='home'&&!state.searchQuery){
         loadPosts();
-      }else if(state.currentView==='explore'){
+      }else if(state.currentView==='explore'&&!state.searchQuery){
         showExplore();
-      }else if(state.currentView==='profile'){
-        showProfile();
       }
     })
     .subscribe();
-  
-  // 通知の変更を監視
+
   supabase
     .channel('notifications-changes')
     .on('postgres_changes',{
@@ -1095,22 +1229,7 @@ function subscribeToUpdates(){
       loadNotifications();
     })
     .subscribe();
-  
-  // コメントの変更を監視
-  supabase
-    .channel('comments-changes')
-    .on('postgres_changes',{
-      event:'*',
-      schema:'public',
-      table:'comments'
-    },()=>{
-      if(state.currentView==='home'){
-        loadPosts();
-      }
-    })
-    .subscribe();
-  
-  // いいね・リポストの変更を監視
+
   supabase
     .channel('likes-changes')
     .on('postgres_changes',{
@@ -1118,12 +1237,12 @@ function subscribeToUpdates(){
       schema:'public',
       table:'likes'
     },()=>{
-      if(state.currentView==='home'){
+      if(state.currentView==='home'&&!state.searchQuery){
         loadPosts();
       }
     })
     .subscribe();
-  
+
   supabase
     .channel('reposts-changes')
     .on('postgres_changes',{
@@ -1131,7 +1250,7 @@ function subscribeToUpdates(){
       schema:'public',
       table:'reposts'
     },()=>{
-      if(state.currentView==='home'){
+      if(state.currentView==='home'&&!state.searchQuery){
         loadPosts();
       }
     })
@@ -1146,14 +1265,12 @@ function escapeHtml(text){
   const div=document.createElement('div');
   div.textContent=text;
   let escaped=div.innerHTML;
-  
-  // URLをリンク化
+
   const urlRegex=/(https?:\/\/[^\s]+)/g;
   escaped=escaped.replace(urlRegex,'<a href="$1" target="_blank" rel="noopener noreferrer" style="color:var(--main);text-decoration:underline;">$1</a>');
-  
-  // 改行を<br>に
+
   escaped=escaped.replace(/\n/g,'<br>');
-  
+
   return escaped;
 }
 
@@ -1161,17 +1278,17 @@ function getTimeAgo(timestamp){
   const now=Date.now();
   const then=new Date(timestamp).getTime();
   const diff=now-then;
-  
+
   const seconds=Math.floor(diff/1000);
   const minutes=Math.floor(seconds/60);
   const hours=Math.floor(minutes/60);
   const days=Math.floor(hours/24);
-  
+
   if(seconds<60)return`${seconds}秒前`;
   if(minutes<60)return`${minutes}分前`;
   if(hours<24)return`${hours}時間前`;
   if(days<7)return`${days}日前`;
-  
+
   return new Date(timestamp).toLocaleDateString('ja-JP',{
     month:'short',
     day:'numeric'
