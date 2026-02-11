@@ -202,13 +202,6 @@ export async function initPage(pageId,pageTitle,options={}){
       container.insertAdjacentHTML('afterbegin',createHeader(pageTitle));
     }
     
-    if(hasSidebar){
-      const mainContainer=container.querySelector('.main-container');
-      if(mainContainer){
-        mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,profile.role));
-      }
-    }
-    
     // hasSidebar ブロック内
     if(hasSidebar){
       const mainContainer=container.querySelector('.main-container');
