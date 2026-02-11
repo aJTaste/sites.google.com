@@ -1,6 +1,6 @@
 import{initPage}from'../common/core.js';
 
-await initPage('proxy','プロキシブラウザ');
+await initPage('proxy','Proxy');
 
 // ========================================
 // 状態管理

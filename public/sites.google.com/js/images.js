@@ -1,6 +1,6 @@
 import{initPage}from'../common/core.js';
 
-await initPage('images','画像・動画管理');
+await initPage('images','Images');
 
 // ========================================
 // IndexedDB 接続

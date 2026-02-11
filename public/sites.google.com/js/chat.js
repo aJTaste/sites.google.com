@@ -8,7 +8,7 @@ import'./chat-handlers.js';
 import'./chat-modals.js';
 
 // ページ初期化
-await initPage('chat','チャット',{
+await initPage('chat','ChatHub',{
   onUserLoaded:async(profile)=>{
     updateState('currentProfile',profile);
     
