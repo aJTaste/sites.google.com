@@ -803,16 +803,66 @@
 }
 
 @media(max-width:768px){
+  /* dm-sidebar: フルスクリーンオーバーレイ */
   .dm-sidebar{
     width:100%;
     position:absolute;
+    top:0;
+    left:0;
     height:100%;
     z-index:100;
     transform:translateX(-100%);
-    transition:transform 0.3s;
+    transition:transform 0.3s ease;
   }
   .dm-sidebar.show{
     transform:translateX(0);
+  }
+
+  /* オーバーレイ背景 */
+  .dm-overlay{
+    display:none;
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:rgba(0,0,0,0.4);
+    z-index:99;
+  }
+  .dm-overlay.show{
+    display:block;
+  }
+
+  /* チャットヘッダー：バックボタン用スペース確保 */
+  .chat-header{
+    padding:0 12px;
+    gap:8px;
+  }
+
+  /* メッセージエリアのpadding縮小 */
+  .chat-messages{
+    padding:8px 12px;
+  }
+
+  /* 入力欄のpadding縮小 */
+  .chat-input-container{
+    padding:10px 12px;
+  }
+
+  /* 画像の最大幅をモバイル対応 */
+  .message-image{
+    max-width:100%;
+  }
+
+  /* タッチ時にアクションボタンを常時表示 */
+  .message-actions{
+    display:flex;
+  }
+
+  /* アクションボタンを小さく */
+  .message-action-btn{
+    width:32px;
+    height:32px;
   }
 }
 
@@ -951,4 +1001,24 @@
 
 .message-text a:hover{
   color:var(--main-hover);
+}
+
+.back-btn{
+  display:none;
+  width:36px;
+  height:36px;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  border:none;
+  border-radius:6px;
+  color:var(--text-secondary);
+  cursor:pointer;
+  flex-shrink:0;
+}
+
+@media(max-width:768px){
+  .back-btn{
+    display:flex;
+  }
 }

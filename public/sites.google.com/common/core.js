@@ -98,6 +98,24 @@ export function createSidebar(activePage,userRole){
   `;
 }
 
+// createSidebar関数の後に追加
+function createBottomNav(pageId,role){
+  const items=[
+    {href:'hub.html',icon:'home',title:'ホーム',id:'hub'},
+    {href:'chat.html',icon:'forum',title:'チャット',id:'chat'},
+    {href:'gate.html',icon:'disabled_by_default',title:'Gate',id:'gate'},
+    {href:'proxy.html',icon:'vpn_key',title:'Proxy',id:'proxy'},
+  ];
+  const navHTML=items.map(item=>{
+    const activeClass=item.id===pageId?'active':'';
+    return`<a href="${item.href}" class="bottom-nav-item ${activeClass}">
+      <span class="material-symbols-outlined">${item.icon}</span>
+      <span>${item.title}</span>
+    </a>`;
+  }).join('');
+  return`<nav class="bottom-nav">${navHTML}</nav>`;
+}
+
 // ========================================
 // ページ初期化
 // ========================================
@@ -189,6 +207,16 @@ export async function initPage(pageId,pageTitle,options={}){
       if(mainContainer){
         mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,profile.role));
       }
+    }
+    
+    // hasSidebar ブロック内
+    if(hasSidebar){
+      const mainContainer=container.querySelector('.main-container');
+      if(mainContainer){
+        mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,profile.role));
+      }
+      // ボトムナビをapp-containerの末尾に追加
+      container.insertAdjacentHTML('beforeend',createBottomNav(pageId,profile.role));
     }
     
     // イベントリスナー設定

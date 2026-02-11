@@ -20,7 +20,7 @@ let typingCheckInterval=null;
 async function sendTypingStatus(isTyping){
   const targetId=state.selectedUserId||state.selectedChannelId;
   if(!targetId)return;
-  
+
   try{
     await supabase
       .from('typing_status')
@@ -37,12 +37,10 @@ async function sendTypingStatus(isTyping){
 
 // 入力中状態を監視
 function startTypingMonitor(targetId){
-  // 既存の監視を停止
   if(typingCheckInterval){
     clearInterval(typingCheckInterval);
   }
-  
-  // 3秒ごとに入力中状態をチェック
+
   typingCheckInterval=setInterval(async()=>{
     try{
       const{data:typingUsers,error}=await supabase
@@ -51,16 +49,15 @@ function startTypingMonitor(targetId){
         .eq('target_id',targetId)
         .eq('is_typing',true)
         .neq('user_id',state.currentProfile.id);
-      
+
       if(error)throw error;
-      
-      // 古い入力中ステータスを除外（10秒以上前）
+
       const now=Date.now();
       const activeTyping=(typingUsers||[]).filter(t=>{
         const updatedAt=new Date(t.updated_at).getTime();
         return now-updatedAt<10000;
       });
-      
+
       displayTypingIndicator(activeTyping);
     }catch(error){
       console.error('入力中状態チェックエラー:',error);
@@ -72,25 +69,22 @@ function startTypingMonitor(targetId){
 function displayTypingIndicator(typingUsers){
   const chatMessages=document.getElementById('chat-messages');
   if(!chatMessages)return;
-  
-  // 既存のインジケーターを削除
+
   const existing=chatMessages.querySelector('.typing-indicator');
   if(existing){
     existing.remove();
   }
-  
+
   if(typingUsers.length===0)return;
-  
-  // ユーザー名を取得
+
   const names=typingUsers.map(t=>{
     const user=state.allUsers.find(u=>u.id===t.user_id);
     return user?user.display_name:'誰か';
   });
-  
-  // インジケーターを作成
+
   const indicator=document.createElement('div');
   indicator.className='typing-indicator';
-  
+
   if(names.length===1){
     indicator.innerHTML=`
       <span class="typing-text">${names[0]} が入力中</span>
@@ -106,11 +100,23 @@ function displayTypingIndicator(typingUsers){
       </span>
     `;
   }
-  
+
   chatMessages.appendChild(indicator);
-  
-  // スクロールを最下部に
   chatMessages.scrollTop=chatMessages.scrollHeight;
+}
+
+// ========================================
+// モバイル用：サイドバー開閉ヘルパー
+// ========================================
+
+function closeDmSidebar(){
+  document.querySelector('.dm-sidebar')?.classList.remove('show');
+  document.querySelector('.dm-overlay')?.classList.remove('show');
+}
+
+function openDmSidebar(){
+  document.querySelector('.dm-sidebar')?.classList.add('show');
+  document.querySelector('.dm-overlay')?.classList.add('show');
 }
 
 // ========================================
@@ -121,10 +127,13 @@ export async function selectUser(userId){
   console.log('selectUser()実行:',userId);
   updateState('selectedUserId',userId);
   updateState('selectedChannelId',null);
-  
+
+  // モバイル：サイドバーを閉じる
+  closeDmSidebar();
+
   // 入力中モニター開始
   startTypingMonitor(userId);
-  
+
   // 既読を更新
   await supabase
     .from('read_status')
@@ -133,19 +142,19 @@ export async function selectUser(userId){
       target_id:userId,
       last_read_at:new Date().toISOString()
     },{onConflict:'user_id,target_id'});
-  
+
   state.unreadCounts[userId]=0;
-  
+
   displayUsers();
-  
+
   const chatMain=document.getElementById('chat-main');
   const selectedUser=state.allUsers.find(u=>u.user_id===userId);
-  
+
   if(!selectedUser){
     console.error('選択されたユーザーが見つかりません:',userId);
     return;
   }
-  
+
   chatMain.innerHTML=createChatHTML(selectedUser);
   setupChatInput();
   loadMessages(userId);
@@ -157,26 +166,28 @@ export async function selectUser(userId){
 
 export async function selectChannel(channelId){
   console.log('selectChannel()実行:',channelId);
-  
+
   const channel=CHANNELS.find(c=>c.id===channelId);
-  
+
   if(!channel){
     console.error('選択されたチャンネルが見つかりません:',channelId);
     return;
   }
-  
-  // 権限チェック
+
   if(!canAccessChannel(state.currentProfile.role,channel.requiredRole)){
     alert('このチャンネルへのアクセス権限がありません');
     return;
   }
-  
+
   updateState('selectedChannelId',channelId);
   updateState('selectedUserId',null);
-  
+
+  // モバイル：サイドバーを閉じる
+  closeDmSidebar();
+
   // 入力中モニター開始
   startTypingMonitor(channelId);
-  
+
   // 既読を更新
   await supabase
     .from('read_status')
@@ -185,11 +196,11 @@ export async function selectChannel(channelId){
       target_id:channelId,
       last_read_at:new Date().toISOString()
     },{onConflict:'user_id,target_id'});
-  
+
   state.unreadCounts[channelId]=0;
-  
+
   displayUsers();
-  
+
   const chatMain=document.getElementById('chat-main');
   chatMain.innerHTML=createChannelChatHTML(channel);
   setupChatInput();
@@ -210,34 +221,29 @@ function setupChatInput(){
     console.error('chat-inputが見つかりません');
     return;
   }
-  
-  // 入力中ステータスの送信
+
   chatInput.addEventListener('input',async()=>{
     chatInput.style.height='auto';
     chatInput.style.height=Math.min(chatInput.scrollHeight,120)+'px';
-    
-    // 入力中ステータスを送信
+
     await sendTypingStatus(true);
-    
-    // 3秒後に入力中を解除
+
     if(typingTimeout)clearTimeout(typingTimeout);
     typingTimeout=setTimeout(async()=>{
       await sendTypingStatus(false);
     },3000);
   });
-  
+
   chatInput.addEventListener('keydown',(e)=>{
     if(e.key==='Enter'&&!e.shiftKey){
       e.preventDefault();
       if(!state.isSending){
         sendMessage();
-        // 入力中ステータスを解除
         sendTypingStatus(false);
       }
     }
   });
-  
-  // クリップボードから画像を貼り付け
+
   chatInput.addEventListener('paste',(e)=>{
     const items=e.clipboardData.items;
     for(let i=0;i<items.length;i++){
@@ -253,27 +259,25 @@ function setupChatInput(){
       }
     }
   });
-  
+
   const sendBtn=document.getElementById('send-btn');
   if(sendBtn){
     sendBtn.addEventListener('click',()=>{
       if(!state.isSending){
         sendMessage();
-        // 入力中ステータスを解除
         sendTypingStatus(false);
       }
     });
   }
-  
-  // 画像添付ボタン
+
   const attachImageBtn=document.getElementById('attach-image-btn');
   const imageFileInput=document.getElementById('image-file-input');
-  
+
   if(attachImageBtn&&imageFileInput){
     attachImageBtn.addEventListener('click',()=>{
       imageFileInput.click();
     });
-    
+
     imageFileInput.addEventListener('change',(e)=>{
       const file=e.target.files[0];
       if(file){
@@ -285,8 +289,7 @@ function setupChatInput(){
       }
     });
   }
-  
-  // 画像プレビュー削除
+
   const imagePreviewClose=document.getElementById('image-preview-close');
   if(imagePreviewClose){
     imagePreviewClose.addEventListener('click',()=>{
@@ -294,13 +297,28 @@ function setupChatInput(){
       document.getElementById('image-preview-container').classList.remove('show');
     });
   }
-  
-  // リプライプレビュー削除
+
   const replyPreviewClose=document.getElementById('reply-preview-close');
   if(replyPreviewClose){
     replyPreviewClose.addEventListener('click',()=>{
       updateState('replyToMessage',null);
       document.getElementById('reply-preview').classList.remove('show');
+    });
+  }
+
+  // モバイル用バックボタン
+  const backBtn=document.getElementById('back-to-list');
+  if(backBtn){
+    backBtn.addEventListener('click',()=>{
+      openDmSidebar();
+    });
+  }
+
+  // オーバーレイクリックでサイドバーを閉じる
+  const overlay=document.querySelector('.dm-overlay');
+  if(overlay){
+    overlay.addEventListener('click',()=>{
+      closeDmSidebar();
     });
   }
 }

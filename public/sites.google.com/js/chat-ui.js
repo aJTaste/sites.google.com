@@ -133,6 +133,9 @@ export function createChatHTML(selectedUser){
   
   return`
     <div class="chat-header">
+      <button class="back-btn" id="back-to-list">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
       <div class="chat-header-user">
         <div class="chat-header-avatar">
           ${iconHtml}
@@ -182,6 +185,9 @@ export function createChatHTML(selectedUser){
 export function createChannelChatHTML(channel){
   return`
     <div class="chat-header">
+      <button class="back-btn" id="back-to-list">
+        <span class="material-symbols-outlined">arrow_back</span>
+      </button>
       <div class="chat-header-user">
         <div class="channel-icon" style="width:36px;height:36px;">
           <span class="material-symbols-outlined">${channel.icon}</span>

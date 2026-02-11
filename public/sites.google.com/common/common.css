@@ -424,13 +424,70 @@ input::placeholder,textarea::placeholder{
   background:var(--bg-secondary);
 }
 
-/* レスポンシブ対応 */
+/* 既存の@media(max-width:768px)を拡張・追記 */
 @media(max-width:768px){
+  /* 100svh でiOS Safari対応 */
+  .app-container{
+    height:100svh;
+  }
+
+  /* トップヘッダー縮小 */
+  .top-header{
+    height:52px;
+    padding:0 12px;
+  }
+
+  /* アプリナビサイドバー → 非表示にしてボトムナビへ */
+  .sidebar{
+    display:none;
+  }
+
+  /* ボトムナビ */
+  .bottom-nav{
+    display:flex !important;
+    height:56px;
+    background:var(--bg-primary);
+    border-top:1px solid var(--border);
+    flex-shrink:0;
+  }
+
   .main-content{
-    padding:16px;
+    padding:12px;
   }
 }
 
+/* ボトムナビ（デフォルト非表示） */
+.bottom-nav{
+  display:none;
+  align-items:center;
+  justify-content:space-around;
+  width:100%;
+}
+
+.bottom-nav-item{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:2px;
+  padding:6px 0;
+  color:var(--text-tertiary);
+  text-decoration:none;
+  font-size:10px;
+  transition:color 0.15s;
+  border:none;
+  background:transparent;
+  cursor:pointer;
+}
+
+.bottom-nav-item.active{
+  color:var(--main);
+}
+
+.bottom-nav-item .material-symbols-outlined{
+  font-size:22px;
+}
 
 
 /* 更新情報 */
