@@ -16,11 +16,9 @@ console.log('chat-handlers.js読み込み開始');
 let typingTimeout=null;
 let typingCheckInterval=null;
 
-// 入力中状態を送信
 async function sendTypingStatus(isTyping){
   const targetId=state.selectedUserId||state.selectedChannelId;
   if(!targetId)return;
-
   try{
     await supabase
       .from('typing_status')
@@ -35,12 +33,10 @@ async function sendTypingStatus(isTyping){
   }
 }
 
-// 入力中状態を監視
 function startTypingMonitor(targetId){
   if(typingCheckInterval){
     clearInterval(typingCheckInterval);
   }
-
   typingCheckInterval=setInterval(async()=>{
     try{
       const{data:typingUsers,error}=await supabase
@@ -57,7 +53,6 @@ function startTypingMonitor(targetId){
         const updatedAt=new Date(t.updated_at).getTime();
         return now-updatedAt<10000;
       });
-
       displayTypingIndicator(activeTyping);
     }catch(error){
       console.error('入力中状態チェックエラー:',error);
@@ -65,15 +60,12 @@ function startTypingMonitor(targetId){
   },3000);
 }
 
-// 入力中インジケーターを表示
 function displayTypingIndicator(typingUsers){
   const chatMessages=document.getElementById('chat-messages');
   if(!chatMessages)return;
 
   const existing=chatMessages.querySelector('.typing-indicator');
-  if(existing){
-    existing.remove();
-  }
+  if(existing)existing.remove();
 
   if(typingUsers.length===0)return;
 
@@ -128,13 +120,14 @@ export async function selectUser(userId){
   updateState('selectedUserId',userId);
   updateState('selectedChannelId',null);
 
-  // モバイル：サイドバーを閉じる
-  closeDmSidebar();
+  // localStorageに保存
+  try{
+    localStorage.setItem('chathub_last',JSON.stringify({type:'user',id:userId}));
+  }catch(e){}
 
-  // 入力中モニター開始
+  closeDmSidebar();
   startTypingMonitor(userId);
 
-  // 既読を更新
   await supabase
     .from('read_status')
     .upsert({
@@ -144,7 +137,6 @@ export async function selectUser(userId){
     },{onConflict:'user_id,target_id'});
 
   state.unreadCounts[userId]=0;
-
   displayUsers();
 
   const chatMain=document.getElementById('chat-main');
@@ -168,7 +160,6 @@ export async function selectChannel(channelId){
   console.log('selectChannel()実行:',channelId);
 
   const channel=CHANNELS.find(c=>c.id===channelId);
-
   if(!channel){
     console.error('選択されたチャンネルが見つかりません:',channelId);
     return;
@@ -182,13 +173,14 @@ export async function selectChannel(channelId){
   updateState('selectedChannelId',channelId);
   updateState('selectedUserId',null);
 
-  // モバイル：サイドバーを閉じる
-  closeDmSidebar();
+  // localStorageに保存
+  try{
+    localStorage.setItem('chathub_last',JSON.stringify({type:'channel',id:channelId}));
+  }catch(e){}
 
-  // 入力中モニター開始
+  closeDmSidebar();
   startTypingMonitor(channelId);
 
-  // 既読を更新
   await supabase
     .from('read_status')
     .upsert({
@@ -198,7 +190,6 @@ export async function selectChannel(channelId){
     },{onConflict:'user_id,target_id'});
 
   state.unreadCounts[channelId]=0;
-
   displayUsers();
 
   const chatMain=document.getElementById('chat-main');
@@ -225,9 +216,7 @@ function setupChatInput(){
   chatInput.addEventListener('input',async()=>{
     chatInput.style.height='auto';
     chatInput.style.height=Math.min(chatInput.scrollHeight,120)+'px';
-
     await sendTypingStatus(true);
-
     if(typingTimeout)clearTimeout(typingTimeout);
     typingTimeout=setTimeout(async()=>{
       await sendTypingStatus(false);
@@ -272,12 +261,10 @@ function setupChatInput(){
 
   const attachImageBtn=document.getElementById('attach-image-btn');
   const imageFileInput=document.getElementById('image-file-input');
-
   if(attachImageBtn&&imageFileInput){
     attachImageBtn.addEventListener('click',()=>{
       imageFileInput.click();
     });
-
     imageFileInput.addEventListener('change',(e)=>{
       const file=e.target.files[0];
       if(file){

@@ -11,26 +11,13 @@ import'./chat-modals.js';
 await initPage('chat','ChatHub',{
   onUserLoaded:async(profile)=>{
     updateState('currentProfile',profile);
-    
-    // オンライン状態更新
     await updateOnlineStatus(true);
-    
-    // 通知権限リクエスト
     await requestNotificationPermission();
-    
-    // ユーザー一覧読み込み
     await loadUsers();
-    
-    // プロフィール変更のリアルタイム監視
+    autoRestoreLastChat();
     subscribeToProfiles();
-    
-    // 最終ログイン時刻の定期更新
     startLastOnlineUpdateTimer();
-    
-    // オンライン状態の定期更新（15秒ごと）
     startOnlineHeartbeat();
-    
-    // ページ非表示時・クローズ時の処理
     setupVisibilityHandlers();
   }
 });
@@ -55,19 +42,16 @@ function startOnlineHeartbeat(){
   if(state.onlineHeartbeatInterval){
     clearInterval(state.onlineHeartbeatInterval);
   }
-  
   const interval=setInterval(async()=>{
     if(!document.hidden){
       await updateOnlineStatus(true);
     }
   },15000);
-  
   updateState('onlineHeartbeatInterval',interval);
 }
 
 // ページ非表示時・クローズ時の処理
 function setupVisibilityHandlers(){
-  // ページが非表示になった時
   document.addEventListener('visibilitychange',async()=>{
     if(document.hidden){
       await updateOnlineStatus(false);
@@ -75,24 +59,19 @@ function setupVisibilityHandlers(){
       await updateOnlineStatus(true);
     }
   });
-  
-  // ページを閉じる時（確実にオフラインにする）
+
   window.addEventListener('beforeunload',async()=>{
-    // Beaconを使って確実に送信
     const data=JSON.stringify({
       id:state.currentProfile.id,
       is_online:false,
       last_online:new Date().toISOString()
     });
-    
-    // Supabase REST APIに直接送信
     navigator.sendBeacon(
       `${supabase.supabaseUrl}/rest/v1/profiles?id=eq.${state.currentProfile.id}`,
       new Blob([data],{type:'application/json'})
     );
   });
-  
-  // ページを閉じる時（フォールバック）
+
   window.addEventListener('pagehide',async()=>{
     await updateOnlineStatus(false);
   });
@@ -106,15 +85,11 @@ async function loadUsers(){
       .select('*')
       .neq('id',state.currentProfile.id)
       .order('last_online',{ascending:false});
-    
+
     if(error)throw error;
-    
+
     updateState('allUsers',users||[]);
-    
-    // 未読件数を計算
     await calculateUnreadCounts();
-    
-    // ユーザー一覧を表示
     displayUsers();
   }catch(error){
     console.error('ユーザー読み込みエラー:',error);
@@ -126,82 +101,70 @@ function subscribeToProfiles(){
   if(state.profilesSubscription){
     supabase.removeChannel(state.profilesSubscription);
   }
-  
   const subscription=supabase
     .channel('profiles-changes')
     .on('postgres_changes',{
       event:'*',
       schema:'public',
       table:'profiles'
-    },async(payload)=>{
-      // ユーザー一覧を再読み込み
+    },async()=>{
       await loadUsers();
     })
     .subscribe();
-  
   updateState('profilesSubscription',subscription);
 }
 
 // 未読件数を計算
 async function calculateUnreadCounts(){
   const unreadCounts={};
-  
   try{
-    // 自分の既読状態を取得
     const{data:readStatuses,error:readError}=await supabase
       .from('read_status')
       .select('*')
       .eq('user_id',state.currentProfile.id);
-    
+
     if(readError)throw readError;
-    
+
     const readMap={};
     if(readStatuses){
       readStatuses.forEach(status=>{
         readMap[status.target_id]=new Date(status.last_read_at).getTime();
       });
     }
-    
-    // DM の未読
+
     for(const user of state.allUsers){
       const dmId=[state.currentProfile.user_id,user.user_id].sort().join('_');
-      
       const{data:messages,error:msgError}=await supabase
         .from('dm_messages')
         .select('id,sender_id,created_at')
         .eq('dm_id',dmId)
         .order('created_at',{ascending:false});
-      
+
       if(msgError)throw msgError;
-      
+
       const lastReadTime=readMap[user.user_id]||0;
-      
       const unreadCount=(messages||[]).filter(msg=>
         msg.sender_id===user.id&&new Date(msg.created_at).getTime()>lastReadTime
       ).length;
-      
       unreadCounts[user.user_id]=unreadCount;
     }
-    
-    // チャンネルの未読
+
     for(const channel of CHANNELS){
       const{data:messages,error:msgError}=await supabase
         .from('channel_messages')
         .select('id,sender_id,created_at')
         .eq('channel_id',channel.id)
         .order('created_at',{ascending:false});
-      
+
       if(msgError)throw msgError;
-      
+
       const lastReadTime=readMap[channel.id]||0;
-      
       const unreadCount=(messages||[]).filter(msg=>
         msg.sender_id!==state.currentProfile.id&&new Date(msg.created_at).getTime()>lastReadTime
       ).length;
-      
       unreadCounts[channel.id]=unreadCount;
     }
-    
+
     state.unreadCounts=unreadCounts;
   }catch(error){
     console.error('未読計算エラー:',error);
@@ -217,4 +180,31 @@ function startLastOnlineUpdateTimer(){
     displayUsers();
   },1000);
   updateState('lastOnlineUpdateInterval',interval);
+}
+
+// 最後に開いていた会話を復元（なければgeneralをデフォルト）
+function autoRestoreLastChat(){
+  try{
+    const saved=localStorage.getItem('chathub_last');
+    if(saved){
+      const{type,id}=JSON.parse(saved);
+      if(type==='channel'&&window.selectChannel){
+        window.selectChannel(id);
+        return;
+      }
+      if(type==='user'&&window.selectUser){
+        const exists=state.allUsers.find(u=>u.user_id===id);
+        if(exists){
+          window.selectUser(id);
+          return;
+        }
+      }
+    }
+  }catch(e){
+    console.warn('チャット復元エラー:',e);
+  }
+  // デフォルト：連絡チャンネルを開く
+  if(window.selectChannel){
+    window.selectChannel('general');
+  }
 }
