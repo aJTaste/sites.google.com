@@ -5,13 +5,11 @@ import { Camera } from './camera.js';
 import { SelectionManager } from './selection.js';
 import { CellType, CellProps } from './types.js';
 
-// ---- UI Logic Mixin ----
-// 簡単のためMainに記述しますが、本来はUIクラスに分けるべきです
+// ---- UI Logic ----
 const setupUI = (game) => {
-    // ツールバー生成
     const toolbar = document.getElementById('tools');
     
-    // 特別なツール: "Select"
+    // Select Tool
     const selectBtn = document.createElement('div');
     selectBtn.className = 'tool-btn';
     selectBtn.textContent = "範囲選択 (Select)";
@@ -21,20 +19,21 @@ const setupUI = (game) => {
     };
     toolbar.appendChild(selectBtn);
 
-    // ブロックツール
+    // Block Tools
     Object.keys(CellProps).forEach(key => {
         const type = parseInt(key);
-        if (type === CellType.EMPTY) return; // 消しゴムは右クリックにするのでボタン不要
+        if (type === CellType.EMPTY) return;
         const prop = CellProps[type];
         const btn = document.createElement('div');
         btn.className = 'tool-btn';
         btn.textContent = prop.name;
         btn.onclick = () => {
             game.currentTool = type;
+            game.activeBlockType = type; // 塗りつぶし用に記憶
             updateActiveBtn(btn);
         };
         toolbar.appendChild(btn);
-        if (type === CellType.WALL) btn.click(); // デフォルト
+        if (type === CellType.WALL) btn.click();
     });
 
     function updateActiveBtn(active) {
@@ -42,24 +41,18 @@ const setupUI = (game) => {
         active.classList.add('active');
     }
 
-    // ファイル操作 (File System Access API)
+    // Buttons
+    const setStatus = (msg) => document.getElementById('status-msg').textContent = msg;
+
     document.getElementById('btn-save').onclick = async () => {
         try {
-            const opts = {
-                types: [{
-                    description: 'Logic Sandbox File',
-                    accept: { 'application/json': ['.json'] },
-                }],
-            };
+            const opts = { types: [{ description: 'Logic Sandbox File', accept: { 'application/json': ['.json'] } }] };
             const handle = await window.showSaveFilePicker(opts);
             const writable = await handle.createWritable();
             await writable.write(game.grid.exportJSON());
             await writable.close();
-            document.getElementById('status-msg').textContent = "Saved!";
-        } catch (err) {
-            console.error(err);
-            alert("保存キャンセル、または非対応ブラウザです。");
-        }
+            setStatus("Saved!");
+        } catch (err) { console.error(err); }
     };
 
     document.getElementById('btn-load').onclick = async () => {
@@ -67,12 +60,13 @@ const setupUI = (game) => {
             const [handle] = await window.showOpenFilePicker();
             const file = await handle.getFile();
             const text = await file.text();
-            if (game.grid.importJSON(text)) {
-                document.getElementById('status-msg').textContent = "Loaded!";
-            }
-        } catch (err) {
-            console.error(err);
-        }
+            if (game.grid.importJSON(text)) setStatus("Loaded!");
+        } catch (err) { console.error(err); }
+    };
+
+    // 塗りつぶしボタン
+    document.getElementById('btn-fill').onclick = () => {
+        game.performFill();
     };
 
     document.getElementById('btn-clear').onclick = () => {
@@ -92,6 +86,7 @@ class Game {
         this.selectionMgr = new SelectionManager(this.grid);
         
         this.currentTool = CellType.WALL;
+        this.activeBlockType = CellType.WALL; // 塗りつぶしに使うデフォルトブロック
         this.currentRotation = 0;
         
         this.setupInputs(canvas);
@@ -101,16 +96,23 @@ class Game {
         requestAnimationFrame(this.loop);
     }
 
+    performFill() {
+        if (this.selectionMgr.hasSelection()) {
+            // 現在の回転方向と、記憶しているブロックタイプで塗りつぶす
+            const count = this.selectionMgr.fill(this.activeBlockType, this.currentRotation);
+            document.getElementById('status-msg').textContent = `Filled ${count} cells with ${CellProps[this.activeBlockType].name}`;
+        } else {
+            document.getElementById('status-msg').textContent = "Select area first!";
+        }
+    }
+
     setupInputs(canvas) {
-        // マウス位置管理
-        let mouseX = 0, mouseY = 0;
         let isRightDown = false;
         let isLeftDown = false;
         let isMiddleDown = false;
 
         const getGridPos = (e) => {
             const rect = canvas.getBoundingClientRect();
-            // カメラ座標変換
             const worldPos = this.camera.toWorld(e.clientX - rect.left, e.clientY - rect.top);
             return {
                 x: Math.floor(worldPos.x / this.cellSize),
@@ -133,6 +135,11 @@ class Game {
                 this.renderer.selectionStart = {x:g.x, y:g.y};
                 this.renderer.selectionEnd = {x:g.x, y:g.y};
             } else if (isLeftDown) {
+                // 通常配置（クリックした瞬間に選択解除）
+                this.renderer.selectionStart = null;
+                this.renderer.selectionEnd = null;
+                this.selectionMgr.startPos = null; // Manager側もリセット
+                
                 this.grid.setCell(g.x, g.y, this.currentTool, this.currentRotation);
             } else if (isRightDown) {
                 this.grid.setCell(g.x, g.y, CellType.EMPTY);
@@ -148,7 +155,6 @@ class Game {
         canvas.addEventListener('mousemove', (e) => {
             const g = getGridPos(e);
             
-            // パン（移動）
             if (this.camera.isDragging) {
                 const dx = e.clientX - this.camera.lastMouse.x;
                 const dy = e.clientY - this.camera.lastMouse.y;
@@ -176,29 +182,36 @@ class Game {
 
         canvas.addEventListener('contextmenu', e => e.preventDefault());
 
-        // キーボード操作
         window.addEventListener('keydown', (e) => {
-            if (e.key.toLowerCase() === 'r') this.currentRotation = (this.currentRotation + 1) % 4;
+            // R: 回転
+            if (e.key.toLowerCase() === 'r') {
+                this.currentRotation = (this.currentRotation + 1) % 4;
+                document.getElementById('status-msg').textContent = `Rotation: ${['UP','RIGHT','DOWN','LEFT'][this.currentRotation]}`;
+            }
             
-            // コピペ
+            // F: 塗りつぶし
+            if (e.key.toLowerCase() === 'f') {
+                this.performFill();
+            }
+
+            // Ctrl/Meta系
             if (e.ctrlKey || e.metaKey) {
                 if (e.key === 'c') {
-                    this.selectionMgr.copy();
-                    document.getElementById('status-msg').textContent = "Copied!";
+                    const count = this.selectionMgr.copy();
+                    if(count) document.getElementById('status-msg').textContent = "Copied!";
                 }
                 if (e.key === 'v') {
-                    // 現在のマウス位置にペースト（簡易的に画面中央付近などでもよいが、今回はマウス位置を取得する術がないため直近のクリック位置などが望ましいが、簡易実装としてカメラ中心へ）
-                    // 改善: マウス位置をクラス変数で追跡するのがベスト
+                    // 画面中心にペースト
                     const center = this.camera.toWorld(canvas.width/2, canvas.height/2);
-                    this.selectionMgr.paste(Math.floor(center.x/this.cellSize), Math.floor(center.y/this.cellSize));
-                    document.getElementById('status-msg').textContent = "Pasted!";
+                    const count = this.selectionMgr.paste(Math.floor(center.x/this.cellSize), Math.floor(center.y/this.cellSize));
+                    if(count) document.getElementById('status-msg').textContent = "Pasted!";
                 }
             }
             if (e.key === 'Delete' || e.key === 'Backspace') {
                 this.selectionMgr.deleteSelected();
-                // 選択表示も消す
                 this.renderer.selectionStart = null;
                 this.renderer.selectionEnd = null;
+                document.getElementById('status-msg').textContent = "Deleted selection";
             }
         });
         
