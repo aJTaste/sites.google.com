@@ -15,44 +15,66 @@
                 <div id="main-grid" class="grid">
                     </div>
             </div>
+
             <div id="controls-section">
+                
                 <div class="panel">
-                    <h2>PALETTE</h2>
+                    <h2>パレット (配置)</h2>
                     <div id="palette" class="palette-grid">
-                        <div class="palette-item active" data-type="empty">EMPTY</div>
-                        <div class="palette-item" data-type="wall">WALL (■)</div>
-                        <div class="palette-item" data-type="particle" data-dir="right">PARTICLE (→)</div>
+                        <div class="palette-item active" data-type="empty">消しゴム</div>
+                        <div class="palette-item" data-type="wall">壁 (■)</div>
+                        <div class="palette-item" data-type="particle" data-dir="right">粒子 (→)</div>
                         </div>
+                    
                     <div id="particle-direction-controls" style="display: none; margin-top: 10px;">
-                        <p>Particle Direction:</p>
-                        <button data-dir="up">↑</button>
-                        <button data-dir="right" class="active">→</button>
-                        <button data-dir="down">↓</button>
-                        <button data-dir="left">←</button>
+                        <p>粒子の進行方向:</p>
+                        <div class="direction-buttons">
+                            <button data-dir="up">↑</button>
+                            <button data-dir="right" class="active">→</button>
+                            <button data-dir="down">↓</button>
+                            <button data-dir="left">←</button>
+                        </div>
                     </div>
                 </div>
 
                 <div class="panel">
-                    <h2>CONTROLS</h2>
-                    <button id="btn-play">PLAY / PAUSE</button>
-                    <button id="btn-step">STEP >></button>
-                    <button id="btn-reset">RESET</button>
-                    <button id="btn-clear">CLEAR GRID</button>
+                    <h2>シミュレーション制御</h2>
+                    <div class="control-buttons">
+                        <button id="btn-play">▶ 再生 / 停止</button>
+                        <button id="btn-step">⏯ 1コマ進む</button>
+                        <button id="btn-reset">↩ 位置リセット</button>
+                        <button id="btn-clear" class="danger">🗑 全消去</button>
+                    </div>
                 </div>
 
                 <div class="panel">
-                    <h2>OBJECT CREATION</h2>
-                    <input type="text" id="object-name" placeholder="Enter object name">
-                    <button id="btn-save-object">SAVE CURRENT GRID AS OBJECT</button>
+                    <h2>部品の作成 (モジュール化)</h2>
+                    <p class="desc">現在の盤面を1つのブロックとして保存します</p>
+                    <input type="text" id="object-name" placeholder="部品名を入力 (例: AND回路)">
+                    <button id="btn-save-object">現在の盤面を部品として登録</button>
                 </div>
 
-                <div class="panel">
-                    <h2>DATA MANAGEMENT</h2>
-                    <button id="btn-export">EXPORT DATA TO FILE</button>
-                    <label for="file-import" class="custom-file-upload">
-                        IMPORT DATA FROM FILE
-                    </label>
-                    <input type="file" id="file-import" accept=".json">
+                <div class="panel file-manager">
+                    <h2>ローカルフォルダ連携</h2>
+                    <p class="desc">PCのフォルダを接続してデータを直接読み書きします</p>
+                    <button id="btn-open-folder" class="primary-btn">📂 フォルダを接続</button>
+                    
+                    <div id="file-list-container" style="display:none;">
+                        <h3>保存されているファイル:</h3>
+                        <ul id="file-list">
+                            </ul>
+                        <hr>
+                        <input type="text" id="file-save-name" placeholder="ファイル名 (例: my_save)">
+                        <button id="btn-save-to-folder">フォルダに保存 (.json)</button>
+                    </div>
+                    
+                    <div id="legacy-import-export">
+                        <hr>
+                        <p style="font-size: 12px; color: #666;">※フォルダ接続を使わない場合:</p>
+                        <button id="btn-export">ファイル書き出し (DL)</button>
+                        <label for="file-import" class="custom-file-upload">ファイル読み込み</label>
+                        <input type="file" id="file-import" accept=".json">
+                    </div>
                 </div>
             </div>
         </main>
