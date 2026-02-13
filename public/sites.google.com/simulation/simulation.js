@@ -1,155 +1,192 @@
-import { CellType } from './types.js';
-import { Vec2 } from './math.js';
+import { CellType, CellProps, Dir } from './types.js';
 
 export class Simulation {
     constructor(grid) {
         this.grid = grid;
         this.balls = [];
-        this.gravity = new Vec2(0, 0.2);
-        this.tickCounter = 0;
     }
 
     update() {
-        this.updateLogic();
         this.updatePhysics();
-        this.tickCounter++;
+        this.updateLogic();
     }
 
-    updateLogic() {
-        // Mapのイテレーション
-        for (const cell of this.grid.cells.values()) {
-            if (cell.type === CellType.WALL) continue;
-            
-            // Simulation logic is mostly same, just accessing coords from cell.x/y
-            const hasInput = this.checkInput(cell.x, cell.y, cell);
-            
-            switch (cell.type) {
-                case CellType.BATTERY: cell.nextPowered = true; break;
-                case CellType.WIRE:
-                case CellType.LAMP:
-                case CellType.PISTON:
-                case CellType.SPAWNER:
-                    cell.nextPowered = hasInput; break;
-                case CellType.NOT:
-                    const backInput = this.getInputFromDir(cell.x, cell.y, (cell.rotation + 2) % 4);
-                    cell.nextPowered = !backInput; break;
-                case CellType.DIODE:
-                    cell.nextPowered = this.getInputFromDir(cell.x, cell.y, (cell.rotation + 2) % 4); break;
-                case CellType.SENSOR:
-                    cell.nextPowered = false; break;
-            }
-        }
-
-        // Apply state
-        for (const cell of this.grid.cells.values()) {
-            cell.powered = cell.nextPowered;
-        }
-
-        // Spawners
-        if (this.tickCounter % 20 === 0) { // 間隔調整
-            for (const cell of this.grid.cells.values()) {
-                if (cell.powered && cell.type === CellType.SPAWNER) {
-                    this.spawnBall(cell.x, cell.y, cell.rotation);
-                }
-            }
-        }
-    }
-
-    checkInput(x, y, selfCell) {
-        const dirs = [{ dx: 0, dy: -1 }, { dx: 1, dy: 0 }, { dx: 0, dy: 1 }, { dx: -1, dy: 0 }];
-        for (let i = 0; i < 4; i++) {
-            if (selfCell.directional && i === selfCell.rotation) continue;
-            const neighbor = this.grid.getCell(x + dirs[i].dx, y + dirs[i].dy);
-            if (!neighbor) continue;
-            if (neighbor.powered) {
-                if (!neighbor.directional) return true;
-                if (neighbor.directional) {
-                    if (neighbor.rotation === (i + 2) % 4) return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    getInputFromDir(x, y, dir) {
-        const dx = [0, 1, 0, -1][dir];
-        const dy = [-1, 0, 1, 0][dir];
-        const neighbor = this.grid.getCell(x + dx, y + dy);
-        if (!neighbor) return false;
-        if (neighbor.powered) {
-             if (!neighbor.directional) return true;
-             if (neighbor.rotation === (dir + 2) % 4) return true;
-        }
-        return false;
-    }
-
+    // ---- 物理演算 (ボール) ----
     updatePhysics() {
-        const cs = this.grid.cellSize;
-        
-        for (let i = this.balls.length - 1; i >= 0; i--) {
-            const ball = this.balls[i];
-            ball.vel = ball.vel.add(this.gravity);
-            ball.pos = ball.pos.add(ball.vel);
-            ball.vel = ball.vel.mult(0.99);
+        // 重力
+        for (const ball of this.balls) {
+            ball.vy += 0.5; // Gravity
+            ball.pos.x += ball.vx;
+            ball.pos.y += ball.vy;
 
-            // 衝突判定 (周囲のセルだけ取得して判定)
+            // 画面外削除
+            if (ball.pos.y > this.grid.height * this.grid.cellSize + 100) {
+                ball.remove = true;
+            }
+        }
+        this.balls = this.balls.filter(b => !b.remove);
+
+        // 当たり判定 (簡易)
+        const cs = this.grid.cellSize;
+        for (const ball of this.balls) {
             const gx = Math.floor(ball.pos.x / cs);
             const gy = Math.floor(ball.pos.y / cs);
+            const cell = this.grid.getCell(gx, gy);
 
-            // 画面外削除判定(簡易) - yが極端に大きい場合のみ
-            if (ball.pos.y > 100000) { this.balls.splice(i, 1); continue; }
+            if (cell && (cell.type === CellType.WALL || cell.type === CellType.PISTON && !cell.powered)) {
+                // 壁に当たったら跳ね返る（簡易）
+                ball.vy *= -0.5;
+                ball.vx *= 0.9;
+                ball.pos.y = gy * cs - ball.radius;
+            }
+            
+            // センサー接触
+            if (cell && cell.type === CellType.SENSOR) {
+                cell.activeSignal = true; // センサー発動
+            }
+        }
+    }
 
-            for (let y = gy - 1; y <= gy + 1; y++) {
-                for (let x = gx - 1; x <= gx + 1; x++) {
-                    const cell = this.grid.getCell(x, y);
-                    if (!cell) continue;
+    // ---- 論理回路 (電気) ----
+    updateLogic() {
+        const cells = Array.from(this.grid.cells.values());
+        
+        // 1. 前回の通電状態をバックアップ (論理ゲートの判定に使う)
+        // これがないと、信号がループした時に点滅したりバグったりするため
+        const prevPowered = new Map();
+        for (const cell of cells) {
+            prevPowered.set(`${cell.x},${cell.y}`, cell.powered || cell.activeSignal);
+            cell.activeSignal = false; // センサー信号は毎回リセット
+        }
+
+        // 2. 全ての「受動素子(ワイヤー、ランプ、ピストンなど)」の電気を一旦 OFF にする
+        for (const cell of cells) {
+            if (cell.type !== CellType.BATTERY) {
+                cell.powered = false;
+            } else {
+                cell.powered = true; // 電池は常にON
+            }
+        }
+
+        // 3. 電源となる場所（ソース）を探してキューに入れる
+        let queue = [];
+
+        for (const cell of cells) {
+            // A. 電池はソース
+            if (cell.type === CellType.BATTERY) {
+                queue.push(cell);
+            }
+            // B. NOTゲート: 「後ろ」がOFFなら、自分はソースになる
+            else if (cell.type === CellType.NOT) {
+                const inputPos = this.getBackwardPos(cell.x, cell.y, cell.rotation);
+                const inputKey = `${inputPos.x},${inputPos.y}`;
+                const isInputOn = prevPowered.get(inputKey); // 前回のフレームで電気が来ていたか？
+                
+                if (!isInputOn) {
+                    cell.powered = true;
+                    queue.push(cell);
+                }
+            }
+            // C. センサー: ボールが触れていたらソースになる
+            else if (cell.type === CellType.SENSOR && prevPowered.get(`${cell.x},${cell.y}`)) {
+                cell.powered = true;
+                queue.push(cell);
+            }
+        }
+
+        // 4. 電気の拡散 (BFS: 幅優先探索)
+        // ソースから繋がっている導線を辿って powered = true にしていく
+        let visited = new Set(queue.map(c => `${c.x},${c.y}`));
+        
+        while (queue.length > 0) {
+            const current = queue.shift();
+            
+            // 現在のセルから出力できる方向を取得
+            const outputDirs = this.getOutputDirections(current);
+
+            for (const dir of outputDirs) {
+                const nextPos = this.getPosInDir(current.x, current.y, dir);
+                const nextCell = this.grid.getCell(nextPos.x, nextPos.y);
+
+                if (!nextCell) continue;
+                if (visited.has(`${nextPos.x},${nextPos.y}`)) continue;
+
+                // 接続可能かチェック
+                if (this.canAcceptPower(nextCell, dir)) {
+                    nextCell.powered = true;
+                    visited.add(`${nextCell.x},${nextCell.y}`);
                     
-                    const solid = [CellType.WALL, CellType.BATTERY, CellType.LAMP, CellType.NOT, CellType.DIODE, CellType.PISTON, CellType.SPAWNER, CellType.SENSOR].includes(cell.type);
-                    if (solid) {
-                        this.resolveCollision(ball, cell, x, y, cs);
+                    // ワイヤーならさらに先へ電気を伝える
+                    // ランプやピストンは終点なのでキューには入れない（そこから電気は出ない）
+                    if (nextCell.type === CellType.WIRE) {
+                        queue.push(nextCell);
                     }
                 }
             }
         }
-    }
-
-    resolveCollision(ball, cell, x, y, cs) {
-        const cellRect = { x: x * cs, y: y * cs, w: cs, h: cs };
-        const closestX = Math.max(cellRect.x, Math.min(ball.pos.x, cellRect.x + cellRect.w));
-        const closestY = Math.max(cellRect.y, Math.min(ball.pos.y, cellRect.y + cellRect.h));
-        const dx = ball.pos.x - closestX;
-        const dy = ball.pos.y - closestY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist < ball.radius) {
-            const overlap = ball.radius - dist;
-            const normal = dist === 0 ? new Vec2(0, -1) : new Vec2(dx, dy).normalize();
-            ball.pos = ball.pos.add(normal.mult(overlap));
-            
-            let bounceForce = 0.6;
-            if (cell.type === CellType.PISTON && cell.powered) bounceForce = 1.8;
-            
-            const dot = ball.vel.x * normal.x + ball.vel.y * normal.y;
-            ball.vel = ball.vel.sub(normal.mult(2 * dot));
-            ball.vel = ball.vel.mult(bounceForce);
-
-            if (cell.type === CellType.SENSOR) {
-                cell.nextPowered = true;
-                cell.powered = true;
-            }
-        }
-    }
-
-    spawnBall(gx, gy, dir) {
-        const cs = this.grid.cellSize;
-        // ... (前のコードと同様のオフセット計算) ...
-        const offset = [{x:0.5,y:-0.2}, {x:1.2,y:0.5}, {x:0.5,y:1.2}, {x:-0.2,y:0.5}][dir];
-        const velDir = [{x:0,y:-1}, {x:1,y:0}, {x:0,y:1}, {x:-1,y:0}][dir];
         
-        this.balls.push({
-            pos: new Vec2((gx + offset.x) * cs, (gy + offset.y) * cs),
-            vel: new Vec2(velDir.x, velDir.y).mult(5),
-            radius: cs * 0.3
-        });
+        // 5. ピストンの物理動作 (ONなら動かす)
+        // (簡易実装: ONならボールを弾く処理など。今回は割愛)
+    }
+
+    // ---- ヘルパー関数 ----
+
+    // あるセルが、指定した絶対方向へ電気を出せるか？
+    getOutputDirections(cell) {
+        const dirs = [];
+        if (cell.type === CellType.BATTERY || cell.type === CellType.SENSOR || cell.type === CellType.WIRE) {
+            // 全方向に拡散
+            dirs.push(0, 1, 2, 3);
+        } else if (cell.type === CellType.NOT || cell.type === CellType.DIODE) {
+            // 向いている方向だけ
+            dirs.push(cell.rotation);
+        }
+        return dirs;
+    }
+
+    // あるセルが、指定した方向（からの電気）を受け取れるか？
+    // dir: 電気が来る方向（絶対方向）
+    canAcceptPower(cell, fromDir) {
+        // 壁や空は何もしない
+        if (cell.type === CellType.EMPTY || cell.type === CellType.WALL) return false;
+        
+        // ワイヤー、ランプ、ピストンはどこからでも受け取る
+        if (cell.type === CellType.WIRE || cell.type === CellType.LAMP || cell.type === CellType.PISTON) return true;
+
+        // ダイオード、NOTゲートは「後ろ」からしか受け取らない
+        // つまり、電気の来る方向(fromDir)が、自分の向き(rotation)と逆であること
+        // (0:UP, 1:RIGHT, 2:DOWN, 3:LEFT)
+        if (cell.type === CellType.NOT || cell.type === CellType.DIODE) {
+            const backDir = (cell.rotation + 2) % 4;
+            // fromDirは「ソースから見てどっちに進んだか」。
+            // 例: ソースが(0,0)で右(1)に進んで(1,0)に来た。
+            // (1,0)にあるNOTが右(1)を向いていたら、入力は左(3)から来る必要がある。
+            // fromDir(1) == activeな進行方向。
+            // 受け手から見ると「左から来た」= RIGHT方向への進行波。
+            
+            // シンプルに:
+            // NOTが右(1)を向いている。
+            // 電気が左から右へ流れてきた(fromDir = 1)。
+            // これは「後ろからの入力」なのでOK。
+            return fromDir === cell.rotation; 
+        }
+
+        return false;
+    }
+
+    getBackwardPos(x, y, rotation) {
+        // rotationの逆方向の座標
+        const backRot = (rotation + 2) % 4;
+        return this.getPosInDir(x, y, backRot);
+    }
+
+    getPosInDir(x, y, dir) {
+        const d = [
+            {x:0, y:-1}, // 0: UP
+            {x:1, y:0},  // 1: RIGHT
+            {x:0, y:1},  // 2: DOWN
+            {x:-1, y:0}  // 3: LEFT
+        ];
+        return { x: x + d[dir].x, y: y + d[dir].y };
     }
 }
