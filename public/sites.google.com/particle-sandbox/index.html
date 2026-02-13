@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Particle Sandbox - 粒子サンドボックス</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>PARTICLE SANDBOX</h1>
+      <p class="subtitle">すべての事象は粒子の運動の積み重ねである</p>
+    </header>
+
+    <div class="main-content">
+      <div class="canvas-area">
+        <canvas id="gameCanvas" width="512" height="512"></canvas>
+        <div class="controls">
+          <button id="playBtn" class="btn btn-play">▶ PLAY</button>
+          <button id="pauseBtn" class="btn btn-pause" disabled>⏸ PAUSE</button>
+          <button id="stepBtn" class="btn btn-step">⏭ STEP</button>
+          <button id="resetBtn" class="btn btn-reset">↻ RESET</button>
+        </div>
+      </div>
+
+      <div class="sidebar">
+        <div class="panel">
+          <h3>TOOLS</h3>
+          <div class="tool-palette">
+            <button class="tool-btn active" data-tool="particle-right" title="粒子（右）">
+              <span class="particle-icon">→</span>
+            </button>
+            <button class="tool-btn" data-tool="particle-down" title="粒子（下）">
+              <span class="particle-icon">↓</span>
+            </button>
+            <button class="tool-btn" data-tool="particle-left" title="粒子（左）">
+              <span class="particle-icon">←</span>
+            </button>
+            <button class="tool-btn" data-tool="particle-up" title="粒子（上）">
+              <span class="particle-icon">↑</span>
+            </button>
+            <button class="tool-btn" data-tool="wall" title="壁">
+              <span class="wall-icon">■</span>
+            </button>
+            <button class="tool-btn" data-tool="erase" title="消しゴム">
+              <span class="erase-icon">✕</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>MODULES</h3>
+          <div id="moduleList" class="module-list">
+            <p class="empty-text">モジュールがありません</p>
+          </div>
+          <div class="module-actions">
+            <button id="loadModuleBtn" class="btn btn-secondary">
+              📂 LOAD MODULE
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>DATA</h3>
+          <div class="data-actions">
+            <label for="moduleName">Module Name:</label>
+            <input type="text" id="moduleName" placeholder="MyLogicGate" class="text-input">
+            <button id="saveBtn" class="btn btn-primary">
+              💾 SAVE AS MODULE
+            </button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>INFO</h3>
+          <div class="info">
+            <p>Tick: <span id="tickCount">0</span></p>
+            <p>Grid: 8×8</p>
+            <p>Selected: <span id="selectedTool">粒子（右）</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="fileInput" accept=".json" style="display:none;">
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
