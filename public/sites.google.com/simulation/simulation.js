@@ -118,7 +118,7 @@ export class Simulation {
                     
                     // ワイヤーならさらに先へ電気を伝える
                     // ランプやピストンは終点なのでキューには入れない（そこから電気は出ない）
-                    if (nextCell.type === CellType.WIRE) {
+                    if (nextCell.type === CellType.WIRE || nextCell.type === CellType.DIODE) {
                         queue.push(nextCell);
                     }
                 }
