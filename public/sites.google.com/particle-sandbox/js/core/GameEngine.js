@@ -13,6 +13,9 @@ export class GameEngine{
     this.isRunning=false;
     this.tickCount=0;
     this.placementMass=5;
+    this.mode='particle';
+    this.selectedObject=null;
+    this.previewPosition=null;
   }
   start(){
     this.isRunning=true;
@@ -25,6 +28,10 @@ export class GameEngine{
     this.particles=[];
     this.tickCount=0;
     this.render();
+  }
+  setMode(mode,objectData=null){
+    this.mode=mode;
+    this.selectedObject=objectData;
   }
   loop(){
     if(!this.isRunning)return;
@@ -41,6 +48,9 @@ export class GameEngine{
     this.ctx.fillRect(0,0,this.width,this.height);
     this.drawGrid();
     this.drawParticles();
+    if(this.mode==='object'&&this.previewPosition){
+      this.drawObjectPreview();
+    }
   }
   drawGrid(){
     this.ctx.strokeStyle='#ddd';
@@ -74,6 +84,29 @@ export class GameEngine{
       }
     }
   }
+  drawObjectPreview(){
+    if(!this.selectedObject||!this.previewPosition)return;
+    const{x,y}=this.previewPosition;
+    this.ctx.save();
+    this.ctx.globalAlpha=0.5;
+    if(this.selectedObject.particles){
+      for(const pData of this.selectedObject.particles){
+        this.ctx.fillStyle='#666';
+        const px=x*this.cellSize+this.cellSize/2+(pData.x-300);
+        const py=y*this.cellSize+this.cellSize/2+(pData.y-300);
+        const radius=Math.sqrt(pData.mass)*3;
+        this.ctx.beginPath();
+        this.ctx.arc(px,py,radius,0,Math.PI*2);
+        this.ctx.fill();
+      }
+    }
+    this.ctx.restore();
+    this.ctx.strokeStyle='#000';
+    this.ctx.lineWidth=2;
+    this.ctx.setLineDash([5,5]);
+    this.ctx.strokeRect(x*this.cellSize,y*this.cellSize,this.cellSize,this.cellSize);
+    this.ctx.setLineDash([]);
+  }
   getGridPosition(clientX,clientY){
     const rect=this.canvas.getBoundingClientRect();
     const scaleX=this.width/rect.width;
@@ -93,6 +126,20 @@ export class GameEngine{
     const pos=this.getCellCenter(gridX,gridY);
     const particle=new Particle(pos.x,pos.y,this.placementMass);
     this.particles.push(particle);
+    this.render();
+  }
+  placeObject(gridX,gridY,objectData){
+    if(gridX<0||gridX>=this.gridSize||gridY<0||gridY>=this.gridSize)return;
+    if(!objectData||!objectData.particles)return;
+    const centerPos=this.getCellCenter(gridX,gridY);
+    const offsetX=centerPos.x-300;
+    const offsetY=centerPos.y-300;
+    for(const pData of objectData.particles){
+      const particle=new Particle(pData.x+offsetX,pData.y+offsetY,pData.mass);
+      particle.vx=pData.vx||0;
+      particle.vy=pData.vy||0;
+      this.particles.push(particle);
+    }
     this.render();
   }
   serialize(){
