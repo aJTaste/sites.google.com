@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Fractal Bit Sandbox</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>FRACTAL BIT SANDBOX</h1>
+        </header>
+        <main>
+            <div id="grid-section">
+                <div id="main-grid" class="grid">
+                    </div>
+            </div>
+            <div id="controls-section">
+                <div class="panel">
+                    <h2>PALETTE</h2>
+                    <div id="palette" class="palette-grid">
+                        <div class="palette-item active" data-type="empty">EMPTY</div>
+                        <div class="palette-item" data-type="wall">WALL (■)</div>
+                        <div class="palette-item" data-type="particle" data-dir="right">PARTICLE (→)</div>
+                        </div>
+                    <div id="particle-direction-controls" style="display: none; margin-top: 10px;">
+                        <p>Particle Direction:</p>
+                        <button data-dir="up">↑</button>
+                        <button data-dir="right" class="active">→</button>
+                        <button data-dir="down">↓</button>
+                        <button data-dir="left">←</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>CONTROLS</h2>
+                    <button id="btn-play">PLAY / PAUSE</button>
+                    <button id="btn-step">STEP >></button>
+                    <button id="btn-reset">RESET</button>
+                    <button id="btn-clear">CLEAR GRID</button>
+                </div>
+
+                <div class="panel">
+                    <h2>OBJECT CREATION</h2>
+                    <input type="text" id="object-name" placeholder="Enter object name">
+                    <button id="btn-save-object">SAVE CURRENT GRID AS OBJECT</button>
+                </div>
+
+                <div class="panel">
+                    <h2>DATA MANAGEMENT</h2>
+                    <button id="btn-export">EXPORT DATA TO FILE</button>
+                    <label for="file-import" class="custom-file-upload">
+                        IMPORT DATA FROM FILE
+                    </label>
+                    <input type="file" id="file-import" accept=".json">
+                </div>
+            </div>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
