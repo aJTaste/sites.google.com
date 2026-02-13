@@ -1,47 +1,84 @@
 import { CellType, Dir } from './types.js';
 
 export class Grid {
-    constructor(width, height, cellSize) {
-        this.width = width;
-        this.height = height;
+    constructor(cellSize) {
         this.cellSize = cellSize;
-        this.cells = new Array(width * height).fill(null).map(() => ({
-            type: CellType.EMPTY,
-            rotation: Dir.UP,
-            powered: false,     // 現在の電気状態
-            nextPowered: false, // 次のフレームの電気状態
-            lastUpdate: 0
-        }));
+        this.cells = new Map(); // 配列ではなくMapに変更(無限グリッド対応のため疎行列的に扱う)
     }
 
-    getIndex(x, y) {
-        if (x < 0 || x >= this.width || y < 0 || y >= this.height) return -1;
-        return y * this.width + x;
-    }
+    // "x,y" という文字列をキーにする
+    _key(x, y) { return `${x},${y}`; }
 
     getCell(x, y) {
-        const idx = this.getIndex(x, y);
-        return idx !== -1 ? this.cells[idx] : null;
+        return this.cells.get(this._key(x, y)) || null;
     }
 
     setCell(x, y, type, rotation = Dir.UP) {
-        const idx = this.getIndex(x, y);
-        if (idx !== -1) {
-            this.cells[idx] = {
-                type: type,
-                rotation: rotation,
+        const key = this._key(x, y);
+        if (type === CellType.EMPTY) {
+            this.cells.delete(key);
+        } else {
+            // 既存の状態があれば保持したいプロパティがあるか確認
+            const existing = this.cells.get(key);
+            this.cells.set(key, {
+                x, y,
+                type,
+                rotation,
                 powered: false,
                 nextPowered: false,
-                lastUpdate: 0
-            };
+                lastUpdate: 0,
+                // 一部のプロパティは上書き時に継承しない
+            });
         }
     }
 
-    // 座標変換 (スクリーン座標 -> グリッド座標)
-    toGrid(screenX, screenY) {
-        return {
-            x: Math.floor(screenX / this.cellSize),
-            y: Math.floor(screenY / this.cellSize)
-        };
+    // 範囲内のセルを取得（選択用）
+    getCellsInRect(x1, y1, x2, y2) {
+        const result = [];
+        const minX = Math.min(x1, x2);
+        const maxX = Math.max(x1, x2);
+        const minY = Math.min(y1, y2);
+        const maxY = Math.max(y1, y2);
+
+        for (const [key, cell] of this.cells) {
+            if (cell.x >= minX && cell.x <= maxX && cell.y >= minY && cell.y <= maxY) {
+                result.push(cell);
+            }
+        }
+        return result;
+    }
+
+    clear() {
+        this.cells.clear();
+    }
+
+    // シリアライズ
+    exportJSON() {
+        // Mapを配列に変換して保存
+        return JSON.stringify(Array.from(this.cells.values()));
+    }
+
+    // デシリアライズ
+    importJSON(jsonString) {
+        try {
+            const data = JSON.parse(jsonString);
+            this.cells.clear();
+            data.forEach(cellData => {
+                // 必須データの復元
+                this.cells.set(this._key(cellData.x, cellData.y), {
+                    x: cellData.x,
+                    y: cellData.y,
+                    type: cellData.type,
+                    rotation: cellData.rotation,
+                    powered: false, // 状態はリセット
+                    nextPowered: false,
+                    lastUpdate: 0
+                });
+            });
+            return true;
+        } catch (e) {
+            console.error("Load failed", e);
+            return false;
+        }
     }
 }

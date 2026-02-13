@@ -3,23 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logic & Physics Sandbox</title>
+    <title>Logic & Physics Sandbox 2.0</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div id="container">
         <canvas id="simCanvas"></canvas>
-        <div id="ui-layer">
-            <div id="toolbar">
-                <h3>ツールボックス</h3>
+        
+        <div id="top-bar">
+            <button id="btn-save">保存 (Save)</button>
+            <button id="btn-load">開く (Load)</button>
+            <span class="separator">|</span>
+            <button id="btn-clear">全消去</button>
+            <span id="status-msg">Ready</span>
+        </div>
+
+        <div id="bottom-bar">
+            <div id="tools-scroll">
                 <div id="tools"></div>
-                <div class="info">
-                    左クリック: 設置<br>
-                    右クリック: 削除<br>
-                    Rキー: 回転<br>
-                    Space: 一時停止
-                </div>
-                <div id="debug-info">FPS: 60</div>
+            </div>
+            <div id="controls-info">
+                <small>
+                    Wheel: Zoom | Mid-Click/Space: Pan<br>
+                    Left: Place/Select | Right: Del<br>
+                    Ctrl+C/V: Copy/Paste
+                </small>
             </div>
         </div>
     </div>

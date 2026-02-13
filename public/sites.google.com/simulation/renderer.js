@@ -1,68 +1,82 @@
 import { CellType, CellProps, Dir } from './types.js';
 
 export class Renderer {
-    constructor(canvas, grid, simulation) {
+    constructor(canvas, grid, simulation, camera) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.grid = grid;
         this.sim = simulation;
+        this.camera = camera;
+        
+        // 選択範囲用
+        this.selectionStart = null;
+        this.selectionEnd = null;
+
         this.resize();
     }
 
     resize() {
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+        // High DPI Display 対応
+        const dpr = window.devicePixelRatio || 1;
+        const rect = this.canvas.parentElement.getBoundingClientRect();
+        
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        
+        this.canvas.style.width = `${rect.width}px`;
+        this.canvas.style.height = `${rect.height}px`;
+        
+        this.ctx.scale(dpr, dpr);
     }
 
     draw() {
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        const ctx = this.ctx;
+        const cvsW = this.canvas.width / (window.devicePixelRatio || 1);
+        const cvsH = this.canvas.height / (window.devicePixelRatio || 1);
+
+        ctx.clearRect(0, 0, cvsW, cvsH);
         
-        this.drawGrid();
-        this.drawBalls();
+        ctx.save();
+        // カメラ変換適用
+        ctx.translate(this.camera.offset.x, this.camera.offset.y);
+        ctx.scale(this.camera.scale, this.camera.scale);
+
+        this.drawGrid(ctx);
+        this.drawBalls(ctx);
+        this.drawSelection(ctx);
+
+        ctx.restore();
     }
 
-    drawGrid() {
+    drawGrid(ctx) {
         const cs = this.grid.cellSize;
-        const ctx = this.ctx;
+        
+        // 画面内にあるセルだけ描画（カリング）最適化は省略しますが、本来はやるべき
+        for (const cell of this.grid.cells.values()) {
+            const cx = cell.x * cs;
+            const cy = cell.y * cs;
+            const props = CellProps[cell.type];
 
-        for (let y = 0; y < this.grid.height; y++) {
-            for (let x = 0; x < this.grid.width; x++) {
-                const cell = this.grid.getCell(x, y);
-                if (cell.type === CellType.EMPTY) continue;
+            ctx.lineWidth = 2; // 線を太くしてSVGっぽく
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#222';
 
-                const cx = x * cs;
-                const cy = y * cs;
-                const props = CellProps[cell.type];
-
-                // 描画スタイル設定
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#000';
-                
-                // ON状態なら中を塗りつぶす、OFFなら白抜き
-                if (cell.powered) {
-                    ctx.fillStyle = props.color;
-                    ctx.fillRect(cx, cy, cs, cs);
-                    ctx.fillStyle = '#fff'; // テキストやアイコン用
-                } else {
-                    ctx.fillStyle = '#fff';
-                    ctx.fillRect(cx, cy, cs, cs);
-                    ctx.strokeRect(cx, cy, cs, cs);
-                    ctx.fillStyle = '#000'; // テキストやアイコン用
-                }
-
-                // アイコン/方向描画
-                ctx.save();
-                ctx.translate(cx + cs/2, cy + cs/2);
-                
-                // 回転
-                if (cell.rotation !== Dir.UP) {
-                    ctx.rotate(cell.rotation * Math.PI / 2);
-                }
-
-                this.drawCellIcon(ctx, cell.type, cs);
-                ctx.restore();
+            if (cell.powered) {
+                ctx.fillStyle = props.color;
+                ctx.fillRect(cx, cy, cs, cs);
+                ctx.fillStyle = '#fff'; 
+            } else {
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(cx, cy, cs, cs);
+                ctx.strokeRect(cx, cy, cs, cs);
+                ctx.fillStyle = '#222';
             }
+
+            ctx.save();
+            ctx.translate(cx + cs/2, cy + cs/2);
+            if (cell.rotation !== Dir.UP) ctx.rotate(cell.rotation * Math.PI / 2);
+            this.drawCellIcon(ctx, cell.type, cs);
+            ctx.restore();
         }
     }
 
@@ -70,58 +84,54 @@ export class Renderer {
         const s = size / 2;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold 12px Courier New';
+        ctx.font = 'bold 12px monospace';
 
+        // 図形をパスで描画してSVGライクにする
+        ctx.beginPath();
         switch(type) {
             case CellType.WIRE:
-                ctx.fillRect(-2, -2, 4, 4);
-                break;
+                ctx.fillRect(-2, -2, 4, 4); break;
             case CellType.BATTERY:
-                ctx.fillText("BAT", 0, 0);
-                break;
+                ctx.fillText("PWR", 0, 0); break;
             case CellType.NOT:
-                // 三角形
-                ctx.beginPath();
-                ctx.moveTo(-s/2, s/2);
-                ctx.lineTo(s/2, s/2);
-                ctx.lineTo(0, -s/2);
-                ctx.fill();
-                break;
+                ctx.moveTo(-s/2, s/2); ctx.lineTo(s/2, s/2); ctx.lineTo(0, -s/2); ctx.fill(); break;
             case CellType.LAMP:
-                ctx.beginPath();
-                ctx.arc(0, 0, s/1.5, 0, Math.PI*2);
-                ctx.stroke();
-                break;
+                ctx.arc(0, 0, s/1.5, 0, Math.PI*2); ctx.stroke(); break;
             case CellType.PISTON:
-                ctx.fillRect(-s/2, 0, s, s/2);
-                // 棒
-                ctx.beginPath();
-                ctx.moveTo(0, 0);
-                ctx.lineTo(0, -s);
-                ctx.stroke();
-                break;
+                ctx.fillRect(-s/2, 0, s, s/2); ctx.moveTo(0,0); ctx.lineTo(0, -s); ctx.stroke(); break;
             case CellType.SPAWNER:
-                ctx.fillText("SPW", 0, 0);
-                break;
+                ctx.fillText("SPW", 0, 0); break;
             case CellType.SENSOR:
-                ctx.fillText("?", 0, 0);
-                ctx.beginPath();
-                ctx.arc(0,0, s, 0, Math.PI*2);
-                ctx.stroke();
-                break;
+                ctx.arc(0,0, s, 0, Math.PI*2); ctx.stroke(); ctx.fillText("?", 0, 0); break;
             case CellType.DIODE:
-                ctx.fillText("->", 0, 0);
-                break;
+                ctx.fillText("▶", 0, 0); break;
         }
     }
 
-    drawBalls() {
-        const ctx = this.ctx;
+    drawBalls(ctx) {
         ctx.fillStyle = '#000';
         for (const ball of this.sim.balls) {
             ctx.beginPath();
             ctx.arc(ball.pos.x, ball.pos.y, ball.radius, 0, Math.PI * 2);
             ctx.fill();
+        }
+    }
+
+    drawSelection(ctx) {
+        if (this.selectionStart && this.selectionEnd) {
+            const cs = this.grid.cellSize;
+            const x1 = Math.min(this.selectionStart.x, this.selectionEnd.x) * cs;
+            const y1 = Math.min(this.selectionStart.y, this.selectionEnd.y) * cs;
+            const w = (Math.abs(this.selectionEnd.x - this.selectionStart.x) + 1) * cs;
+            const h = (Math.abs(this.selectionEnd.y - this.selectionStart.y) + 1) * cs;
+
+            ctx.save();
+            ctx.strokeStyle = '#007bff';
+            ctx.fillStyle = 'rgba(0, 123, 255, 0.2)';
+            ctx.lineWidth = 2 / this.camera.scale; // ズームしても線の太さを一定に
+            ctx.fillRect(x1, y1, w, h);
+            ctx.strokeRect(x1, y1, w, h);
+            ctx.restore();
         }
     }
 }

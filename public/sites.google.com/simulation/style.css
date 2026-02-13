@@ -1,14 +1,16 @@
 :root {
-    --bg-color: #ffffff;
-    --stroke-color: #000000;
-    --highlight-color: #444444;
+    --bg-color: #f7f7f7;
+    --ui-bg: rgba(255, 255, 255, 0.95);
+    --stroke-color: #222;
+    --accent-color: #000;
+    --border-color: #ddd;
 }
 
 body {
     margin: 0;
     overflow: hidden;
     background-color: var(--bg-color);
-    font-family: 'Courier New', monospace;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: var(--stroke-color);
     user-select: none;
 }
@@ -21,61 +23,99 @@ body {
 
 canvas {
     display: block;
+    cursor: crosshair;
 }
 
-#ui-layer {
+/* 上部メニュー */
+#top-bar {
     position: absolute;
-    top: 20px;
-    left: 20px;
-    pointer-events: none; /* UI以外はクリック透過 */
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 10px;
+    background: var(--ui-bg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-sizing: border-box;
+    z-index: 10;
 }
 
-#toolbar {
-    pointer-events: auto;
-    background: rgba(255, 255, 255, 0.9);
-    border: 2px solid var(--stroke-color);
-    padding: 15px;
-    width: 220px;
-    box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
+button {
+    background: #fff;
+    border: 1px solid var(--stroke-color);
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s;
+    border-radius: 4px;
 }
 
-h3 {
-    margin-top: 0;
-    border-bottom: 1px solid var(--stroke-color);
+button:hover {
+    background: #222;
+    color: #fff;
+}
+
+/* 下部ツールバー */
+#bottom-bar {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 800px;
+    background: var(--ui-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    z-index: 10;
+}
+
+#tools-scroll {
+    overflow-x: auto;
     padding-bottom: 5px;
 }
 
+#tools {
+    display: flex;
+    gap: 5px;
+}
+
 .tool-btn {
-    display: block;
-    width: 100%;
-    padding: 8px;
-    margin-bottom: 5px;
-    background: #fff;
-    border: 1px solid var(--stroke-color);
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    border: 1px solid transparent;
     cursor: pointer;
-    text-align: left;
-    font-weight: bold;
-    transition: all 0.1s;
+    font-size: 12px;
+    text-align: center;
+    border-radius: 4px;
+    background: #f0f0f0;
+    color: #555;
 }
 
 .tool-btn:hover {
-    background: #eee;
+    background: #e0e0e0;
 }
 
 .tool-btn.active {
     background: #000;
     color: #fff;
+    border-color: #000;
 }
 
-.info {
-    font-size: 0.8em;
-    margin-top: 15px;
-    line-height: 1.5;
-    color: #666;
+#controls-info {
+    margin-top: 8px;
+    border-top: 1px solid #eee;
+    padding-top: 5px;
+    text-align: center;
+    color: #888;
+    font-size: 0.75rem;
 }
 
-#debug-info {
-    margin-top: 10px;
-    font-size: 0.7em;
-    text-align: right;
-}
+.separator { color: #ccc; }
+#status-msg { margin-left: auto; font-size: 12px; color: #666; font-family: monospace;}
