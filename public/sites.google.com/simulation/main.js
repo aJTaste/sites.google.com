@@ -7,6 +7,27 @@ import { CellType, CellProps } from './types.js';
 
 // ---- UI Logic ----
 const setupUI = (game) => {
+
+    // 一時停止ボタン
+const pauseBtn = document.getElementById('btn-pause');
+pauseBtn.onclick = () => {
+    game.paused = !game.paused;
+    pauseBtn.textContent = game.paused ? "再開 (Play)" : "一時停止 (Pause)";
+    // 停止中はステップボタンを有効化などのUI制御も可能ですが今回は簡易に
+};
+
+// ステップ実行ボタン
+document.getElementById('btn-step').onclick = () => {
+    if (!game.paused) {
+        game.paused = true; // 強制的にポーズ状態にする
+        pauseBtn.textContent = "再開 (Play)";
+    }
+    game.sim.update(); // 1フレームだけ手動更新
+    game.renderer.draw(); // 即座に反映
+};
+
+// ... 既存のコード ...
+
     const toolbar = document.getElementById('tools');
     
     // Select Tool

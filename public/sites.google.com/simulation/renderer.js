@@ -7,25 +7,18 @@ export class Renderer {
         this.grid = grid;
         this.sim = simulation;
         this.camera = camera;
-        
-        // 選択範囲用
         this.selectionStart = null;
         this.selectionEnd = null;
-
         this.resize();
     }
 
     resize() {
-        // High DPI Display 対応
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.parentElement.getBoundingClientRect();
-        
         this.canvas.width = rect.width * dpr;
         this.canvas.height = rect.height * dpr;
-        
         this.canvas.style.width = `${rect.width}px`;
         this.canvas.style.height = `${rect.height}px`;
-        
         this.ctx.scale(dpr, dpr);
     }
 
@@ -37,7 +30,6 @@ export class Renderer {
         ctx.clearRect(0, 0, cvsW, cvsH);
         
         ctx.save();
-        // カメラ変換適用
         ctx.translate(this.camera.offset.x, this.camera.offset.y);
         ctx.scale(this.camera.scale, this.camera.scale);
 
@@ -51,33 +43,70 @@ export class Renderer {
     drawGrid(ctx) {
         const cs = this.grid.cellSize;
         
-        // 画面内にあるセルだけ描画（カリング）最適化は省略しますが、本来はやるべき
         for (const cell of this.grid.cells.values()) {
             const cx = cell.x * cs;
             const cy = cell.y * cs;
             const props = CellProps[cell.type];
 
-            ctx.lineWidth = 2; // 線を太くしてSVGっぽく
-            ctx.lineJoin = 'round';
-            ctx.strokeStyle = '#222';
-
-            if (cell.powered) {
-                ctx.fillStyle = props.color;
-                ctx.fillRect(cx, cy, cs, cs);
-                ctx.fillStyle = '#fff'; 
+            // 共通: 白背景と枠
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(cx, cy, cs, cs);
+            
+            // ワイヤーの場合は特殊描画
+            if (cell.type === CellType.WIRE) {
+                this.drawWire(ctx, cell, cx, cy, cs, props);
             } else {
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(cx, cy, cs, cs);
+                // 通常ブロック
+                ctx.lineWidth = 1; // 通常は細く
+                ctx.strokeStyle = '#ddd';
                 ctx.strokeRect(cx, cy, cs, cs);
-                ctx.fillStyle = '#222';
-            }
 
-            ctx.save();
-            ctx.translate(cx + cs/2, cy + cs/2);
-            if (cell.rotation !== Dir.UP) ctx.rotate(cell.rotation * Math.PI / 2);
-            this.drawCellIcon(ctx, cell.type, cs);
-            ctx.restore();
+                if (cell.powered) {
+                    ctx.fillStyle = props.color;
+                    ctx.fillRect(cx, cy, cs, cs);
+                    ctx.fillStyle = '#fff';
+                } else {
+                    ctx.fillStyle = '#222';
+                }
+
+                ctx.save();
+                ctx.translate(cx + cs/2, cy + cs/2);
+                if (cell.rotation !== Dir.UP) ctx.rotate(cell.rotation * Math.PI / 2);
+                this.drawCellIcon(ctx, cell.type, cs);
+                ctx.restore();
+            }
         }
+    }
+
+    // ワイヤー同士や機械と繋がって見えるように描画
+    drawWire(ctx, cell, cx, cy, cs, props) {
+        const center = cs / 2;
+        const lineWidth = cs / 3;
+
+        ctx.fillStyle = cell.powered ? props.color : '#eee'; // OFF時は薄いグレー
+        
+        // 中心点
+        ctx.fillRect(cx + center - lineWidth/2, cy + center - lineWidth/2, lineWidth, lineWidth);
+
+        // 周囲4方向チェック
+        const dirs = [
+            { dx: 0, dy: -1 }, // UP
+            { dx: 1, dy: 0 },  // RIGHT
+            { dx: 0, dy: 1 },  // DOWN
+            { dx: -1, dy: 0 }  // LEFT
+        ];
+
+        dirs.forEach(d => {
+            const neighbor = this.grid.getCell(cell.x + d.dx, cell.y + d.dy);
+            if (neighbor && neighbor.type !== CellType.EMPTY && neighbor.type !== CellType.WALL) {
+                // 壁以外なら繋がる（簡易判定）
+                const lx = d.dx === 0 ? cx + center - lineWidth/2 : (d.dx > 0 ? cx + center : cx);
+                const ly = d.dy === 0 ? cy + center - lineWidth/2 : (d.dy > 0 ? cy + center : cy);
+                const lw = d.dx === 0 ? lineWidth : center;
+                const lh = d.dy === 0 ? lineWidth : center;
+                ctx.fillRect(lx, ly, lw, lh);
+            }
+        });
     }
 
     drawCellIcon(ctx, type, size) {
@@ -86,25 +115,22 @@ export class Renderer {
         ctx.textBaseline = 'middle';
         ctx.font = 'bold 12px monospace';
 
-        // 図形をパスで描画してSVGライクにする
         ctx.beginPath();
         switch(type) {
-            case CellType.WIRE:
-                ctx.fillRect(-2, -2, 4, 4); break;
-            case CellType.BATTERY:
-                ctx.fillText("PWR", 0, 0); break;
+            case CellType.BATTERY: ctx.fillText("⚡", 0, 1); break;
             case CellType.NOT:
-                ctx.moveTo(-s/2, s/2); ctx.lineTo(s/2, s/2); ctx.lineTo(0, -s/2); ctx.fill(); break;
+                ctx.moveTo(-s/2, s/2); ctx.lineTo(s/2, s/2); ctx.lineTo(0, -s/2); ctx.fill(); 
+                // 丸印
+                ctx.beginPath(); ctx.arc(0, -s/2 - 2, 2, 0, Math.PI*2); ctx.stroke();
+                break;
             case CellType.LAMP:
                 ctx.arc(0, 0, s/1.5, 0, Math.PI*2); ctx.stroke(); break;
             case CellType.PISTON:
                 ctx.fillRect(-s/2, 0, s, s/2); ctx.moveTo(0,0); ctx.lineTo(0, -s); ctx.stroke(); break;
-            case CellType.SPAWNER:
-                ctx.fillText("SPW", 0, 0); break;
+            case CellType.SPAWNER: ctx.fillText("Box", 0, 0); break;
             case CellType.SENSOR:
-                ctx.arc(0,0, s, 0, Math.PI*2); ctx.stroke(); ctx.fillText("?", 0, 0); break;
-            case CellType.DIODE:
-                ctx.fillText("▶", 0, 0); break;
+                ctx.arc(0,0, s, 0, Math.PI*2); ctx.stroke(); ctx.fillText("!", 0, 1); break;
+            case CellType.DIODE: ctx.fillText("▶", 0, 1); break;
         }
     }
 
@@ -127,9 +153,8 @@ export class Renderer {
 
             ctx.save();
             ctx.strokeStyle = '#007bff';
-            ctx.fillStyle = 'rgba(0, 123, 255, 0.2)';
-            ctx.lineWidth = 2 / this.camera.scale; // ズームしても線の太さを一定に
-            ctx.fillRect(x1, y1, w, h);
+            ctx.lineWidth = 2 / this.camera.scale;
+            ctx.setLineDash([5 / this.camera.scale, 5 / this.camera.scale]);
             ctx.strokeRect(x1, y1, w, h);
             ctx.restore();
         }
