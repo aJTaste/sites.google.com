@@ -1,0 +1,81 @@
+:root {
+    --bg-color: #ffffff;
+    --stroke-color: #000000;
+    --highlight-color: #444444;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: var(--bg-color);
+    font-family: 'Courier New', monospace;
+    color: var(--stroke-color);
+    user-select: none;
+}
+
+#container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+canvas {
+    display: block;
+}
+
+#ui-layer {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    pointer-events: none; /* UI以外はクリック透過 */
+}
+
+#toolbar {
+    pointer-events: auto;
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid var(--stroke-color);
+    padding: 15px;
+    width: 220px;
+    box-shadow: 5px 5px 0px rgba(0,0,0,0.1);
+}
+
+h3 {
+    margin-top: 0;
+    border-bottom: 1px solid var(--stroke-color);
+    padding-bottom: 5px;
+}
+
+.tool-btn {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 5px;
+    background: #fff;
+    border: 1px solid var(--stroke-color);
+    cursor: pointer;
+    text-align: left;
+    font-weight: bold;
+    transition: all 0.1s;
+}
+
+.tool-btn:hover {
+    background: #eee;
+}
+
+.tool-btn.active {
+    background: #000;
+    color: #fff;
+}
+
+.info {
+    font-size: 0.8em;
+    margin-top: 15px;
+    line-height: 1.5;
+    color: #666;
+}
+
+#debug-info {
+    margin-top: 10px;
+    font-size: 0.7em;
+    text-align: right;
+}
