@@ -2,83 +2,304 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Fractal Bit Sandbox</title>
-    <link rel="stylesheet" href="style.css">
+    <title>The Architect - Life Simulator</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --cell-color: #ffffff;
+            --ui-bg: #111111;
+            --ui-text: #cccccc;
+            --ui-border: #333333;
+        }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: var(--bg-color);
+            color: var(--ui-text);
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* コントロールパネル */
+        #controls {
+            padding: 10px 20px;
+            background-color: var(--ui-bg);
+            border-bottom: 1px solid var(--ui-border);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            z-index: 10;
+        }
+
+        button {
+            background: transparent;
+            color: var(--ui-text);
+            border: 1px solid var(--ui-text);
+            padding: 5px 15px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--ui-text);
+            color: var(--bg-color);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        #info {
+            margin-left: auto;
+            font-size: 12px;
+        }
+
+        /* キャンバスエリア */
+        #canvas-container {
+            flex-grow: 1;
+            position: relative;
+            cursor: crosshair;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            image-rendering: pixelated; /* ドットをくっきりさせる */
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+    </style>
 </head>
 <body>
-    <div id="game-container">
-        <header>
-            <h1>FRACTAL BIT SANDBOX</h1>
-        </header>
-        <main>
-            <div id="grid-section">
-                <div id="main-grid" class="grid">
-                    </div>
-            </div>
 
-            <div id="controls-section">
-                
-                <div class="panel">
-                    <h2>パレット (配置)</h2>
-                    <div id="palette" class="palette-grid">
-                        <div class="palette-item active" data-type="empty">消しゴム</div>
-                        <div class="palette-item" data-type="wall">壁 (■)</div>
-                        <div class="palette-item" data-type="particle" data-dir="right">粒子 (→)</div>
-                        </div>
-                    
-                    <div id="particle-direction-controls" style="display: none; margin-top: 10px;">
-                        <p>粒子の進行方向:</p>
-                        <div class="direction-buttons">
-                            <button data-dir="up">↑</button>
-                            <button data-dir="right" class="active">→</button>
-                            <button data-dir="down">↓</button>
-                            <button data-dir="left">←</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <h2>シミュレーション制御</h2>
-                    <div class="control-buttons">
-                        <button id="btn-play">▶ 再生 / 停止</button>
-                        <button id="btn-step">⏯ 1コマ進む</button>
-                        <button id="btn-reset">↩ 位置リセット</button>
-                        <button id="btn-clear" class="danger">🗑 全消去</button>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <h2>部品の作成 (モジュール化)</h2>
-                    <p class="desc">現在の盤面を1つのブロックとして保存します</p>
-                    <input type="text" id="object-name" placeholder="部品名を入力 (例: AND回路)">
-                    <button id="btn-save-object">現在の盤面を部品として登録</button>
-                </div>
-
-                <div class="panel file-manager">
-                    <h2>ローカルフォルダ連携</h2>
-                    <p class="desc">PCのフォルダを接続してデータを直接読み書きします</p>
-                    <button id="btn-open-folder" class="primary-btn">📂 フォルダを接続</button>
-                    
-                    <div id="file-list-container" style="display:none;">
-                        <h3>保存されているファイル:</h3>
-                        <ul id="file-list">
-                            </ul>
-                        <hr>
-                        <input type="text" id="file-save-name" placeholder="ファイル名 (例: my_save)">
-                        <button id="btn-save-to-folder">フォルダに保存 (.json)</button>
-                    </div>
-                    
-                    <div id="legacy-import-export">
-                        <hr>
-                        <p style="font-size: 12px; color: #666;">※フォルダ接続を使わない場合:</p>
-                        <button id="btn-export">ファイル書き出し (DL)</button>
-                        <label for="file-import" class="custom-file-upload">ファイル読み込み</label>
-                        <input type="file" id="file-import" accept=".json">
-                    </div>
-                </div>
-            </div>
-        </main>
+    <div id="controls">
+        <button id="btn-toggle">START / STOP</button>
+        <button id="btn-step">STEP</button>
+        <button id="btn-random">CHAOS</button>
+        <button id="btn-clear">CLEAR</button>
+        <div id="info">GEN: <span id="gen-count">0</span> | POP: <span id="pop-count">0</span></div>
     </div>
-    <script src="script.js"></script>
+
+    <div id="canvas-container">
+        <canvas id="gridCanvas"></canvas>
+    </div>
+
+<script>
+    /**
+     * CONFIGURATION
+     */
+    const CELL_SIZE = 10; // セルの大きさ(px)
+    const FPS = 30;       // 更新速度
+
+    /**
+     * STATE
+     */
+    const canvas = document.getElementById('gridCanvas');
+    const ctx = canvas.getContext('2d');
+    const container = document.getElementById('canvas-container');
+    
+    let cols, rows;
+    let grid = [];
+    let isRunning = false;
+    let generation = 0;
+    let animationId;
+    let isMouseDown = false;
+    let lastDrawX = -1, lastDrawY = -1;
+
+    // Elements
+    const btnToggle = document.getElementById('btn-toggle');
+    const btnStep = document.getElementById('btn-step');
+    const btnRandom = document.getElementById('btn-random');
+    const btnClear = document.getElementById('btn-clear');
+    const genDisplay = document.getElementById('gen-count');
+    const popDisplay = document.getElementById('pop-count');
+
+    /**
+     * INITIALIZATION
+     */
+    function init() {
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Mouse/Touch Events for Drawing
+        canvas.addEventListener('mousedown', (e) => {
+            isMouseDown = true;
+            drawCell(e);
+        });
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+            lastDrawX = -1;
+            lastDrawY = -1;
+        });
+        canvas.addEventListener('mousemove', (e) => {
+            if (isMouseDown) drawCell(e);
+        });
+
+        // Controls
+        btnToggle.addEventListener('click', toggleGame);
+        btnStep.addEventListener('click', () => { if(!isRunning) update(); });
+        btnRandom.addEventListener('click', randomizeGrid);
+        btnClear.addEventListener('click', clearGrid);
+
+        // Game Loop
+        let lastTime = 0;
+        function loop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            const elapsed = timestamp - lastTime;
+
+            if (isRunning && elapsed > (1000 / FPS)) {
+                update();
+                lastTime = timestamp;
+            }
+            requestAnimationFrame(loop);
+        }
+        requestAnimationFrame(loop);
+    }
+
+    /**
+     * CORE LOGIC
+     */
+    function resizeCanvas() {
+        // コンテナのサイズに合わせてキャンバスをリサイズ
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+        
+        cols = Math.floor(canvas.width / CELL_SIZE);
+        rows = Math.floor(canvas.height / CELL_SIZE);
+        
+        // グリッド再生成（内容はリセットされます）
+        createGrid();
+        render();
+    }
+
+    function createGrid() {
+        grid = new Array(cols).fill(null).map(() => new Array(rows).fill(0));
+        generation = 0;
+        updateStats();
+    }
+
+    function randomizeGrid() {
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+                grid[i][j] = Math.random() > 0.85 ? 1 : 0; // 15%の確率で生存
+            }
+        }
+        generation = 0;
+        render();
+        updateStats();
+    }
+
+    function clearGrid() {
+        grid = grid.map(col => col.map(() => 0));
+        generation = 0;
+        isRunning = false;
+        render();
+        updateStats();
+    }
+
+    // ライフゲームのルール（神の数式）
+    function update() {
+        let nextGrid = grid.map(arr => [...arr]); // Deep copy
+        let hasChanged = false;
+
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+                const state = grid[i][j];
+                const neighbors = countNeighbors(grid, i, j);
+
+                if (state === 0 && neighbors === 3) {
+                    nextGrid[i][j] = 1; // 誕生
+                    hasChanged = true;
+                } else if (state === 1 && (neighbors < 2 || neighbors > 3)) {
+                    nextGrid[i][j] = 0; // 過疎または過密で死滅
+                    hasChanged = true;
+                } else {
+                    nextGrid[i][j] = state; // 生存
+                }
+            }
+        }
+
+        grid = nextGrid;
+        if (hasChanged) {
+            generation++;
+            updateStats();
+            render();
+        }
+    }
+
+    function countNeighbors(grid, x, y) {
+        let sum = 0;
+        for (let i = -1; i < 2; i++) {
+            for (let j = -1; j < 2; j++) {
+                const col = (x + i + cols) % cols; // 端をつなげる（トーラス構造）
+                const row = (y + j + rows) % rows;
+                sum += grid[col][row];
+            }
+        }
+        sum -= grid[x][y]; // 自分自身は引く
+        return sum;
+    }
+
+    /**
+     * RENDERING & INTERACTION
+     */
+    function render() {
+        // 背景クリア
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 生きているセルを描画
+        ctx.fillStyle = '#ffffff';
+        for (let i = 0; i < cols; i++) {
+            for (let j = 0; j < rows; j++) {
+                if (grid[i][j] === 1) {
+                    ctx.fillRect(i * CELL_SIZE, j * CELL_SIZE, CELL_SIZE - 1, CELL_SIZE - 1);
+                }
+            }
+        }
+    }
+
+    function drawCell(e) {
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor((e.clientX - rect.left) / CELL_SIZE);
+        const y = Math.floor((e.clientY - rect.top) / CELL_SIZE);
+
+        // 範囲外チェック
+        if (x < 0 || x >= cols || y < 0 || y >= rows) return;
+
+        // 同じセルを連続で処理しない
+        if (x === lastDrawX && y === lastDrawY) return;
+
+        grid[x][y] = grid[x][y] ? 0 : 1; // トグル（反転）
+        lastDrawX = x;
+        lastDrawY = y;
+        
+        render();
+        updateStats();
+    }
+
+    function toggleGame() {
+        isRunning = !isRunning;
+    }
+
+    function updateStats() {
+        genDisplay.innerText = generation;
+        // 人口カウント（少し重いので大規模な場合は最適化推奨）
+        let pop = 0;
+        grid.forEach(col => col.forEach(cell => pop += cell));
+        popDisplay.innerText = pop;
+    }
+
+    // Start
+    init();
+
+</script>
 </body>
 </html>
