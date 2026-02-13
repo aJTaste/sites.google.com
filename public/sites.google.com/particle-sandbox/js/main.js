@@ -1,11 +1,11 @@
 import{GameEngine}from'./core/GameEngine.js';
-import{Editor}from'./ui/Editor.js';
+import{UI}from'./ui/UI.js';
 document.addEventListener('DOMContentLoaded',()=>{
-  const canvas=document.getElementById('gameCanvas');
+  const canvas=document.getElementById('canvas');
   const engine=new GameEngine(canvas);
-  const editor=new Editor(engine);
+  const ui=new UI(engine);
   engine.render();
-  editor.startUpdateLoop();
-  console.log('Particle Sandbox initialized');
-  console.log('Grid size:',engine.grid.size,'x',engine.grid.size);
+  console.log('粒子シミュレータ起動');
+  console.log('グリッド:',engine.gridSize,'×',engine.gridSize);
+  console.log('キャンバス:',engine.width,'×',engine.height);
 });
