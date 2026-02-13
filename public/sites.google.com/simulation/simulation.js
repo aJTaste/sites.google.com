@@ -4,6 +4,8 @@ export class Simulation {
     constructor(grid) {
         this.grid = grid;
         this.balls = [];
+        // 前フレームの通電状態を保持（NOT回路のループ制御用）
+        this.prevPowered = new Map();
     }
 
     update() {
@@ -13,36 +15,33 @@ export class Simulation {
 
     // ---- 物理演算 (ボール) ----
     updatePhysics() {
-        // 重力
         for (const ball of this.balls) {
-            ball.vy += 0.5; // Gravity
+            ball.vy += 0.5; // 重力
             ball.pos.x += ball.vx;
             ball.pos.y += ball.vy;
 
-            // 画面外削除
             if (ball.pos.y > this.grid.height * this.grid.cellSize + 100) {
                 ball.remove = true;
             }
         }
         this.balls = this.balls.filter(b => !b.remove);
 
-        // 当たり判定 (簡易)
         const cs = this.grid.cellSize;
         for (const ball of this.balls) {
             const gx = Math.floor(ball.pos.x / cs);
             const gy = Math.floor(ball.pos.y / cs);
             const cell = this.grid.getCell(gx, gy);
 
-            if (cell && (cell.type === CellType.WALL || cell.type === CellType.PISTON && !cell.powered)) {
-                // 壁に当たったら跳ね返る（簡易）
+            // 壁やOFFのピストンでの跳ね返り
+            if (cell && (cell.type === CellType.WALL || (cell.type === CellType.PISTON && !cell.powered))) {
                 ball.vy *= -0.5;
                 ball.vx *= 0.9;
-                ball.pos.y = gy * cs - ball.radius;
+                ball.pos.y = gy * cs - ball.radius; // 位置補正
             }
             
-            // センサー接触
+            // センサー接触判定
             if (cell && cell.type === CellType.SENSOR) {
-                cell.activeSignal = true; // センサー発動
+                cell.activeSignal = true; 
             }
         }
     }
@@ -51,136 +50,115 @@ export class Simulation {
     updateLogic() {
         const cells = Array.from(this.grid.cells.values());
         
-        // 1. 前回の通電状態をバックアップ (論理ゲートの判定に使う)
-        // これがないと、信号がループした時に点滅したりバグったりするため
-        const prevPowered = new Map();
+        // 1. 状態のバックアップ（NOTゲートの判定用）
+        // キーは "x,y" 形式
+        const currentInputState = new Map();
         for (const cell of cells) {
-            prevPowered.set(`${cell.x},${cell.y}`, cell.powered || cell.activeSignal);
-            cell.activeSignal = false; // センサー信号は毎回リセット
+            currentInputState.set(`${cell.x},${cell.y}`, cell.powered || cell.activeSignal);
+            cell.activeSignal = false; // センサー信号リセット
         }
 
-        // 2. 全ての「受動素子(ワイヤー、ランプ、ピストンなど)」の電気を一旦 OFF にする
+        // 2. 全リセット（電池以外）
         for (const cell of cells) {
             if (cell.type !== CellType.BATTERY) {
                 cell.powered = false;
             } else {
-                cell.powered = true; // 電池は常にON
+                cell.powered = true;
             }
         }
 
-        // 3. 電源となる場所（ソース）を探してキューに入れる
+        // 3. ソース（電気の発生源）を特定してキューに入れる
         let queue = [];
 
         for (const cell of cells) {
-            // A. 電池はソース
+            // A. 電池
             if (cell.type === CellType.BATTERY) {
                 queue.push(cell);
             }
-            // B. NOTゲート: 「後ろ」がOFFなら、自分はソースになる
+            // B. センサー (物理接触があった場合)
+            else if (cell.type === CellType.SENSOR && currentInputState.get(`${cell.x},${cell.y}`)) {
+                cell.powered = true;
+                queue.push(cell);
+            }
+            // C. NOTゲート (前回のフレームで入力がOFFだった場合のみONになる)
             else if (cell.type === CellType.NOT) {
-                const inputPos = this.getBackwardPos(cell.x, cell.y, cell.rotation);
+                // NOTゲートのお尻（入力元）の座標を計算
+                const inputDir = (cell.rotation + 2) % 4; 
+                const inputPos = this.getNeighborPos(cell.x, cell.y, inputDir);
                 const inputKey = `${inputPos.x},${inputPos.y}`;
-                const isInputOn = prevPowered.get(inputKey); // 前回のフレームで電気が来ていたか？
+                
+                // 前フレームで、入力元に電気が来ていたか？
+                const isInputOn = this.prevPowered.get(inputKey);
                 
                 if (!isInputOn) {
                     cell.powered = true;
                     queue.push(cell);
                 }
             }
-            // C. センサー: ボールが触れていたらソースになる
-            else if (cell.type === CellType.SENSOR && prevPowered.get(`${cell.x},${cell.y}`)) {
-                cell.powered = true;
-                queue.push(cell);
-            }
         }
 
-        // 4. 電気の拡散 (BFS: 幅優先探索)
-        // ソースから繋がっている導線を辿って powered = true にしていく
+        // 4. 電気の拡散 (BFS)
+        // ここでのポイント：
+        // 「今いるセル(current)」が「どの方向に出せるか」を確認し、
+        // 「隣のセル(next)」が「その方向から受け取れるか」を確認する。
+        
         let visited = new Set(queue.map(c => `${c.x},${c.y}`));
         
         while (queue.length > 0) {
             const current = queue.shift();
             
-            // 現在のセルから出力できる方向を取得
-            const outputDirs = this.getOutputDirections(current);
+            // このセルが電気を出力できる方向のリスト
+            const outputDirs = this.getOutputDirs(current);
 
             for (const dir of outputDirs) {
-                const nextPos = this.getPosInDir(current.x, current.y, dir);
+                // 隣のセルの座標
+                const nextPos = this.getNeighborPos(current.x, current.y, dir);
                 const nextCell = this.grid.getCell(nextPos.x, nextPos.y);
 
                 if (!nextCell) continue;
+                if (nextCell.type === CellType.EMPTY || nextCell.type === CellType.WALL) continue;
+
+                // 既に訪問済みならスキップ
                 if (visited.has(`${nextPos.x},${nextPos.y}`)) continue;
 
-                // 接続可能かチェック
-                if (this.canAcceptPower(nextCell, dir)) {
+                // 重要：隣のセルは、currentからの電気を受け取れるか？
+                // dir は current から見た出力方向。
+                // nextCell から見ると、電気は (dir + 2) % 4 の方向から来る。
+                const incomingDir = (dir + 2) % 4;
+
+                if (this.canAcceptPower(nextCell, incomingDir)) {
                     nextCell.powered = true;
                     visited.add(`${nextCell.x},${nextCell.y}`);
                     
-                    // ワイヤーならさらに先へ電気を伝える
-                    // ランプやピストンは終点なのでキューには入れない（そこから電気は出ない）
+                    // 電気をさらに次に流せるパーツならキューに追加
+                    // (ランプやピストンは終端なのでキューに入れない＝ここから電気は出ない)
+                    if (nextCell.type === CellType.WIRE || 
+                        nextCell.type === CellType.DIODE || 
+                        nextCell.type === CellType.NOT) { // NOT自体は入力も受けるが、出力は別途ソース判定で決まるので、ここでは導線的な役割として次へ回さない方が安全だが、直列NOTのために一応通す
+                         // ※修正: NOTはソースとして判定済みなので、ここでキューに入れても
+                         // 「powered=true」にするだけで、出力ロジックはソース判定に任せるべき。
+                         // ただし、NOTの入力側まで電気を運びたいので、WIRE同様に扱う必要はない（NOTは入力を止める）。
+                         // したがって、キューに入れるのは WIRE と DIODE だけで良い。
+                    }
+
                     if (nextCell.type === CellType.WIRE || nextCell.type === CellType.DIODE) {
                         queue.push(nextCell);
                     }
                 }
             }
         }
-        
-        // 5. ピストンの物理動作 (ONなら動かす)
-        // (簡易実装: ONならボールを弾く処理など。今回は割愛)
+
+        // 現在の通電状態を保存（次フレームの判定用）
+        this.prevPowered.clear();
+        for (const cell of cells) {
+            this.prevPowered.set(`${cell.x},${cell.y}`, cell.powered);
+        }
     }
 
     // ---- ヘルパー関数 ----
 
-    // あるセルが、指定した絶対方向へ電気を出せるか？
-    getOutputDirections(cell) {
-        const dirs = [];
-        if (cell.type === CellType.BATTERY || cell.type === CellType.SENSOR || cell.type === CellType.WIRE) {
-            // 全方向に拡散
-            dirs.push(0, 1, 2, 3);
-        } else if (cell.type === CellType.NOT || cell.type === CellType.DIODE) {
-            // 向いている方向だけ
-            dirs.push(cell.rotation);
-        }
-        return dirs;
-    }
-
-    // あるセルが、指定した方向（からの電気）を受け取れるか？
-    // dir: 電気が来る方向（絶対方向）
-    canAcceptPower(cell, fromDir) {
-        // 壁や空は何もしない
-        if (cell.type === CellType.EMPTY || cell.type === CellType.WALL) return false;
-        
-        // ワイヤー、ランプ、ピストンはどこからでも受け取る
-        if (cell.type === CellType.WIRE || cell.type === CellType.LAMP || cell.type === CellType.PISTON) return true;
-
-        // ダイオード、NOTゲートは「後ろ」からしか受け取らない
-        // つまり、電気の来る方向(fromDir)が、自分の向き(rotation)と逆であること
-        // (0:UP, 1:RIGHT, 2:DOWN, 3:LEFT)
-        if (cell.type === CellType.NOT || cell.type === CellType.DIODE) {
-            const backDir = (cell.rotation + 2) % 4;
-            // fromDirは「ソースから見てどっちに進んだか」。
-            // 例: ソースが(0,0)で右(1)に進んで(1,0)に来た。
-            // (1,0)にあるNOTが右(1)を向いていたら、入力は左(3)から来る必要がある。
-            // fromDir(1) == activeな進行方向。
-            // 受け手から見ると「左から来た」= RIGHT方向への進行波。
-            
-            // シンプルに:
-            // NOTが右(1)を向いている。
-            // 電気が左から右へ流れてきた(fromDir = 1)。
-            // これは「後ろからの入力」なのでOK。
-            return fromDir === cell.rotation; 
-        }
-
-        return false;
-    }
-
-    getBackwardPos(x, y, rotation) {
-        // rotationの逆方向の座標
-        const backRot = (rotation + 2) % 4;
-        return this.getPosInDir(x, y, backRot);
-    }
-
-    getPosInDir(x, y, dir) {
+    // 指定した座標の隣の座標を取得
+    getNeighborPos(x, y, dir) {
         const d = [
             {x:0, y:-1}, // 0: UP
             {x:1, y:0},  // 1: RIGHT
@@ -188,5 +166,42 @@ export class Simulation {
             {x:-1, y:0}  // 3: LEFT
         ];
         return { x: x + d[dir].x, y: y + d[dir].y };
+    }
+
+    // そのセルが電気を出せる方向を返す
+    getOutputDirs(cell) {
+        // 電池、ワイヤー、センサー: 全方向に出す
+        if (cell.type === CellType.BATTERY || 
+            cell.type === CellType.WIRE || 
+            cell.type === CellType.SENSOR) {
+            return [0, 1, 2, 3];
+        }
+        // ダイオード、NOT: 向いている方向（前方）だけに出す
+        if (cell.type === CellType.DIODE || cell.type === CellType.NOT) {
+            return [cell.rotation];
+        }
+        // ランプ、ピストン: 電気を出さない（終端）
+        return [];
+    }
+
+    // そのセルが、指定した方向から来る電気を受け取れるか？
+    // incomingDir: 自分から見て「どの方角から電気が来たか」 (例: 0なら上から電気が来た)
+    canAcceptPower(cell, incomingDir) {
+        // ワイヤー、ランプ、ピストン: どこからでも受け取る
+        if (cell.type === CellType.WIRE || 
+            cell.type === CellType.LAMP || 
+            cell.type === CellType.PISTON) {
+            return true;
+        }
+
+        // ダイオード、NOT: 「お尻（向いている方向の逆）」からしか受け取らない
+        if (cell.type === CellType.DIODE || cell.type === CellType.NOT) {
+            // 自分の向きの反対側
+            const backDir = (cell.rotation + 2) % 4;
+            return incomingDir === backDir;
+        }
+
+        // それ以外（電池、センサーなど）は入力を受け取らない
+        return false;
     }
 }
