@@ -105,7 +105,8 @@ class Game{
     this.currentTool=CellType.WALL;
     this.activeBlockType=CellType.WALL;
     this.currentRotation=0;
-    this.paused=false; // 一時停止フラグ
+    this.paused=false;
+    this.spacePressed=false; // Spaceキー押下状態
     
     this.setupInputs(canvas);
     setupUI(this);
@@ -142,10 +143,16 @@ class Game{
       
       const g=getGridPos(e);
 
-      // 右ドラッグでカメラ移動開始
-      if(e.button===2){
+      // Space + 左ドラッグでカメラ移動開始
+      if(this.spacePressed&&e.button===0){
         this.camera.isDragging=true;
         this.camera.lastMouse={x:e.clientX,y:e.clientY};
+        return;
+      }
+
+      // 右クリック（2本指タップ）でセル削除
+      if(e.button===2){
+        this.grid.setCell(g.x,g.y,CellType.EMPTY);
         e.preventDefault();
         return;
       }
@@ -165,18 +172,18 @@ class Game{
     });
 
     window.addEventListener('mouseup',(e)=>{
-      if(e.button===0)isLeftDown=false;
-      if(e.button===2){
-        isRightDown=false;
+      if(e.button===0){
+        isLeftDown=false;
         this.camera.isDragging=false;
       }
+      if(e.button===2)isRightDown=false;
       if(this.currentTool==='SELECT')this.selectionMgr.endSelection();
     });
 
     canvas.addEventListener('mousemove',(e)=>{
       const g=getGridPos(e);
       
-      // カメラドラッグ中
+      // カメラドラッグ中（Space + 左ドラッグ）
       if(this.camera.isDragging){
         const dx=e.clientX-this.camera.lastMouse.x;
         const dy=e.clientY-this.camera.lastMouse.y;
@@ -190,6 +197,9 @@ class Game{
         this.renderer.selectionEnd={x:g.x,y:g.y};
       }else if(isLeftDown&&this.currentTool!=='SELECT'){
         this.grid.setCell(g.x,g.y,this.currentTool,this.currentRotation);
+      }else if(isRightDown){
+        // 右ドラッグで連続削除（2本指タップしながらドラッグ）
+        this.grid.setCell(g.x,g.y,CellType.EMPTY);
       }
     });
 
@@ -203,12 +213,16 @@ class Game{
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
     window.addEventListener('keydown',(e)=>{
-      // スペースキー：再生/停止
-      if(e.code==='Space'){
-        e.preventDefault();
-        this.paused=!this.paused;
-        const pauseBtn=document.getElementById('btn-pause');
-        pauseBtn.textContent=this.paused?"再開 (Play)":"一時停止 (Pause)";
+      // Spaceキー押下状態を記録
+      if(e.code==='Space'&&!this.spacePressed){
+        // ドラッグ中でない場合のみ再生/停止
+        if(!isLeftDown){
+          e.preventDefault();
+          this.paused=!this.paused;
+          const pauseBtn=document.getElementById('btn-pause');
+          pauseBtn.textContent=this.paused?"再開 (Play)":"一時停止 (Pause)";
+        }
+        this.spacePressed=true;
         return;
       }
 
@@ -240,6 +254,12 @@ class Game{
         this.renderer.selectionStart=null;
         this.renderer.selectionEnd=null;
         document.getElementById('status-msg').textContent="Deleted selection";
+      }
+    });
+
+    window.addEventListener('keyup',(e)=>{
+      if(e.code==='Space'){
+        this.spacePressed=false;
       }
     });
     
