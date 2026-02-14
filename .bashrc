@@ -38,7 +38,7 @@ function gnb() {
 # Switch & update main quickly
 alias gmain='git checkout main && git pull'
 
-# あるコミットの状態に完全に戻したいとき
+# あるコミットの状態に完全に戻したい
 # git reset --hard [コミットID]
 # git push --force-with-lease
 
