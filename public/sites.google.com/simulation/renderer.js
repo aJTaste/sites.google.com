@@ -130,7 +130,7 @@ export class Renderer {
             case CellType.SPAWNER: ctx.fillText("Box", 0, 0); break;
             case CellType.SENSOR:
                 ctx.arc(0,0, s, 0, Math.PI*2); ctx.stroke(); ctx.fillText("!", 0, 1); break;
-            case CellType.DIODE: ctx.fillText("▶", 0, 1); break;
+            case CellType.DIODE: ctx.fillText("▲", 0, 1); break;
         }
     }
 
