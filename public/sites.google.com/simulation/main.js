@@ -5,13 +5,16 @@ import{Camera}from'./camera.js';
 import{SelectionManager}from'./selection.js';
 import{CellType,CellProps}from'./types.js';
 
+// ---- UI Logic ----
 const setupUI=(game)=>{
+  // 一時停止ボタン
   const pauseBtn=document.getElementById('btn-pause');
   pauseBtn.onclick=()=>{
     game.paused=!game.paused;
     pauseBtn.textContent=game.paused?"再開 (Play)":"一時停止 (Pause)";
   };
 
+  // ステップ実行ボタン
   document.getElementById('btn-step').onclick=()=>{
     if(!game.paused){
       game.paused=true;
@@ -22,7 +25,8 @@ const setupUI=(game)=>{
   };
 
   const toolbar=document.getElementById('tools');
-
+  
+  // Select Tool
   const selectBtn=document.createElement('div');
   selectBtn.className='tool-btn';
   selectBtn.textContent="範囲選択 (Select)";
@@ -32,6 +36,7 @@ const setupUI=(game)=>{
   };
   toolbar.appendChild(selectBtn);
 
+  // Block Tools
   Object.keys(CellProps).forEach(key=>{
     const type=parseInt(key);
     if(type===CellType.EMPTY)return;
@@ -53,6 +58,7 @@ const setupUI=(game)=>{
     active.classList.add('active');
   }
 
+  // Buttons
   const setStatus=(msg)=>document.getElementById('status-msg').textContent=msg;
 
   document.getElementById('btn-save').onclick=async()=>{
@@ -75,6 +81,7 @@ const setupUI=(game)=>{
     }catch(err){console.error(err);}
   };
 
+  // 塗りつぶしボタン
   document.getElementById('btn-fill').onclick=()=>{
     game.performFill();
   };
@@ -98,7 +105,7 @@ class Game{
     this.currentTool=CellType.WALL;
     this.activeBlockType=CellType.WALL;
     this.currentRotation=0;
-    this.paused=false;
+    this.paused=false; // 一時停止フラグ
     
     this.setupInputs(canvas);
     setupUI(this);
@@ -119,8 +126,6 @@ class Game{
   setupInputs(canvas){
     let isRightDown=false;
     let isLeftDown=false;
-    let isMiddleDown=false;
-    let isSpaceDown=false;
 
     const getGridPos=(e)=>{
       const rect=canvas.getBoundingClientRect();
@@ -133,38 +138,45 @@ class Game{
 
     canvas.addEventListener('mousedown',(e)=>{
       if(e.button===0)isLeftDown=true;
-      if(e.button===1)isMiddleDown=true;
       if(e.button===2)isRightDown=true;
       
       const g=getGridPos(e);
 
-      if(isMiddleDown||(isSpaceDown&&isLeftDown)){
+      // 右ドラッグでカメラ移動開始
+      if(e.button===2){
         this.camera.isDragging=true;
         this.camera.lastMouse={x:e.clientX,y:e.clientY};
-      }else if(this.currentTool==='SELECT'&&isLeftDown){
+        e.preventDefault();
+        return;
+      }
+
+      if(this.currentTool==='SELECT'&&isLeftDown){
         this.selectionMgr.startSelection(g.x,g.y);
         this.renderer.selectionStart={x:g.x,y:g.y};
         this.renderer.selectionEnd={x:g.x,y:g.y};
       }else if(isLeftDown){
+        // 通常配置
         this.renderer.selectionStart=null;
         this.renderer.selectionEnd=null;
         this.selectionMgr.startPos=null;
         
         this.grid.setCell(g.x,g.y,this.currentTool,this.currentRotation);
-      }else if(isRightDown){
-        this.grid.setCell(g.x,g.y,CellType.EMPTY);
       }
     });
 
-    window.addEventListener('mouseup',()=>{
-      isLeftDown=false;isRightDown=false;isMiddleDown=false;
-      this.camera.isDragging=false;
+    window.addEventListener('mouseup',(e)=>{
+      if(e.button===0)isLeftDown=false;
+      if(e.button===2){
+        isRightDown=false;
+        this.camera.isDragging=false;
+      }
       if(this.currentTool==='SELECT')this.selectionMgr.endSelection();
     });
 
     canvas.addEventListener('mousemove',(e)=>{
       const g=getGridPos(e);
       
+      // カメラドラッグ中
       if(this.camera.isDragging){
         const dx=e.clientX-this.camera.lastMouse.x;
         const dy=e.clientY-this.camera.lastMouse.y;
@@ -178,8 +190,6 @@ class Game{
         this.renderer.selectionEnd={x:g.x,y:g.y};
       }else if(isLeftDown&&this.currentTool!=='SELECT'){
         this.grid.setCell(g.x,g.y,this.currentTool,this.currentRotation);
-      }else if(isRightDown){
-        this.grid.setCell(g.x,g.y,CellType.EMPTY);
       }
     });
 
@@ -193,24 +203,27 @@ class Game{
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
     window.addEventListener('keydown',(e)=>{
+      // スペースキー：再生/停止
+      if(e.code==='Space'){
+        e.preventDefault();
+        this.paused=!this.paused;
+        const pauseBtn=document.getElementById('btn-pause');
+        pauseBtn.textContent=this.paused?"再開 (Play)":"一時停止 (Pause)";
+        return;
+      }
+
+      // R: 回転
       if(e.key.toLowerCase()==='r'){
         this.currentRotation=(this.currentRotation+1)%4;
         document.getElementById('status-msg').textContent=`Rotation: ${['UP','RIGHT','DOWN','LEFT'][this.currentRotation]}`;
       }
       
+      // F: 塗りつぶし
       if(e.key.toLowerCase()==='f'){
         this.performFill();
       }
 
-      if(e.code==='Space'){
-        if(!isLeftDown&&!isSpaceDown){
-          e.preventDefault();
-          this.paused=!this.paused;
-          document.getElementById('btn-pause').textContent=this.paused?"再開 (Play)":"一時停止 (Pause)";
-        }
-        isSpaceDown=true;
-      }
-
+      // Ctrl/Meta系
       if(e.ctrlKey||e.metaKey){
         if(e.key==='c'){
           const count=this.selectionMgr.copy();
@@ -227,12 +240,6 @@ class Game{
         this.renderer.selectionStart=null;
         this.renderer.selectionEnd=null;
         document.getElementById('status-msg').textContent="Deleted selection";
-      }
-    });
-
-    window.addEventListener('keyup',(e)=>{
-      if(e.code==='Space'){
-        isSpaceDown=false;
       }
     });
     
