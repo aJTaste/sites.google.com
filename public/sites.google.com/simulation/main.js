@@ -106,7 +106,7 @@ class Game{
     this.activeBlockType=CellType.WALL;
     this.currentRotation=0;
     this.paused=false;
-    this.spacePressed=false; // Spaceキー押下状態
+    this.altPressed=false; // Altキー押下状態
     
     this.setupInputs(canvas);
     setupUI(this);
@@ -143,8 +143,8 @@ class Game{
       
       const g=getGridPos(e);
 
-      // Space + 左ドラッグでカメラ移動開始
-      if(this.spacePressed&&e.button===0){
+      // Alt + 左ドラッグでカメラ移動開始
+      if(this.altPressed&&e.button===0){
         this.camera.isDragging=true;
         this.camera.lastMouse={x:e.clientX,y:e.clientY};
         return;
@@ -183,7 +183,7 @@ class Game{
     canvas.addEventListener('mousemove',(e)=>{
       const g=getGridPos(e);
       
-      // カメラドラッグ中（Space + 左ドラッグ）
+      // カメラドラッグ中（Alt + 左ドラッグ）
       if(this.camera.isDragging){
         const dx=e.clientX-this.camera.lastMouse.x;
         const dy=e.clientY-this.camera.lastMouse.y;
@@ -213,16 +213,18 @@ class Game{
     canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
     window.addEventListener('keydown',(e)=>{
-      // Spaceキー押下状態を記録
-      if(e.code==='Space'&&!this.spacePressed){
-        // ドラッグ中でない場合のみ再生/停止
-        if(!isLeftDown){
-          e.preventDefault();
-          this.paused=!this.paused;
-          const pauseBtn=document.getElementById('btn-pause');
-          pauseBtn.textContent=this.paused?"再開 (Play)":"一時停止 (Pause)";
-        }
-        this.spacePressed=true;
+      // Altキー押下状態を記録
+      if(e.key==='Alt'){
+        this.altPressed=true;
+        return;
+      }
+
+      // Spaceキー：再生/停止のみ
+      if(e.code==='Space'){
+        e.preventDefault();
+        this.paused=!this.paused;
+        const pauseBtn=document.getElementById('btn-pause');
+        pauseBtn.textContent=this.paused?"再開 (Play)":"一時停止 (Pause)";
         return;
       }
 
@@ -258,8 +260,8 @@ class Game{
     });
 
     window.addEventListener('keyup',(e)=>{
-      if(e.code==='Space'){
-        this.spacePressed=false;
+      if(e.key==='Alt'){
+        this.altPressed=false;
       }
     });
     
