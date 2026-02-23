@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>VOID ARCHITECT</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#02020f;--bg2:#050518;--bg3:#080825;
+  --accent:#00f5ff;--accent2:#7f00ff;--accent3:#ff006a;
+  --gold:#ffd700;--green:#00ff88;
+  --text:#c8d8ff;--text2:#7888cc;--text3:#4455aa;
+  --border:#1a2060;--border2:#2a3080;
+  --glow:0 0 10px #00f5ff44;--glow2:0 0 20px #7f00ff66;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Share Tech Mono',monospace}
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+#app{position:relative;z-index:1;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* HEADER */
+#header{
+  background:linear-gradient(90deg,var(--bg2),var(--bg3),var(--bg2));
+  border-bottom:1px solid var(--border2);
+  padding:8px 16px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+}
+#logo{
+  font-family:'Orbitron',monospace;font-weight:900;font-size:18px;
+  color:var(--accent);text-shadow:0 0 20px var(--accent),0 0 40px var(--accent2);
+  letter-spacing:4px;
+}
+#header-stats{display:flex;gap:24px;font-size:11px;color:var(--text2)}
+#header-stats span{display:flex;flex-direction:column;align-items:flex-end}
+#header-stats .lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px}
+#header-stats .val{color:var(--accent);font-size:13px}
+#prestige-info{font-size:10px;color:var(--text3);text-align:right}
+#prestige-info .layer{color:var(--accent2)}
+
+/* TABS */
+#tabs{
+  display:flex;background:var(--bg2);border-bottom:1px solid var(--border);
+  flex-shrink:0;overflow-x:auto;
+}
+.tab{
+  padding:8px 16px;font-size:11px;cursor:pointer;border:none;background:transparent;
+  color:var(--text3);font-family:'Share Tech Mono',monospace;
+  border-bottom:2px solid transparent;transition:all .2s;white-space:nowrap;
+  letter-spacing:1px;text-transform:uppercase;
+}
+.tab:hover{color:var(--text);background:#ffffff08}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);background:#00f5ff0a}
+.tab .notif{
+  display:inline-block;background:var(--accent3);color:#fff;
+  border-radius:8px;font-size:9px;padding:1px 5px;margin-left:4px;vertical-align:middle;
+  animation:pulse .8s infinite alternate;
+}
+@keyframes pulse{from{opacity:.6}to{opacity:1}}
+
+/* MAIN CONTENT */
+#main{flex:1;display:flex;overflow:hidden}
+.panel{display:none;flex:1;overflow-y:auto;padding:12px;gap:12px}
+.panel.active{display:flex;flex-direction:column}
+.panel::-webkit-scrollbar{width:4px}
+.panel::-webkit-scrollbar-track{background:var(--bg)}
+.panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+
+/* TWO-COL LAYOUT */
+#panel-main{flex-direction:row;gap:0;padding:0}
+#col-left{width:300px;min-width:260px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+#col-right{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+#col-left::-webkit-scrollbar{width:3px}
+#col-left::-webkit-scrollbar-thumb{background:var(--border)}
+#col-right::-webkit-scrollbar{width:3px}
+#col-right::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* CLICK AREA */
+#click-section{text-align:center}
+#main-btn{
+  width:140px;height:140px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,#1a2080,#050520,#000008);
+  border:2px solid var(--accent);
+  cursor:pointer;position:relative;overflow:hidden;
+  transition:transform .1s,box-shadow .1s;
+  box-shadow:0 0 30px #00f5ff33,inset 0 0 30px #00000080;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  margin:0 auto;
+  animation:btnGlow 3s infinite alternate;
+}
+@keyframes btnGlow{
+  from{box-shadow:0 0 20px #00f5ff22,inset 0 0 20px #00000080}
+  to{box-shadow:0 0 50px #00f5ff66,0 0 80px #7f00ff33,inset 0 0 30px #00f5ff11}
+}
+#main-btn:active{transform:scale(.94);box-shadow:0 0 60px var(--accent)}
+#main-btn .icon{font-size:40px;pointer-events:none;user-select:none}
+#main-btn .click-val{font-size:10px;color:var(--accent);margin-top:4px;pointer-events:none}
+#main-btn::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(transparent 0deg, #00f5ff11 360deg);
+  animation:spin 8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+#resource-display{margin-top:10px}
+#quark-count{font-family:'Orbitron',monospace;font-size:22px;color:var(--accent);text-shadow:0 0 15px var(--accent);text-align:center}
+#quark-per-sec{font-size:11px;color:var(--text2);text-align:center;margin-top:2px}
+#click-power{font-size:10px;color:var(--text3);text-align:center}
+
+/* RESOURCES PANEL */
+#resources-list{display:flex;flex-direction:column;gap:4px}
+.res-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:4px 8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+  font-size:11px;
+}
+.res-name{color:var(--text2)}
+.res-val{color:var(--accent);font-weight:bold}
+
+/* MULTIPLIERS */
+#mult-display{
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  padding:8px;font-size:10px;
+}
+#mult-display .title{color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.mult-row{display:flex;justify-content:space-between;color:var(--text2)}
+.mult-row .mult-val{color:var(--green)}
+
+/* PRODUCERS */
+.producer{
+  background:linear-gradient(135deg,var(--bg2),var(--bg3));
+  border:1px solid var(--border);border-radius:6px;
+  padding:10px;cursor:pointer;transition:all .15s;
+  position:relative;overflow:hidden;
+}
+.producer:hover{border-color:var(--border2);background:linear-gradient(135deg,#0a0a30,#080820)}
+.producer.can-afford{border-color:#00f5ff44;box-shadow:0 0 8px #00f5ff22}
+.producer.can-afford:hover{border-color:var(--accent);box-shadow:0 0 16px #00f5ff44}
+.producer.maxed{border-color:#ffd70044;box-shadow:0 0 8px #ffd70022}
+.producer.locked{opacity:.4;cursor:not-allowed}
+.prod-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.prod-name{font-size:12px;color:var(--text);font-weight:bold}
+.prod-count{
+  font-family:'Orbitron',monospace;font-size:14px;color:var(--accent);
+  background:var(--bg);padding:2px 8px;border-radius:10px;border:1px solid var(--border);
+}
+.prod-desc{font-size:10px;color:var(--text3);margin-bottom:6px;line-height:1.4}
+.prod-stats{display:flex;justify-content:space-between;align-items:center}
+.prod-cost{font-size:11px;color:var(--text2)}
+.prod-cost.affordable{color:var(--accent)}
+.prod-cost.expensive{color:#ff446688}
+.prod-dps{font-size:10px;color:var(--text3)}
+.prod-bar{
+  position:absolute;bottom:0;left:0;height:2px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2));
+  transition:width .3s;
+}
+.prod-mul-badge{
+  position:absolute;top:4px;right:4px;font-size:8px;
+  background:#ffd70022;color:var(--gold);border:1px solid #ffd70044;
+  padding:1px 5px;border-radius:8px;
+}
+
+/* BUY MODE */
+#buy-mode{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap}
+.buy-btn{
+  flex:1;min-width:50px;padding:5px 8px;font-size:10px;cursor:pointer;
+  background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+  color:var(--text2);font-family:'Share Tech Mono',monospace;transition:all .15s;
+}
+.buy-btn:hover{border-color:var(--border2);color:var(--text)}
+.buy-btn.active{background:#00f5ff15;border-color:var(--accent);color:var(--accent)}
+
+/* UPGRADES */
+.upgrade-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px}
+.upgrade{
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  padding:8px;cursor:pointer;transition:all .15s;position:relative;
+}
+.upgrade:hover{border-color:var(--border2)}
+.upgrade.can-afford{border-color:#00f5ff44;box-shadow:0 0 8px #00f5ff22}
+.upgrade.can-afford:hover{border-color:var(--accent);box-shadow:0 0 16px #00f5ff44}
+.upgrade.purchased{background:#00ff8808;border-color:#00ff8844;opacity:.6;cursor:default}
+.upgrade.locked{opacity:.3;cursor:not-allowed}
+.upg-icon{font-size:20px;margin-bottom:4px}
+.upg-name{font-size:11px;color:var(--text);font-weight:bold;margin-bottom:2px}
+.upg-desc{font-size:9px;color:var(--text3);line-height:1.4;margin-bottom:4px}
+.upg-cost{font-size:10px;color:var(--text2)}
+.upg-cost.affordable{color:var(--accent)}
+.upg-check{
+  position:absolute;top:6px;right:6px;color:var(--green);font-size:12px;display:none;
+}
+.upgrade.purchased .upg-check{display:block}
+.upgrade.purchased .upg-cost{display:none}
+.upg-effect{font-size:9px;color:var(--green);font-weight:bold}
+
+/* PRESTIGE */
+#prestige-panel .prestige-box{
+  background:linear-gradient(135deg,#150530,#100025);
+  border:1px solid #7f00ff66;border-radius:8px;padding:16px;margin-bottom:12px;
+}
+#prestige-panel .prestige-box.layer2{
+  background:linear-gradient(135deg,#300515,#250010);
+  border-color:#ff006a66;
+}
+#prestige-panel .prestige-box.layer3{
+  background:linear-gradient(135deg,#1a1500,#150f00);
+  border-color:#ffd70066;
+}
+.prestige-title{
+  font-family:'Orbitron',monospace;font-size:16px;font-weight:700;
+  margin-bottom:8px;
+}
+.prestige-desc{font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:12px}
+.prestige-reward{font-size:12px;margin-bottom:8px}
+.prestige-btn{
+  padding:10px 24px;font-size:12px;cursor:pointer;
+  border-radius:6px;font-family:'Share Tech Mono',monospace;
+  transition:all .2s;border:none;letter-spacing:1px;
+}
+.prestige-btn:disabled{opacity:.3;cursor:not-allowed}
+.prestige-btn.p1{
+  background:linear-gradient(90deg,var(--accent2),#5500cc);
+  color:#fff;box-shadow:0 0 20px var(--accent2);
+}
+.prestige-btn.p2{
+  background:linear-gradient(90deg,var(--accent3),#aa0044);
+  color:#fff;box-shadow:0 0 20px var(--accent3);
+}
+.prestige-btn.p3{
+  background:linear-gradient(90deg,var(--gold),#cc8800);
+  color:#000;box-shadow:0 0 20px var(--gold);
+}
+.prestige-btn:not(:disabled):hover{transform:scale(1.04);filter:brightness(1.2)}
+.prestige-stat{
+  display:flex;justify-content:space-between;padding:4px 0;
+  font-size:11px;border-bottom:1px solid var(--border);
+}
+.prestige-stat:last-child{border-bottom:none}
+.prestige-stat .k{color:var(--text3)}
+.prestige-stat .v{color:var(--accent2)}
+.layer2 .prestige-stat .v{color:var(--accent3)}
+.layer3 .prestige-stat .v{color:var(--gold)}
+
+/* ACHIEVEMENTS */
+#achievements-panel .ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:8px}
+.achievement{
+  background:var(--bg2);border:1px solid var(--border);border-radius:6px;
+  padding:10px;display:flex;gap:10px;align-items:center;
+}
+.achievement.unlocked{border-color:#ffd70044;background:linear-gradient(135deg,var(--bg2),#1a1500)}
+.achievement.locked{opacity:.35}
+.ach-icon{font-size:28px;flex-shrink:0}
+.ach-info .ach-name{font-size:12px;color:var(--text);font-weight:bold}
+.ach-info .ach-desc{font-size:10px;color:var(--text3);margin-top:2px;line-height:1.4}
+.ach-info .ach-reward{font-size:10px;color:var(--gold);margin-top:3px}
+.achievement.unlocked .ach-icon{filter:drop-shadow(0 0 6px var(--gold))}
+
+/* EVENTS */
+#event-banner{
+  position:fixed;top:70px;right:16px;z-index:100;
+  max-width:300px;
+  background:linear-gradient(135deg,#100020,#050510);
+  border:1px solid var(--accent2);border-radius:8px;
+  padding:12px;box-shadow:0 0 30px #7f00ff44;
+  transform:translateX(350px);transition:transform .4s cubic-bezier(.34,1.56,.64,1);
+}
+#event-banner.show{transform:translateX(0)}
+#event-banner .ev-title{font-size:12px;color:var(--accent2);margin-bottom:4px;font-weight:bold}
+#event-banner .ev-desc{font-size:11px;color:var(--text2);line-height:1.4;margin-bottom:8px}
+#event-btn{
+  width:100%;padding:6px;font-size:11px;cursor:pointer;
+  background:var(--accent2);border:none;border-radius:4px;
+  color:#fff;font-family:'Share Tech Mono',monospace;
+}
+#event-btn:hover{background:#9900ff}
+
+/* STATS */
+#stats-panel .stat-section{margin-bottom:16px}
+#stats-panel .stat-section-title{
+  font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:2px;
+  border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;
+}
+.stat-row{display:flex;justify-content:space-between;font-size:11px;padding:3px 0}
+.stat-row .sk{color:var(--text3)}
+.stat-row .sv{color:var(--text)}
+
+/* NOTIFICATIONS */
+#notif-container{position:fixed;bottom:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.notif{
+  background:var(--bg3);border:1px solid var(--border2);border-radius:6px;
+  padding:8px 12px;font-size:11px;color:var(--text);
+  animation:notifIn .3s ease,notifOut .3s ease 2.7s forwards;
+  max-width:280px;
+}
+.notif.gold{border-color:#ffd70066;color:var(--gold)}
+.notif.purple{border-color:#7f00ff66;color:#bb88ff}
+.notif.red{border-color:#ff006a66;color:#ff88aa}
+@keyframes notifIn{from{transform:translateX(300px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes notifOut{from{opacity:1}to{opacity:0;transform:translateY(20px)}}
+
+/* MILESTONE */
+#milestone-flash{
+  position:fixed;inset:0;z-index:300;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .3s;
+}
+#milestone-flash.show{opacity:1;animation:milestoneAnim 1.5s ease forwards}
+@keyframes milestoneAnim{
+  0%{opacity:0}10%{opacity:1}80%{opacity:1}100%{opacity:0}
+}
+#milestone-flash .ms-text{
+  font-family:'Orbitron',monospace;font-size:32px;font-weight:900;
+  color:var(--gold);text-shadow:0 0 40px var(--gold),0 0 80px #ffd70088;
+  text-align:center;
+}
+
+/* PARTICLE canvas */
+#particle-canvas{position:fixed;inset:0;z-index:50;pointer-events:none}
+
+/* SCROLL BAR for panel */
+.section-title{
+  font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:2px;
+  border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:8px;
+}
+
+/* TOOLTIP */
+#tooltip{
+  position:fixed;z-index:500;background:var(--bg3);border:1px solid var(--border2);
+  border-radius:6px;padding:8px 10px;font-size:11px;color:var(--text);
+  pointer-events:none;max-width:200px;line-height:1.5;
+  box-shadow:0 4px 20px #00000088;display:none;
+}
+
+/* AUTOBUYER indicator */
+.auto-indicator{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--green);box-shadow:0 0 6px var(--green);
+  margin-left:6px;vertical-align:middle;animation:blink 1s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* COMBO meter */
+#combo-bar{
+  background:var(--bg2);border:1px solid var(--border);border-radius:4px;
+  padding:6px 8px;font-size:10px;
+}
+#combo-fill{height:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width .1s}
+#combo-text{color:var(--text3);margin-top:2px}
+#combo-mult{color:var(--accent);font-size:12px;font-weight:bold}
+
+/* DIMENSION indicator */
+#dimension-ring{
+  width:40px;height:40px;border-radius:50%;
+  border:2px solid var(--accent2);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Orbitron',monospace;font-size:11px;color:var(--accent2);
+  background:radial-gradient(circle,#150030,#050010);
+  box-shadow:0 0 15px var(--accent2);flex-shrink:0;
+}
+
+/* SECTION separator */
+.sep{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:4px 0}
+
+@media(max-width:600px){
+  #col-left{width:100%;border-right:none;border-bottom:1px solid var(--border);max-height:300px}
+  #panel-main{flex-direction:column}
+  #logo{font-size:13px}
+  #header-stats{gap:12px}
+}
+</style>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+<canvas id="particle-canvas"></canvas>
+
+<div id="app">
+  <!-- HEADER -->
+  <div id="header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div id="dimension-ring">D<span id="dim-num">1</span></div>
+      <div>
+        <div id="logo">VOID ARCHITECT</div>
+        <div id="prestige-info">
+          <span class="layer">BIG BANG:</span> <span id="bb-count">0</span> ×
+          <span class="layer" style="color:var(--accent3)">ASCENSION:</span> <span id="asc-count">0</span> ×
+          <span class="layer" style="color:var(--gold)">SINGULARITY:</span> <span id="sing-count">0</span>
+        </div>
+      </div>
+    </div>
+    <div id="header-stats">
+      <span><span class="lbl">Quarks</span><span class="val" id="h-quarks">0</span></span>
+      <span><span class="lbl">Per Sec</span><span class="val" id="h-qps">0/s</span></span>
+      <span><span class="lbl">Lifetime</span><span class="val" id="h-lifetime">0</span></span>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div id="tabs">
+    <button class="tab active" data-tab="main">⚛ FORGE</button>
+    <button class="tab" data-tab="upgrades">⚡ UPGRADES <span class="notif" id="upg-notif" style="display:none">!</span></button>
+    <button class="tab" data-tab="prestige">✦ PRESTIGE</button>
+    <button class="tab" data-tab="achievements">🏆 ACHV <span class="notif" id="ach-notif" style="display:none">!</span></button>
+    <button class="tab" data-tab="stats">📊 STATS</button>
+  </div>
+
+  <!-- MAIN -->
+  <div id="main">
+    <!-- MAIN PANEL -->
+    <div id="panel-main" class="panel active">
+      <div id="col-left">
+        <!-- Click Section -->
+        <div id="click-section">
+          <button id="main-btn" title="クリックしてQuarkを獲得">
+            <div class="icon">⚛</div>
+            <div class="click-val" id="click-val-display">+0</div>
+          </button>
+          <div id="resource-display">
+            <div id="quark-count">0</div>
+            <div id="quark-per-sec">0 quarks/sec</div>
+            <div id="click-power">click power: 1</div>
+          </div>
+        </div>
+
+        <!-- Combo -->
+        <div id="combo-bar">
+          <div style="display:flex;justify-content:space-between">
+            <span id="combo-text">COMBO ×<span id="combo-mult">1.0</span></span>
+            <span style="font-size:9px;color:var(--text3)" id="combo-timer"></span>
+          </div>
+          <div style="background:var(--bg);border-radius:2px;height:4px;margin-top:4px">
+            <div id="combo-fill" style="width:100%"></div>
+          </div>
+        </div>
+
+        <!-- Multipliers -->
+        <div id="mult-display">
+          <div class="title">ACTIVE MULTIPLIERS</div>
+          <div class="mult-row"><span>Upgrade Bonus</span><span class="mult-val" id="m-upg">×1</span></div>
+          <div class="mult-row"><span>Big Bang Bonus</span><span class="mult-val" id="m-bb">×1</span></div>
+          <div class="mult-row"><span>Ascension Bonus</span><span class="mult-val" id="m-asc">×1</span></div>
+          <div class="mult-row"><span>Achievement Bonus</span><span class="mult-val" id="m-ach">×1</span></div>
+          <div class="mult-row"><span>Event Bonus</span><span class="mult-val" id="m-ev">×1</span></div>
+          <div class="sep"></div>
+          <div class="mult-row" style="font-weight:bold"><span>TOTAL MULT</span><span class="mult-val" id="m-total" style="color:var(--gold)">×1</span></div>
+        </div>
+
+        <!-- Resources -->
+        <div>
+          <div class="section-title">SECONDARY RESOURCES</div>
+          <div id="resources-list"></div>
+        </div>
+      </div>
+
+      <div id="col-right">
+        <div class="section-title">PRODUCERS
+          <span style="float:right;font-size:10px;color:var(--text3)" id="total-dps-display"></span>
+        </div>
+        <div id="buy-mode">
+          <button class="buy-btn active" data-n="1">×1</button>
+          <button class="buy-btn" data-n="10">×10</button>
+          <button class="buy-btn" data-n="100">×100</button>
+          <button class="buy-btn" data-n="max">MAX</button>
+        </div>
+        <div id="producers-list"></div>
+      </div>
+    </div>
+
+    <!-- UPGRADES PANEL -->
+    <div id="panel-upgrades" class="panel">
+      <div class="section-title">UPGRADES — <span id="upg-count-display"></span></div>
+      <div id="upgrade-grid" class="upgrade-grid"></div>
+    </div>
+
+    <!-- PRESTIGE PANEL -->
+    <div id="panel-prestige" class="panel" style="max-width:700px;margin:0 auto;width:100%">
+      <div id="prestige-panel"></div>
+    </div>
+
+    <!-- ACHIEVEMENTS PANEL -->
+    <div id="panel-achievements" class="panel">
+      <div class="section-title">ACHIEVEMENTS — <span id="ach-count-display"></span></div>
+      <div id="achievements-panel"><div class="ach-grid" id="ach-grid"></div></div>
+    </div>
+
+    <!-- STATS PANEL -->
+    <div id="panel-stats" class="panel">
+      <div id="stats-panel"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Event Banner -->
+<div id="event-banner">
+  <div class="ev-title" id="ev-title"></div>
+  <div class="ev-desc" id="ev-desc"></div>
+  <button id="event-btn" id="ev-btn">ENGAGE</button>
+</div>
+
+<!-- Milestone Flash -->
+<div id="milestone-flash"><div class="ms-text" id="ms-text"></div></div>
+
+<!-- Notifications -->
+<div id="notif-container"></div>
+
+<!-- Tooltip -->
+<div id="tooltip"></div>
+
+<script>
+'use strict';
+// ===== BIG NUMBER ENGINE =====
+class BN{
+  constructor(v=0){
+    if(v instanceof BN){this.m=v.m;this.e=v.e;return}
+    if(v===0||v===undefined){this.m=0;this.e=0;return}
+    if(typeof v==='string'){
+      if(v.includes('e')){
+        const p=v.split('e');
+        this.m=parseFloat(p[0]);
+        this.e=parseInt(p[1]);
+        this._fix();return
+      }
+      v=parseFloat(v)
+    }
+    if(!isFinite(v)||v===0){this.m=0;this.e=0;return}
+    const s=v<0?-1:1;
+    const a=Math.abs(v);
+    this.e=Math.floor(Math.log10(a));
+    this.m=s*a/Math.pow(10,this.e);
+    this._fix()
+  }
+  _fix(){
+    if(this.m===0){this.e=0;return}
+    while(Math.abs(this.m)>=10){this.e++;this.m/=10}
+    while(Math.abs(this.m)<1&&this.m!==0){this.e--;this.m*=10}
+  }
+  add(o){
+    o=o instanceof BN?o:new BN(o);
+    if(o.m===0)return new BN(this);
+    if(this.m===0)return new BN(o);
+    const de=this.e-o.e;
+    if(de>15)return new BN(this);
+    if(de<-15)return new BN(o);
+    const r=new BN();
+    r.e=Math.max(this.e,o.e);
+    r.m=this.m*Math.pow(10,this.e-r.e)+o.m*Math.pow(10,o.e-r.e);
+    r._fix();return r
+  }
+  sub(o){
+    o=o instanceof BN?o:new BN(o);
+    const n=new BN(o);n.m=-n.m;
+    return this.add(n)
+  }
+  mul(o){
+    o=o instanceof BN?o:new BN(o);
+    if(this.m===0||o.m===0)return new BN(0);
+    const r=new BN();
+    r.m=this.m*o.m;r.e=this.e+o.e;r._fix();return r
+  }
+  div(o){
+    o=o instanceof BN?o:new BN(o);
+    if(o.m===0)return new BN(0);
+    if(this.m===0)return new BN(0);
+    const r=new BN();
+    r.m=this.m/o.m;r.e=this.e-o.e;r._fix();return r
+  }
+  pow(n){
+    if(n===0)return new BN(1);
+    if(this.m===0)return new BN(0);
+    if(n===1)return new BN(this);
+    const logVal=Math.log10(Math.abs(this.m))+this.e;
+    const resLog=n*logVal;
+    if(!isFinite(resLog))return new BN(0);
+    const r=new BN();
+    r.e=Math.floor(resLog);
+    r.m=Math.pow(10,resLog-r.e)*(this.m<0&&n%2!==0?-1:1);
+    r._fix();return r
+  }
+  gt(o){
+    o=o instanceof BN?o:new BN(o);
+    if(this.m===0&&o.m===0)return false;
+    if(this.m<=0&&o.m>0)return false;
+    if(this.m>0&&o.m<=0)return true;
+    if(this.e!==o.e)return this.e>o.e;
+    return this.m>o.m
+  }
+  gte(o){const ob=o instanceof BN?o:new BN(o);return this.gt(ob)||this.eq(ob)}
+  lt(o){const ob=o instanceof BN?o:new BN(o);return!this.gte(ob)}
+  lte(o){const ob=o instanceof BN?o:new BN(o);return!this.gt(ob)}
+  eq(o){
+    o=o instanceof BN?o:new BN(o);
+    return Math.abs(this.m-o.m)<1e-9&&this.e===o.e
+  }
+  log10(){
+    if(this.m<=0)return-Infinity;
+    return Math.log10(this.m)+this.e
+  }
+  toNum(){
+    if(this.e>300)return Infinity;
+    if(this.e<-300)return 0;
+    return this.m*Math.pow(10,this.e)
+  }
+  fmt(){
+    if(this.m===0)return'0';
+    const suf=['','K','M','B','T','Qa','Qi','Sx','Sp','Oc','No',
+      'De','UnD','DuD','TrD','QuD','QiD','SxD','SpD','OcD','NoD',
+      'Vg','UVg','DVg','TVg','QaVg','QiVg','SxVg','SpVg','OcVg','NoVg','Ct'];
+    const tier=Math.floor(this.e/3);
+    if(tier<suf.length){
+      const shift=this.e-(tier*3);
+      const val=this.m*Math.pow(10,shift);
+      if(tier===0&&val<1000)return val.toFixed(val<10?2:val<100?1:0);
+      return val.toFixed(val<10?2:1)+suf[tier]
+    }
+    return this.m.toFixed(2)+'e'+this.e
+  }
+  static fromLog(l){
+    const r=new BN();
+    r.e=Math.floor(l);r.m=Math.pow(10,l-r.e);
+    return r
+  }
+  serialize(){return{m:this.m,e:this.e}}
+  static deserialize(d){
+    if(!d)return new BN(0);
+    const r=new BN();r.m=d.m||0;r.e=d.e||0;return r
+  }
+}
+
+// ===== GAME STATE =====
+const G={
+  // Current resources
+  quarks:new BN(0),
+  energy:new BN(0),
+  stardust:new BN(0),
+  voidEssence:new BN(0),
+  // Lifetime tracking
+  lifetimeQuarks:new BN(0),
+  totalClicks:0,
+  totalQuarksSpent:new BN(0),
+  playTime:0,
+  // Producers
+  producers:[],
+  // Upgrades
+  upgrades:[],
+  // Prestige
+  bigBangs:0,
+  ascensions:0,
+  singularities:0,
+  voidShards:new BN(0),
+  cosmicDNA:new BN(0),
+  omegaCrystals:new BN(0),
+  // Achievements
+  achievements:[],
+  achUnlocked:0,
+  // Multipliers
+  upgradeMult:new BN(1),
+  // Combo
+  comboCount:0,
+  comboMult:1,
+  comboTimer:0,
+  comboMax:3,
+  lastClickTime:0,
+  // Events
+  activeEvent:null,
+  eventMult:new BN(1),
+  eventTimer:0,
+  nextEventTimer:0,
+  // Stats
+  bestQPS:new BN(0),
+  totalPrestiges:0,
+  // Cached
+  qps:new BN(0),
+  clickPower:new BN(1),
+  totalMult:new BN(1),
+  // Flags
+  initialized:false,
+  // Session
+  sessionStart:Date.now(),
+  lastSave:Date.now(),
+  lastTick:Date.now(),
+  // Dimension
+  dimension:1,
+  // AutoBuyer (unlocked via singularity)
+  autoBuyerActive:false,
+};
+
+// ===== PRODUCER DEFINITIONS =====
+const PROD_DEFS=[
+  {id:0,name:'Quark Harvester',icon:'⚛',desc:'素粒子を直接採取する基礎装置',baseCost:10,baseDPS:0.1,unlockAt:0,energyPer:0},
+  {id:1,name:'Atom Forge',icon:'⚗',desc:'原子を構築し量子エネルギーを生成',baseCost:100,baseDPS:1,unlockAt:1,energyPer:.01},
+  {id:2,name:'Molecule Weaver',icon:'🧬',desc:'分子ネットワークで収集効率を倍増',baseCost:1100,baseDPS:8,unlockAt:5,energyPer:.05},
+  {id:3,name:'Cell Cultivator',icon:'🔬',desc:'自己複製細胞群で指数的増殖',baseCost:12000,baseDPS:47,unlockAt:10,energyPer:.1},
+  {id:4,name:'Neural Nexus',icon:'🧠',desc:'神経ネットワーク最適化エンジン',baseCost:130000,baseDPS:260,unlockAt:25,energyPer:.2},
+  {id:5,name:'Civilization Core',icon:'🏙',desc:'文明全体のエネルギーを収穫',baseCost:1.4e6,baseDPS:1400,unlockAt:50,energyPer:.5},
+  {id:6,name:'Planet Processor',icon:'🪐',desc:'惑星核のエネルギーを変換',baseCost:2e7,baseDPS:7800,unlockAt:100,energyPer:1},
+  {id:7,name:'Star Synthesizer',icon:'⭐',desc:'恒星核融合を直接制御',baseCost:3.3e8,baseDPS:44000,unlockAt:150,energyPer:2},
+  {id:8,name:'Galaxy Grinder',icon:'🌌',desc:'銀河中心ブラックホールからの放射線',baseCost:5.1e9,baseDPS:260000,unlockAt:200,energyPer:5},
+  {id:9,name:'Universe Unfurler',icon:'🔭',desc:'宇宙膨張エネルギーをタップ',baseCost:7.5e10,baseDPS:1.6e6,unlockAt:250,energyPer:10},
+  {id:10,name:'Dimension Drifter',icon:'🌀',desc:'並行宇宙からエネルギーを移送',baseCost:1.2e12,baseDPS:1e7,unlockAt:300,energyPer:20},
+  {id:11,name:'Reality Riftmaker',icon:'⚡',desc:'現実の基本構造を書き換え',baseCost:2e13,baseDPS:6.5e7,unlockAt:350,energyPer:50},
+  {id:12,name:'Void Architect',icon:'🌑',desc:'虚無から無限のエネルギーを創出',baseCost:3.1e14,baseDPS:4e8,unlockAt:400,energyPer:100},
+];
+
+// ===== UPGRADE DEFINITIONS =====
+const UPG_DEFS=[
+  // Click upgrades
+  {id:'c1',name:'Quantum Touch',icon:'👆',cost:50,desc:'クリック力 ×2',effect:'click×2',req:null},
+  {id:'c2',name:'Resonant Strike',icon:'💥',cost:500,desc:'クリック力 ×5',effect:'click×5',req:()=>G.totalClicks>=50},
+  {id:'c3',name:'Void Tap',icon:'🌑',cost:5000,desc:'クリック力 ×10',effect:'click×10',req:()=>G.totalClicks>=200},
+  {id:'c4',name:'Reality Crack',icon:'⚡',cost:1e6,desc:'クリック力 ×100',effect:'click×100',req:()=>G.totalClicks>=500},
+  {id:'c5',name:'Singularity Tap',icon:'🌀',cost:1e9,desc:'クリック力 = QPS×1%',effect:'click_qps',req:()=>G.totalClicks>=2000},
+  {id:'c6',name:'Infinite Recursion',icon:'♾️',cost:1e13,desc:'クリック力 = QPS×5%',effect:'click_qps2',req:()=>G.totalClicks>=10000},
+
+  // Producer upgrades - Quark Harvester
+  {id:'p0a',name:'Efficient Collectors',icon:'⚛',cost:100,desc:'Quark Harvester ×2',effect:'prod0×2',req:()=>G.producers[0]?.count>=1},
+  {id:'p0b',name:'Quantum Arrays',icon:'⚛',cost:1000,desc:'Quark Harvester ×3',effect:'prod0×3',req:()=>G.producers[0]?.count>=10},
+  {id:'p0c',name:'Dimensional Scoop',icon:'⚛',cost:100000,desc:'Quark Harvester ×5',effect:'prod0×5',req:()=>G.producers[0]?.count>=25},
+  {id:'p0d',name:'Infinite Mesh',icon:'⚛',cost:1e8,desc:'Quark Harvester ×10',effect:'prod0×10',req:()=>G.producers[0]?.count>=50},
+
+  // Atom Forge
+  {id:'p1a',name:'Fusion Catalyst',icon:'⚗',cost:500,desc:'Atom Forge ×2',effect:'prod1×2',req:()=>G.producers[1]?.count>=1},
+  {id:'p1b',name:'Isotope Chains',icon:'⚗',cost:5000,desc:'Atom Forge ×3',effect:'prod1×3',req:()=>G.producers[1]?.count>=10},
+  {id:'p1c',name:'Nuclear Web',icon:'⚗',cost:5e5,desc:'Atom Forge ×5',effect:'prod1×5',req:()=>G.producers[1]?.count>=25},
+  {id:'p1d',name:'Hadron Cascade',icon:'⚗',cost:5e8,desc:'Atom Forge ×10',effect:'prod1×10',req:()=>G.producers[1]?.count>=50},
+
+  // Molecule Weaver
+  {id:'p2a',name:'Protein Folding',icon:'🧬',cost:2000,desc:'Molecule Weaver ×2',effect:'prod2×2',req:()=>G.producers[2]?.count>=1},
+  {id:'p2b',name:'Amino Synergy',icon:'🧬',cost:20000,desc:'Molecule Weaver ×3',effect:'prod2×3',req:()=>G.producers[2]?.count>=10},
+  {id:'p2c',name:'DNA Spiral',icon:'🧬',cost:2e6,desc:'Molecule Weaver ×5',effect:'prod2×5',req:()=>G.producers[2]?.count>=25},
+  {id:'p2d',name:'Genomic Array',icon:'🧬',cost:2e9,desc:'Molecule Weaver ×10',effect:'prod2×10',req:()=>G.producers[2]?.count>=50},
+
+  // Cell Cultivator
+  {id:'p3a',name:'Mitosis Loop',icon:'🔬',cost:20000,desc:'Cell Cultivator ×2',effect:'prod3×2',req:()=>G.producers[3]?.count>=1},
+  {id:'p3b',name:'Organelle Net',icon:'🔬',cost:200000,desc:'Cell Cultivator ×3',effect:'prod3×3',req:()=>G.producers[3]?.count>=10},
+  {id:'p3c',name:'Stem Drive',icon:'🔬',cost:2e7,desc:'Cell Cultivator ×5',effect:'prod3×5',req:()=>G.producers[3]?.count>=25},
+  {id:'p3d',name:'Xenobiology',icon:'🔬',cost:2e10,desc:'Cell Cultivator ×10',effect:'prod3×10',req:()=>G.producers[3]?.count>=50},
+
+  // Neural Nexus
+  {id:'p4a',name:'Dendrite Boost',icon:'🧠',cost:1e5,desc:'Neural Nexus ×2',effect:'prod4×2',req:()=>G.producers[4]?.count>=1},
+  {id:'p4b',name:'Synaptic Fire',icon:'🧠',cost:1e6,desc:'Neural Nexus ×3',effect:'prod4×3',req:()=>G.producers[4]?.count>=10},
+  {id:'p4c',name:'Cortex Storm',icon:'🧠',cost:1e8,desc:'Neural Nexus ×5',effect:'prod4×5',req:()=>G.producers[4]?.count>=25},
+  {id:'p4d',name:'Hive Mind',icon:'🧠',cost:1e11,desc:'Neural Nexus ×10',effect:'prod4×10',req:()=>G.producers[4]?.count>=50},
+
+  // Civilization Core
+  {id:'p5a',name:'Tech Revolution',icon:'🏙',cost:1e6,desc:'Civilization Core ×2',effect:'prod5×2',req:()=>G.producers[5]?.count>=1},
+  {id:'p5b',name:'Global Grid',icon:'🏙',cost:1e7,desc:'Civilization Core ×3',effect:'prod5×3',req:()=>G.producers[5]?.count>=10},
+  {id:'p5c',name:'Dyson Seed',icon:'🏙',cost:1e9,desc:'Civilization Core ×5',effect:'prod5×5',req:()=>G.producers[5]?.count>=25},
+  {id:'p5d',name:'Type III Leap',icon:'🏙',cost:1e12,desc:'Civilization Core ×10',effect:'prod5×10',req:()=>G.producers[5]?.count>=50},
+
+  // Global multipliers
+  {id:'g1',name:'Void Resonance',icon:'🌑',cost:1e7,desc:'全生産量 ×2',effect:'global×2',req:()=>G.lifetimeQuarks.gte(1e6)},
+  {id:'g2',name:'Cosmic Attunement',icon:'🔮',cost:1e10,desc:'全生産量 ×3',effect:'global×3',req:()=>G.lifetimeQuarks.gte(1e9)},
+  {id:'g3',name:'Reality Warp',icon:'⚡',cost:1e14,desc:'全生産量 ×5',effect:'global×5',req:()=>G.lifetimeQuarks.gte(1e13)},
+  {id:'g4',name:'Infinity Drive',icon:'♾️',cost:1e18,desc:'全生産量 ×10',effect:'global×10',req:()=>G.lifetimeQuarks.gte(1e17)},
+  {id:'g5',name:'Paradox Engine',icon:'🌀',cost:1e23,desc:'全生産量 ×100',effect:'global×100',req:()=>G.lifetimeQuarks.gte(1e22)},
+
+  // Special
+  {id:'s1',name:'Time Dilation',icon:'⏱️',cost:5e8,desc:'エネルギーがQPSを+5%増加',effect:'energy_boost',req:()=>G.energy.gte(1000)},
+  {id:'s2',name:'Combo Master',icon:'🔥',cost:2e10,desc:'コンボ上限+2',effect:'combo_up',req:()=>G.totalClicks>=1000},
+  {id:'s3',name:'Stardust Cascade',icon:'✨',cost:1e12,desc:'StardustがQPSを+10%増加',effect:'stardust_boost',req:()=>G.stardust.gte(1000)},
+  {id:'s4',name:'Void Resonator',icon:'🌑',cost:1e15,desc:'Void Essenceが全生産量×2',effect:'void_boost',req:()=>G.voidEssence.gte(1)},
+
+  // High-tier producers (Star+)
+  {id:'p6a',name:'Magnet Core',icon:'🪐',cost:1e8,desc:'Planet Processor ×2',effect:'prod6×2',req:()=>G.producers[6]?.count>=1},
+  {id:'p6b',name:'Tectonic Engine',icon:'🪐',cost:1e9,desc:'Planet Processor ×5',effect:'prod6×5',req:()=>G.producers[6]?.count>=10},
+  {id:'p7a',name:'Plasma Loop',icon:'⭐',cost:1e10,desc:'Star Synthesizer ×2',effect:'prod7×2',req:()=>G.producers[7]?.count>=1},
+  {id:'p7b',name:'Supernova Tap',icon:'⭐',cost:1e11,desc:'Star Synthesizer ×5',effect:'prod7×5',req:()=>G.producers[7]?.count>=10},
+  {id:'p8a',name:'Event Horizon',icon:'🌌',cost:1e12,desc:'Galaxy Grinder ×2',effect:'prod8×2',req:()=>G.producers[8]?.count>=1},
+  {id:'p8b',name:'Dark Matter Net',icon:'🌌',cost:1e13,desc:'Galaxy Grinder ×5',effect:'prod8×5',req:()=>G.producers[8]?.count>=10},
+  {id:'p9a',name:'Expansion Wave',icon:'🔭',cost:1e14,desc:'Universe Unfurler ×2',effect:'prod9×2',req:()=>G.producers[9]?.count>=1},
+  {id:'p10a',name:'Rift Storm',icon:'🌀',cost:1e16,desc:'Dimension Drifter ×2',effect:'prod10×2',req:()=>G.producers[10]?.count>=1},
+  {id:'p11a',name:'Fabric Tear',icon:'⚡',cost:1e18,desc:'Reality Riftmaker ×2',effect:'prod11×2',req:()=>G.producers[11]?.count>=1},
+  {id:'p12a',name:'Void Seed',icon:'🌑',cost:1e21,desc:'Void Architect ×2',effect:'prod12×2',req:()=>G.producers[12]?.count>=1},
+  {id:'p12b',name:'Eternal Loop',icon:'🌑',cost:1e25,desc:'Void Architect ×10',effect:'prod12×10',req:()=>G.producers[12]?.count>=10},
+];
+
+// ===== ACHIEVEMENT DEFINITIONS =====
+const ACH_DEFS=[
+  {id:'a1',name:'First Spark',icon:'⚡',desc:'初めてQuarkを獲得',reward:'クリック×1.1',req:()=>G.lifetimeQuarks.gte(1)},
+  {id:'a2',name:'Atomic Age',icon:'⚗',desc:'1,000 Quarks獲得',reward:'全生産×1.05',req:()=>G.lifetimeQuarks.gte(1000)},
+  {id:'a3',name:'Molecule Man',icon:'🧬',desc:'1,000,000 Quarks獲得',reward:'全生産×1.1',req:()=>G.lifetimeQuarks.gte(1e6)},
+  {id:'a4',name:'Civilization Builder',icon:'🏙',desc:'1 Billion Quarks獲得',reward:'全生産×1.15',req:()=>G.lifetimeQuarks.gte(1e9)},
+  {id:'a5',name:'Star Lord',icon:'⭐',desc:'1 Trillion Quarks獲得',reward:'全生産×1.2',req:()=>G.lifetimeQuarks.gte(1e12)},
+  {id:'a6',name:'Galaxy Brain',icon:'🌌',desc:'1 Quadrillion獲得',reward:'全生産×1.25',req:()=>G.lifetimeQuarks.gte(1e15)},
+  {id:'a7',name:'Universe Mind',icon:'🔭',desc:'1e18 Quarks獲得',reward:'全生産×1.3',req:()=>G.lifetimeQuarks.gte(1e18)},
+  {id:'a8',name:'Void Walker',icon:'🌑',desc:'1e21 Quarks獲得',reward:'全生産×1.5',req:()=>G.lifetimeQuarks.gte(1e21)},
+  {id:'a9',name:'Click Novice',icon:'👆',desc:'100回クリック',reward:'クリック×1.05',req:()=>G.totalClicks>=100},
+  {id:'a10',name:'Click Addict',icon:'💥',desc:'1,000回クリック',reward:'クリック×1.1',req:()=>G.totalClicks>=1000},
+  {id:'a11',name:'Click God',icon:'🌟',desc:'10,000回クリック',reward:'クリック×1.5',req:()=>G.totalClicks>=10000},
+  {id:'a12',name:'First Forge',icon:'🔨',desc:'Quark Harvesterを初購入',reward:'Harvester×1.1',req:()=>G.producers[0]?.count>=1},
+  {id:'a13',name:'Mass Production',icon:'🏭',desc:'全Producerを10個以上保有',reward:'全生産×1.1',req:()=>G.producers.every(p=>p.count>=10)},
+  {id:'a14',name:'Big Bang Survivor',icon:'💫',desc:'Big Bangプレステージを実行',reward:'Big Bang効果×1.1',req:()=>G.bigBangs>=1},
+  {id:'a15',name:'Ascended Being',icon:'✦',desc:'Ascensionプレステージを実行',reward:'Ascension効果×1.1',req:()=>G.ascensions>=1},
+  {id:'a16',name:'Combo King',icon:'🔥',desc:'コンボ×5以上を達成',reward:'コンボ持続+1s',req:()=>G.comboMax>=5&&G.comboCount>=5},
+  {id:'a17',name:'Energy Lord',icon:'⚡',desc:'Energy 1,000,000以上',reward:'Energy効果×2',req:()=>G.energy.gte(1e6)},
+  {id:'a18',name:'Stardust Dreamer',icon:'✨',desc:'Stardust 1,000以上',reward:'Stardust効果×2',req:()=>G.stardust.gte(1000)},
+  {id:'a19',name:'Beyond Void',icon:'🌀',desc:'Void Essence 100以上',reward:'Void効果×3',req:()=>G.voidEssence.gte(100)},
+  {id:'a20',name:'Singularity',icon:'♾️',desc:'Singularityプレステージを実行',reward:'全て×2',req:()=>G.singularities>=1},
+  {id:'a21',name:'10 Big Bangs',icon:'🌟',desc:'Big Bang×10',reward:'全生産×2',req:()=>G.bigBangs>=10},
+  {id:'a22',name:'Speed Runner',icon:'⚡',desc:'1秒間に1e9 quarks/sec到達',reward:'全生産×1.2',req:()=>G.qps.gte(1e9)},
+  {id:'a23',name:'Void Collector',icon:'🌑',desc:'Void Essence 1,000獲得',reward:'クリック×2',req:()=>G.voidEssence.gte(1000)},
+  {id:'a24',name:'All Producers',icon:'🏗',desc:'全13種のProducerを所持',reward:'全生産×1.5',req:()=>G.producers.every(p=>p.count>=1)},
+  {id:'a25',name:'God Mode',icon:'👑',desc:'Quarks 1e50以上',reward:'全て×10',req:()=>G.lifetimeQuarks.gte(new BN('1e50'))},
+];
+
+// ===== PROCEDURAL EVENTS =====
+const EVENT_POOL=[
+  {id:'e1',name:'⚡ QUANTUM STORM',desc:'次元の嵐が発生！今後60秒間、全生産量×5',mult:5,dur:60000,cost:0,type:'boost'},
+  {id:'e2',name:'🌌 DARK MATTER SURGE',desc:'暗黒物質の波が到達。60秒間、クリック×20',mult:20,dur:60000,cost:0,type:'click'},
+  {id:'e3',name:'✦ COSMIC ALIGNMENT',desc:'星々が整列。120秒間、全生産×3 & クリック×3',mult:3,dur:120000,cost:0,type:'all'},
+  {id:'e4',name:'🔥 VOID IGNITION',desc:'虚無が点火。90秒間、全生産×8',mult:8,dur:90000,cost:0,type:'boost'},
+  {id:'e5',name:'🌀 PARADOX LOOP',desc:'時間が歪む。60秒間、生産×10（クリック無効）',mult:10,dur:60000,cost:0,type:'boost'},
+  {id:'e6',name:'⭐ SUPERNOVA WAVE',desc:'超新星爆発の余波。45秒間、全生産×15',mult:15,dur:45000,cost:0,type:'boost'},
+  {id:'e7',name:'💫 DIMENSION CRACK',desc:'次元の亀裂。Void Essence×100を即時獲得',mult:0,dur:0,cost:0,type:'void'},
+  {id:'e8',name:'🌑 VOID PULSE',desc:'虚無の鼓動。QPSの1分分を即時獲得',mult:0,dur:0,cost:0,type:'instant_qps'},
+];
+
+// ===== INIT =====
+function initGame(){
+  // Init producers
+  G.producers=PROD_DEFS.map(d=>({
+    id:d.id,count:0,
+    mult:new BN(1), // upgrade multiplier
+    totalEarned:new BN(0),
+  }));
+  // Init upgrades
+  G.upgrades=UPG_DEFS.map(d=>({id:d.id,purchased:false}));
+  // Init achievements
+  G.achievements=ACH_DEFS.map(d=>({id:d.id,unlocked:false}));
+
+  loadGame();
+  G.initialized=true;
+  G.nextEventTimer=60+Math.random()*120;
+
+  renderAll();
+  requestAnimationFrame(renderLoop);
+  setInterval(gameTick,50);
+  setInterval(autoSave,30000);
+  setInterval(checkEvents,1000);
+}
+
+// ===== COST CALC =====
+function prodCost(id,n=1){
+  const def=PROD_DEFS[id];
+  const count=G.producers[id].count;
+  // Σ base * 1.15^(count+i) for i=0..n-1
+  // = base * 1.15^count * (1.15^n - 1)/(1.15 - 1)
+  const base=new BN(def.baseCost);
+  const r=1.15;
+  const rPow=Math.pow(r,count);
+  if(n===1){
+    return base.mul(new BN(rPow));
+  }
+  const sum=rPow*(Math.pow(r,n)-1)/(r-1);
+  return base.mul(new BN(sum));
+}
+
+function maxBuyable(id){
+  const def=PROD_DEFS[id];
+  const base=def.baseCost;
+  const r=1.15;
+  const count=G.producers[id].count;
+  const rC=Math.pow(r,count);
+  // n = floor(log_r(quarks*(r-1)/(base*r^count)+1))
+  const q=G.quarks.toNum();
+  if(q<=0)return 0;
+  const x=q*(r-1)/(base*rC)+1;
+  if(x<=0)return 0;
+  return Math.max(0,Math.floor(Math.log(x)/Math.log(r)));
+}
+
+// ===== BUY PRODUCER =====
+let buyMode=1;
+function buyProducer(id){
+  const def=PROD_DEFS[id];
+  const p=G.producers[id];
+  let n=buyMode==='max'?maxBuyable(id):buyMode;
+  if(n<=0)return;
+  const cost=prodCost(id,n);
+  if(G.quarks.lt(cost))return;
+  G.quarks=G.quarks.sub(cost);
+  G.totalQuarksSpent=G.totalQuarksSpent.add(cost);
+  p.count+=n;
+  recalcMults();
+  renderAll();
+  spawnParticle('+'+n+' '+def.name,'#00f5ff');
+  checkUnlocks();
+}
+
+// ===== BUY UPGRADE =====
+function buyUpgrade(id){
+  const def=UPG_DEFS.find(d=>d.id===id);
+  const upg=G.upgrades.find(u=>u.id===id);
+  if(!def||!upg||upg.purchased)return;
+  const cost=new BN(def.cost);
+  if(G.quarks.lt(cost))return;
+  G.quarks=G.quarks.sub(cost);
+  G.totalQuarksSpent=G.totalQuarksSpent.add(cost);
+  upg.purchased=true;
+  applyUpgradeEffect(def.effect);
+  recalcMults();
+  renderAll();
+  spawnParticle('UPGRADE: '+def.name,'#7f00ff');
+  notify('⚡ '+def.name+' 購入完了','purple');
+}
+
+function applyUpgradeEffect(effect){
+  // Applied via recalcMults, no-op here
+}
+
+// ===== RECALC MULTIPLIERS =====
+function recalcMults(){
+  // Reset producer mults
+  for(let i=0;i<G.producers.length;i++){
+    G.producers[i].mult=new BN(1);
+  }
+  let clickMult=new BN(1);
+  let globalMult=new BN(1);
+  let clickIsQPS=false,clickQPSPct=0.01;
+
+  for(const upg of G.upgrades){
+    if(!upg.purchased)continue;
+    const def=UPG_DEFS.find(d=>d.id===upg.id);
+    const e=def.effect;
+    if(e.startsWith('click×')){
+      clickMult=clickMult.mul(new BN(parseFloat(e.slice(6))))
+    }else if(e==='click_qps'){clickIsQPS=true;clickQPSPct=0.01}
+    else if(e==='click_qps2'){clickIsQPS=true;clickQPSPct=0.05}
+    else if(e.match(/^prod(\d+)×(\d+)$/)){
+      const m=e.match(/^prod(\d+)×(\d+)$/);
+      const pid=parseInt(m[1]),mul=parseInt(m[2]);
+      if(G.producers[pid])G.producers[pid].mult=G.producers[pid].mult.mul(new BN(mul))
+    }else if(e.startsWith('global×')){
+      globalMult=globalMult.mul(new BN(parseInt(e.slice(7))))
+    }else if(e==='combo_up'){
+      G.comboMax=Math.max(G.comboMax,5)
+    }
+  }
+
+  // Achievement bonus
+  let achMult=new BN(1);
+  for(const ach of G.achievements){
+    if(!ach.unlocked)continue;
+    const def=ACH_DEFS.find(d=>d.id===ach.id);
+    const r=def.reward;
+    if(r.includes('全生産×')){achMult=achMult.mul(new BN(parseFloat(r.match(/×([\d.]+)/)[1])))}
+    else if(r.includes('全て×')){achMult=achMult.mul(new BN(parseFloat(r.match(/×([\d.]+)/)[1])));clickMult=clickMult.mul(new BN(parseFloat(r.match(/×([\d.]+)/)[1])))}
+  }
+
+  // Prestige multipliers
+  const bbMult=G.bigBangs>0?new BN(Math.pow(2,G.bigBangs)):new BN(1);
+  const ascMult=G.ascensions>0?new BN(Math.pow(4,G.ascensions)):new BN(1);
+  const singMult=G.singularities>0?new BN(Math.pow(10,G.singularities)):new BN(1);
+
+  // Energy boost
+  let energyBoost=new BN(1);
+  if(G.upgrades.find(u=>u.id==='s1'&&u.purchased)){
+    const eb=G.energy.log10();
+    if(eb>0)energyBoost=new BN(1+eb*0.05);
+  }
+  // Stardust boost
+  let stardustBoost=new BN(1);
+  if(G.upgrades.find(u=>u.id==='s3'&&u.purchased)){
+    const sb=G.stardust.log10();
+    if(sb>0)stardustBoost=new BN(1+sb*0.1);
+  }
+
+  G.upgradeMult=globalMult.mul(achMult).mul(energyBoost).mul(stardustBoost);
+  const totalMult=G.upgradeMult.mul(bbMult).mul(ascMult).mul(singMult).mul(G.eventMult);
+  G.totalMult=totalMult;
+
+  // Void boost
+  let voidBoostActive=G.upgrades.find(u=>u.id==='s4'&&u.purchased)&&G.voidEssence.gte(1);
+
+  // Calc QPS
+  let qps=new BN(0);
+  for(let i=0;i<G.producers.length;i++){
+    if(G.producers[i].count===0)continue;
+    const def=PROD_DEFS[i];
+    let pDPS=new BN(def.baseDPS).mul(new BN(G.producers[i].count));
+    pDPS=pDPS.mul(G.producers[i].mult);
+    pDPS=pDPS.mul(totalMult);
+    if(voidBoostActive)pDPS=pDPS.mul(new BN(2));
+    qps=qps.add(pDPS);
+  }
+  G.qps=qps;
+  if(G.qps.gt(G.bestQPS))G.bestQPS=new BN(G.qps);
+
+  // Click power
+  if(clickIsQPS){
+    G.clickPower=G.qps.mul(new BN(clickQPSPct)).mul(clickMult);
+    if(G.clickPower.lt(new BN(1)))G.clickPower=new BN(1);
+  }else{
+    G.clickPower=clickMult;
+  }
+  G.clickPower=G.clickPower.mul(new BN(G.comboMult));
+
+  // Update UI mults
+  document.getElementById('m-upg').textContent='×'+G.upgradeMult.fmt();
+  document.getElementById('m-bb').textContent='×'+bbMult.fmt();
+  document.getElementById('m-asc').textContent='×'+ascMult.fmt();
+  document.getElementById('m-ach').textContent='×'+achMult.fmt();
+  document.getElementById('m-ev').textContent='×'+G.eventMult.fmt();
+  document.getElementById('m-total').textContent='×'+G.totalMult.fmt();
+  document.getElementById('click-val-display').textContent='+'+G.clickPower.fmt();
+}
+
+// ===== GAME TICK =====
+let lastTickTime=Date.now();
+function gameTick(){
+  const now=Date.now();
+  const dt=(now-lastTickTime)/1000;
+  lastTickTime=now;
+  G.playTime+=dt;
+
+  // Add resources
+  const gained=G.qps.mul(new BN(dt));
+  G.quarks=G.quarks.add(gained);
+  G.lifetimeQuarks=G.lifetimeQuarks.add(gained);
+
+  // Secondary resources
+  for(let i=0;i<G.producers.length;i++){
+    const p=G.producers[i];
+    if(p.count===0)continue;
+    const def=PROD_DEFS[i];
+    if(def.energyPer>0){
+      G.energy=G.energy.add(new BN(def.energyPer*p.count*dt));
+    }
+  }
+  // Stardust from energy
+  if(G.energy.gte(1000)){
+    G.stardust=G.stardust.add(new BN(0.001*dt));
+  }
+  // Void Essence from stardust
+  if(G.stardust.gte(100)){
+    G.voidEssence=G.voidEssence.add(new BN(0.0001*dt));
+  }
+
+  // Combo decay
+  if(G.comboCount>0){
+    G.comboTimer-=dt;
+    if(G.comboTimer<=0){
+      G.comboCount=0;G.comboMult=1;
+      recalcMults();
+    }
+  }
+
+  // Event timer
+  if(G.activeEvent&&G.activeEvent.endTime>0){
+    if(Date.now()>G.activeEvent.endTime){
+      G.eventMult=new BN(1);
+      G.activeEvent=null;
+      recalcMults();
+      notify('イベント終了','purple');
+    }
+  }
+  G.nextEventTimer-=dt;
+
+  // Auto buyer
+  if(G.autoBuyerActive&&G.singularities>=1){
+    for(let i=0;i<G.producers.length;i++){
+      const c=prodCost(i,1);
+      if(G.quarks.gt(c.mul(new BN(10)))){
+        const n=Math.min(maxBuyable(i),10);
+        if(n>0)buyProducer(i);
+      }
+    }
+  }
+
+  checkAchievements();
+}
+
+// ===== CLICK =====
+function handleClick(e){
+  G.totalClicks++;
+  G.quarks=G.quarks.add(G.clickPower);
+  G.lifetimeQuarks=G.lifetimeQuarks.add(G.clickPower);
+
+  // Combo
+  const now=Date.now();
+  if(now-G.lastClickTime<500){
+    G.comboCount=Math.min(G.comboCount+1,G.comboMax);
+    G.comboTimer=3;
+    G.comboMult=1+G.comboCount*0.5;
+    recalcMults();
+  }else{
+    G.comboCount=1;G.comboTimer=3;G.comboMult=1.5;
+    recalcMults();
+  }
+  G.lastClickTime=now;
+
+  // Particles
+  const rect=document.getElementById('main-btn').getBoundingClientRect();
+  spawnClickParticles(rect.left+rect.width/2,rect.top+rect.height/2);
+  spawnFloatText('+'+G.clickPower.fmt(),rect.left+rect.width/2,rect.top);
+
+  checkUnlocks();
+}
+
+// ===== PRESTIGE =====
+function calcVoidShards(){
+  const log=G.lifetimeQuarks.log10();
+  if(log<15)return new BN(0);
+  return BN.fromLog((log-15)*0.5);
+}
+function calcCosmicDNA(){
+  if(G.bigBangs<1)return new BN(0);
+  const log=G.lifetimeQuarks.log10();
+  if(log<20)return new BN(0);
+  return BN.fromLog((log-20)*0.3);
+}
+function calcOmegaCrystals(){
+  if(G.ascensions<1)return new BN(0);
+  const log=G.lifetimeQuarks.log10();
+  if(log<30)return new BN(0);
+  return BN.fromLog((log-30)*0.2);
+}
+
+function doBigBang(){
+  const shards=calcVoidShards();
+  if(shards.lt(new BN(1)))return;
+  G.voidShards=G.voidShards.add(shards);
+  G.bigBangs++;
+  G.totalPrestiges++;
+  resetForPrestige(1);
+  recalcMults();
+  renderAll();
+  flashMilestone('✦ BIG BANG ✦\n+'+shards.fmt()+' Void Shards');
+  notify('🌌 BIG BANG! +'+shards.fmt()+' Void Shards','purple');
+  saveGame();
+}
+function doAscension(){
+  const dna=calcCosmicDNA();
+  if(dna.lt(new BN(1)))return;
+  G.cosmicDNA=G.cosmicDNA.add(dna);
+  G.ascensions++;
+  G.totalPrestiges++;
+  G.bigBangs=0;
+  G.voidShards=new BN(0);
+  resetForPrestige(2);
+  recalcMults();
+  renderAll();
+  flashMilestone('✦✦ ASCENSION ✦✦\n+'+dna.fmt()+' Cosmic DNA');
+  notify('💫 ASCENSION! +'+dna.fmt()+' Cosmic DNA','red');
+  saveGame();
+}
+function doSingularity(){
+  const crystals=calcOmegaCrystals();
+  if(crystals.lt(new BN(1)))return;
+  G.omegaCrystals=G.omegaCrystals.add(crystals);
+  G.singularities++;
+  G.totalPrestiges++;
+  G.ascensions=0;G.bigBangs=0;
+  G.voidShards=new BN(0);G.cosmicDNA=new BN(0);
+  G.autoBuyerActive=true;
+  G.dimension++;
+  resetForPrestige(3);
+  recalcMults();
+  renderAll();
+  flashMilestone('★ SINGULARITY ★\n+'+crystals.fmt()+' Omega Crystals\nDIMENSION '+G.dimension);
+  notify('👑 SINGULARITY! Dimension '+G.dimension,'gold');
+  saveGame();
+}
+
+function resetForPrestige(level){
+  G.quarks=new BN(0);
+  G.energy=new BN(0);
+  G.stardust=new BN(0);
+  G.voidEssence=new BN(0);
+  G.lifetimeQuarks=new BN(0);
+  G.totalQuarksSpent=new BN(0);
+  G.totalClicks=0;
+  G.comboCount=0;G.comboMult=1;G.comboTimer=0;
+  G.eventMult=new BN(1);G.activeEvent=null;
+  for(const p of G.producers)p.count=0;
+  if(level>=2){
+    for(const u of G.upgrades)u.purchased=false;
+    G.comboMax=3;
+  }
+  if(level>=3){
+    for(const a of G.achievements)a.unlocked=false;
+    G.achUnlocked=0;
+  }
+}
+
+// ===== EVENTS =====
+function checkEvents(){
+  if(G.activeEvent)return;
+  if(G.nextEventTimer<=0&&G.lifetimeQuarks.gte(1e6)){
+    triggerEvent();
+    G.nextEventTimer=120+Math.random()*180;
+  }
+}
+function triggerEvent(){
+  const pool=EVENT_POOL.filter(e=>e.id!==G.activeEvent?.id);
+  const ev=pool[Math.floor(Math.random()*pool.length)];
+  document.getElementById('ev-title').textContent=ev.name;
+  document.getElementById('ev-desc').textContent=ev.desc;
+  document.getElementById('event-btn').onclick=()=>resolveEvent(ev);
+  const banner=document.getElementById('event-banner');
+  banner.classList.add('show');
+  setTimeout(()=>banner.classList.remove('show'),15000);
+}
+function resolveEvent(ev){
+  document.getElementById('event-banner').classList.remove('show');
+  if(ev.type==='boost'||ev.type==='all'){
+    G.eventMult=new BN(ev.mult);
+    G.activeEvent={...ev,endTime:Date.now()+ev.dur};
+  }else if(ev.type==='click'){
+    G.eventMult=new BN(1);
+    G.activeEvent=null;
+    G.clickPower=G.clickPower.mul(new BN(ev.mult));
+    setTimeout(()=>{recalcMults()},ev.dur);
+  }else if(ev.type==='void'){
+    G.voidEssence=G.voidEssence.add(G.voidEssence.mul(new BN(100)).add(new BN(100)));
+  }else if(ev.type==='instant_qps'){
+    const bonus=G.qps.mul(new BN(60));
+    G.quarks=G.quarks.add(bonus);
+    G.lifetimeQuarks=G.lifetimeQuarks.add(bonus);
+    spawnParticle('+'+bonus.fmt()+' Quarks','#ffd700');
+  }
+  recalcMults();
+  notify('✦ '+ev.name+' 発動!','purple');
+}
+
+// ===== ACHIEVEMENTS =====
+function checkAchievements(){
+  for(const ach of G.achievements){
+    if(ach.unlocked)continue;
+    const def=ACH_DEFS.find(d=>d.id===ach.id);
+    if(def.req()){
+      ach.unlocked=true;
+      G.achUnlocked++;
+      notify('🏆 ACHIEVEMENT: '+def.name,'gold');
+      recalcMults();
+      const notif=document.getElementById('ach-notif');
+      notif.style.display='inline';
+      setTimeout(()=>notif.style.display='none',5000);
+    }
+  }
+  document.getElementById('ach-count-display').textContent=
+    G.achUnlocked+'/'+ACH_DEFS.length;
+}
+
+function checkUnlocks(){
+  // Check upgrade unlocks
+  let newUpg=false;
+  for(const def of UPG_DEFS){
+    const upg=G.upgrades.find(u=>u.id===def.id);
+    if(!upg.purchased&&(!def.req||def.req())){
+      if(G.quarks.gte(def.cost)){newUpg=true;break}
+    }
+  }
+  const notif=document.getElementById('upg-notif');
+  if(newUpg)notif.style.display='inline';
+  else notif.style.display='none';
+}
+
+// ===== PARTICLES =====
+const particleCanvas=document.getElementById('particle-canvas');
+const pCtx=particleCanvas.getContext('2d');
+const particles=[];
+const floatTexts=[];
+
+function resizeParticleCanvas(){
+  particleCanvas.width=window.innerWidth;
+  particleCanvas.height=window.innerHeight;
+}
+resizeParticleCanvas();
+window.addEventListener('resize',resizeParticleCanvas);
+
+function spawnClickParticles(x,y){
+  for(let i=0;i<12;i++){
+    const angle=Math.random()*Math.PI*2;
+    const speed=2+Math.random()*4;
+    particles.push({
+      x,y,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,
+      life:1,maxLife:1,r:2+Math.random()*3,
+      color:`hsl(${180+Math.random()*60},100%,${60+Math.random()*30}%)`,
+    });
+  }
+}
+function spawnFloatText(text,x,y){
+  floatTexts.push({text,x,y,vy:-2,life:1.2,maxLife:1.2});
+}
+function spawnParticle(text,color){
+  // Top-center float
+  floatTexts.push({
+    text,x:window.innerWidth/2,y:60,vy:-1.5,life:2,maxLife:2,
+    color:color||'#00f5ff',big:true,
+  });
+}
+
+function updateParticles(dt){
+  pCtx.clearRect(0,0,particleCanvas.width,particleCanvas.height);
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];
+    p.x+=p.vx;p.y+=p.vy;p.vy+=0.15;
+    p.life-=dt*1.5;
+    if(p.life<=0){particles.splice(i,1);continue}
+    const alpha=p.life/p.maxLife;
+    pCtx.save();
+    pCtx.globalAlpha=alpha;
+    pCtx.fillStyle=p.color;
+    pCtx.beginPath();
+    pCtx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    pCtx.fill();
+    pCtx.restore();
+  }
+  for(let i=floatTexts.length-1;i>=0;i--){
+    const f=floatTexts[i];
+    f.y+=f.vy;f.life-=dt;
+    if(f.life<=0){floatTexts.splice(i,1);continue}
+    const alpha=Math.min(1,f.life/f.maxLife*2);
+    pCtx.save();
+    pCtx.globalAlpha=alpha;
+    pCtx.fillStyle=f.color||'#00f5ff';
+    pCtx.font=(f.big?'bold 14px':'bold 16px')+' "Share Tech Mono",monospace';
+    pCtx.textAlign='center';
+    pCtx.shadowBlur=10;pCtx.shadowColor=f.color||'#00f5ff';
+    pCtx.fillText(f.text,f.x,f.y);
+    pCtx.restore();
+  }
+}
+
+// ===== BACKGROUND CANVAS =====
+const bgCanvas=document.getElementById('bg-canvas');
+const bgCtx=bgCanvas.getContext('2d');
+const stars=[];
+const nebulas=[];
+
+function initBG(){
+  bgCanvas.width=window.innerWidth;bgCanvas.height=window.innerHeight;
+  stars.length=0;nebulas.length=0;
+  for(let i=0;i<200;i++){
+    stars.push({
+      x:Math.random()*bgCanvas.width,
+      y:Math.random()*bgCanvas.height,
+      r:Math.random()*1.5,
+      a:Math.random(),
+      da:(Math.random()-.5)*0.01,
+      speed:Math.random()*0.2,
+    });
+  }
+  for(let i=0;i<5;i++){
+    nebulas.push({
+      x:Math.random()*bgCanvas.width,
+      y:Math.random()*bgCanvas.height,
+      r:100+Math.random()*200,
+      hue:Math.random()>0.5?240+Math.random()*40:280+Math.random()*40,
+      a:0.03+Math.random()*0.05,
+    });
+  }
+}
+initBG();
+window.addEventListener('resize',()=>{initBG();resizeParticleCanvas()});
+
+function drawBG(){
+  bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+  // Nebulas
+  for(const n of nebulas){
+    const g=bgCtx.createRadialGradient(n.x,n.y,0,n.x,n.y,n.r);
+    g.addColorStop(0,`hsla(${n.hue},100%,50%,${n.a})`);
+    g.addColorStop(1,'transparent');
+    bgCtx.fillStyle=g;
+    bgCtx.beginPath();bgCtx.arc(n.x,n.y,n.r,0,Math.PI*2);bgCtx.fill();
+  }
+  // Stars
+  for(const s of stars){
+    s.a+=s.da;
+    if(s.a>1||s.a<0.1)s.da=-s.da;
+    s.y+=s.speed;
+    if(s.y>bgCanvas.height)s.y=0;
+    bgCtx.save();
+    bgCtx.globalAlpha=s.a;
+    bgCtx.fillStyle='#c8d8ff';
+    bgCtx.beginPath();bgCtx.arc(s.x,s.y,s.r,0,Math.PI*2);bgCtx.fill();
+    bgCtx.restore();
+  }
+}
+
+// ===== RENDER LOOP =====
+let lastRAFTime=performance.now();
+function renderLoop(timestamp){
+  const dt=(timestamp-lastRAFTime)/1000;
+  lastRAFTime=timestamp;
+  drawBG();
+  updateParticles(dt);
+  renderDynamic();
+  requestAnimationFrame(renderLoop);
+}
+
+// ===== DYNAMIC RENDER (60fps) =====
+function renderDynamic(){
+  // Resource numbers
+  document.getElementById('quark-count').textContent=G.quarks.fmt();
+  document.getElementById('quark-per-sec').textContent=G.qps.fmt()+' quarks/sec';
+  document.getElementById('click-power').textContent='click power: '+G.clickPower.fmt();
+  document.getElementById('h-quarks').textContent=G.quarks.fmt();
+  document.getElementById('h-qps').textContent=G.qps.fmt()+'/s';
+  document.getElementById('h-lifetime').textContent=G.lifetimeQuarks.fmt();
+  document.getElementById('bb-count').textContent=G.bigBangs;
+  document.getElementById('asc-count').textContent=G.ascensions;
+  document.getElementById('sing-count').textContent=G.singularities;
+  document.getElementById('dim-num').textContent=G.dimension;
+
+  // Combo
+  const ct=document.getElementById('combo-timer');
+  const cf=document.getElementById('combo-fill');
+  const cm=document.getElementById('combo-mult');
+  if(G.comboCount>0){
+    ct.textContent=G.comboTimer.toFixed(1)+'s';
+    cf.style.width=(G.comboTimer/3*100)+'%';
+    cm.textContent=G.comboMult.toFixed(1);
+  }else{
+    ct.textContent='';cf.style.width='100%';cm.textContent='1.0';
+  }
+
+  // Resources
+  const rl=document.getElementById('resources-list');
+  if(rl._last!==G.energy.fmt()){
+    rl._last=G.energy.fmt();
+    rl.innerHTML=`
+      <div class="res-row"><span class="res-name">⚡ Energy</span><span class="res-val">${G.energy.fmt()}</span></div>
+      <div class="res-row"><span class="res-name">✨ Stardust</span><span class="res-val">${G.stardust.fmt()}</span></div>
+      <div class="res-row"><span class="res-name">🌑 Void Essence</span><span class="res-val">${G.voidEssence.fmt()}</span></div>
+      <div class="res-row"><span class="res-name">💫 Void Shards</span><span class="res-val">${G.voidShards.fmt()}</span></div>
+      <div class="res-row"><span class="res-name">🧬 Cosmic DNA</span><span class="res-val">${G.cosmicDNA.fmt()}</span></div>
+      <div class="res-row"><span class="res-name">♾️ Omega Crystals</span><span class="res-val">${G.omegaCrystals.fmt()}</span></div>
+    `;
+  }
+
+  // Total DPS display
+  document.getElementById('total-dps-display').textContent='Total: '+G.qps.fmt()+'/s';
+
+  // Active event timer
+  if(G.activeEvent&&G.activeEvent.endTime>0){
+    const rem=Math.max(0,(G.activeEvent.endTime-Date.now())/1000);
+    document.getElementById('ev-title').textContent=G.activeEvent.name+' ('+rem.toFixed(0)+'s)';
+  }
+}
+
+// ===== FULL RENDER =====
+function renderAll(){
+  renderProducers();
+  renderUpgrades();
+  renderPrestige();
+  renderAchievements();
+  renderStats();
+  recalcMults();
+}
+
+function renderProducers(){
+  const list=document.getElementById('producers-list');
+  let html='';
+  let totalOwned=0;
+  for(let i=0;i<G.producers.length;i++){
+    const def=PROD_DEFS[i];
+    const p=G.producers[i];
+    totalOwned+=p.count;
+    let n=buyMode==='max'?maxBuyable(i):buyMode;
+    const cost=n>0?prodCost(i,Math.max(1,n)):prodCost(i,1);
+    const canAfford=G.quarks.gte(cost)&&n>0;
+    const isLocked=totalOwned<def.unlockAt&&p.count===0;
+    let pDPS=new BN(def.baseDPS).mul(new BN(Math.max(1,p.count))).mul(p.mult).mul(G.totalMult);
+    const pct=G.qps.gt(new BN(0))?Math.min(100,pDPS.div(G.qps).mul(new BN(100)).toNum()):0;
+    const hasMil=p.count>0&&[10,25,50,100,200,300,400].some(m=>p.count>=m);
+    html+=`<div class="producer ${canAfford?'can-afford':''} ${isLocked?'locked':''} ${hasMil?'maxed':''}" 
+      onclick="buyProducer(${i})" title="${def.desc}">
+      ${p.count>=100?'<div class="prod-mul-badge">×'+Math.floor(p.count/10)+'</div>':''}
+      <div class="prod-header">
+        <span class="prod-name">${def.icon} ${def.name}</span>
+        <span class="prod-count">${p.count}</span>
+      </div>
+      <div class="prod-desc">${isLocked?'🔒 要'+def.unlockAt+'個購入':def.desc}</div>
+      <div class="prod-stats">
+        <span class="prod-cost ${canAfford?'affordable':'expensive'}">${isLocked?'???':cost.fmt()}</span>
+        <span class="prod-dps">${p.count>0?pDPS.fmt()+'/s':''}</span>
+      </div>
+      <div class="prod-bar" style="width:${pct}%"></div>
+    </div>`;
+  }
+  list.innerHTML=html;
+}
+
+function renderUpgrades(){
+  const grid=document.getElementById('upgrade-grid');
+  let html='';
+  let available=0,purchased=0;
+  for(const def of UPG_DEFS){
+    const upg=G.upgrades.find(u=>u.id===def.id);
+    const isAvail=!def.req||def.req();
+    const canAfford=isAvail&&G.quarks.gte(def.cost)&&!upg.purchased;
+    const isLocked=!isAvail&&!upg.purchased;
+    if(upg.purchased)purchased++;
+    if(isAvail&&!upg.purchased)available++;
+    html+=`<div class="upgrade ${upg.purchased?'purchased':''} ${canAfford?'can-afford':''} ${isLocked?'locked':''}"
+      onclick="${upg.purchased||isLocked?'':('buyUpgrade(\''+def.id+'\')')}">
+      <div class="upg-check">✓</div>
+      <div class="upg-icon">${def.icon}</div>
+      <div class="upg-name">${def.name}</div>
+      <div class="upg-desc">${def.desc}</div>
+      <div class="upg-effect">${def.effect.replace('×','×').replace('prod','P').replace('global','全体').replace('click','クリック')}</div>
+      ${!upg.purchased?`<div class="upg-cost ${G.quarks.gte(def.cost)?'affordable':''}">${new BN(def.cost).fmt()} Q</div>`:''}
+    </div>`;
+  }
+  grid.innerHTML=html;
+  document.getElementById('upg-count-display').textContent=purchased+'/'+UPG_DEFS.length;
+}
+
+function renderPrestige(){
+  const pp=document.getElementById('prestige-panel');
+  const shards=calcVoidShards();
+  const dna=calcCosmicDNA();
+  const crystals=calcOmegaCrystals();
+  const canBB=shards.gte(new BN(1));
+  const canAsc=dna.gte(new BN(1))&&G.bigBangs>=1;
+  const canSing=crystals.gte(new BN(1))&&G.ascensions>=1;
+  pp.innerHTML=`
+    <div class="prestige-box">
+      <div class="prestige-title" style="color:var(--accent2)">✦ BIG BANG RESET</div>
+      <div class="prestige-desc">全てのリソース・生産施設をリセットし、<b>Void Shards</b>を獲得します。
+      Void Shardsは永続的に生産量を2<sup>n</sup>倍に増加させます。
+      （必要条件: 1e15 Quarks lifetime）</div>
+      <div class="prestige-stat"><span class="k">現在のVoid Shards</span><span class="v">${G.voidShards.fmt()}</span></div>
+      <div class="prestige-stat"><span class="k">獲得予定Shards</span><span class="v">${shards.fmt()}</span></div>
+      <div class="prestige-stat"><span class="k">Big Bang実行回数</span><span class="v">${G.bigBangs}</span></div>
+      <div class="prestige-stat"><span class="k">Big Bang乗数</span><span class="v">×${Math.pow(2,G.bigBangs).toFixed(0)}</span></div>
+      <div style="margin-top:12px">
+        <button class="prestige-btn p1" onclick="doBigBang()" ${canBB?'':'disabled'}>
+          ${canBB?'◆ BIG BANG EXECUTE':'🔒 1e15 Quarks必要'}
+        </button>
+      </div>
+    </div>
+    <div class="prestige-box layer2">
+      <div class="prestige-title" style="color:var(--accent3)">✦✦ DIMENSIONAL ASCENSION</div>
+      <div class="prestige-desc">Big Bang含む全リセットを行い、<b>Cosmic DNA</b>を獲得。
+      Cosmic DNAは生産量を4<sup>n</sup>倍にし、進化的な新能力を解放します。
+      （必要条件: Big Bang×1、1e20 Quarks lifetime）</div>
+      <div class="prestige-stat"><span class="k">現在のCosmic DNA</span><span style="color:var(--accent3)">${G.cosmicDNA.fmt()}</span></div>
+      <div class="prestige-stat"><span class="k">獲得予定DNA</span><span style="color:var(--accent3)">${dna.fmt()}</span></div>
+      <div class="prestige-stat"><span class="k">Ascension実行回数</span><span style="color:var(--accent3)">${G.ascensions}</span></div>
+      <div class="prestige-stat"><span class="k">Ascension乗数</span><span style="color:var(--accent3)">×${Math.pow(4,G.ascensions).toFixed(0)}</span></div>
+      <div style="margin-top:12px">
+        <button class="prestige-btn p2" onclick="doAscension()" ${canAsc?'':'disabled'}>
+          ${canAsc?'◆ ASCEND NOW':'🔒 BigBang×1、1e20 Q必要'}
+        </button>
+      </div>
+    </div>
+    <div class="prestige-box layer3">
+      <div class="prestige-title" style="color:var(--gold)">★ SINGULARITY</div>
+      <div class="prestige-desc">全次元をリセットし、<b>Omega Crystals</b>を獲得。
+      新たな<b>Dimension</b>に移行し、AutoBuyerが解放されます。全乗数が10<sup>n</sup>倍。
+      （必要条件: Ascension×1、1e30 Quarks lifetime）</div>
+      <div class="prestige-stat"><span class="k">現在のOmega Crystals</span><span style="color:var(--gold)">${G.omegaCrystals.fmt()}</span></div>
+      <div class="prestige-stat"><span class="k">獲得予定Crystals</span><span style="color:var(--gold)">${crystals.fmt()}</span></div>
+      <div class="prestige-stat"><span class="k">Singularity実行回数</span><span style="color:var(--gold)">${G.singularities}</span></div>
+      <div class="prestige-stat"><span class="k">現在のDimension</span><span style="color:var(--gold)">${G.dimension}</span></div>
+      <div class="prestige-stat"><span class="k">AutoBuyer</span><span style="color:var(--gold)">${G.autoBuyerActive?'✓ ACTIVE':'🔒 LOCKED'}</span></div>
+      <div style="margin-top:12px">
+        <button class="prestige-btn p3" onclick="doSingularity()" ${canSing?'':'disabled'}>
+          ${canSing?'◆ SINGULARITY EXECUTE':'🔒 Ascension×1、1e30 Q必要'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function renderAchievements(){
+  const grid=document.getElementById('ach-grid');
+  let html='';
+  for(const def of ACH_DEFS){
+    const ach=G.achievements.find(a=>a.id===def.id);
+    html+=`<div class="achievement ${ach.unlocked?'unlocked':'locked'}">
+      <div class="ach-icon">${def.icon}</div>
+      <div class="ach-info">
+        <div class="ach-name">${def.name}</div>
+        <div class="ach-desc">${ach.unlocked?def.desc:'???'}</div>
+        <div class="ach-reward">✦ ${def.reward}</div>
+      </div>
+    </div>`;
+  }
+  grid.innerHTML=html;
+}
+
+function renderStats(){
+  const sp=document.getElementById('stats-panel');
+  const playH=Math.floor(G.playTime/3600);
+  const playM=Math.floor((G.playTime%3600)/60);
+  const playS=Math.floor(G.playTime%60);
+  sp.innerHTML=`
+    <div class="stat-section">
+      <div class="stat-section-title">RESOURCES</div>
+      <div class="stat-row"><span class="sk">現在のQuarks</span><span class="sv">${G.quarks.fmt()}</span></div>
+      <div class="stat-row"><span class="sk">Quarks/sec</span><span class="sv">${G.qps.fmt()}</span></div>
+      <div class="stat-row"><span class="sk">最高QPS</span><span class="sv">${G.bestQPS.fmt()}</span></div>
+      <div class="stat-row"><span class="sk">累計Quarks</span><span class="sv">${G.lifetimeQuarks.fmt()}</span></div>
+      <div class="stat-row"><span class="sk">使用済みQuarks</span><span class="sv">${G.totalQuarksSpent.fmt()}</span></div>
+    </div>
+    <div class="stat-section">
+      <div class="stat-section-title">ACTIONS</div>
+      <div class="stat-row"><span class="sk">総クリック数</span><span class="sv">${G.totalClicks.toLocaleString()}</span></div>
+      <div class="stat-row"><span class="sk">クリック力</span><span class="sv">${G.clickPower.fmt()}</span></div>
+      <div class="stat-row"><span class="sk">コンボ最大値</span><span class="sv">×${G.comboMax}</span></div>
+    </div>
+    <div class="stat-section">
+      <div class="stat-section-title">PRESTIGE</div>
+      <div class="stat-row"><span class="sk">Big Bang実行</span><span class="sv">${G.bigBangs}回</span></div>
+      <div class="stat-row"><span class="sk">Ascension実行</span><span class="sv">${G.ascensions}回</span></div>
+      <div class="stat-row"><span class="sk">Singularity実行</span><span class="sv">${G.singularities}回</span></div>
+      <div class="stat-row"><span class="sk">総プレステージ</span><span class="sv">${G.totalPrestiges}回</span></div>
+      <div class="stat-row"><span class="sk">現在Dimension</span><span class="sv">D${G.dimension}</span></div>
+    </div>
+    <div class="stat-section">
+      <div class="stat-section-title">SESSION</div>
+      <div class="stat-row"><span class="sk">プレイ時間</span><span class="sv">${playH}h ${playM}m ${playS}s</span></div>
+      <div class="stat-row"><span class="sk">実績解除</span><span class="sv">${G.achUnlocked}/${ACH_DEFS.length}</span></div>
+      <div class="stat-row"><span class="sk">アップグレード購入</span><span class="sv">${G.upgrades.filter(u=>u.purchased).length}/${UPG_DEFS.length}</span></div>
+    </div>
+  `;
+}
+
+// ===== NOTIFICATIONS =====
+function notify(text,type=''){
+  const c=document.getElementById('notif-container');
+  const el=document.createElement('div');
+  el.className='notif '+(type==='gold'?'gold':type==='purple'?'purple':type==='red'?'red':'');
+  el.textContent=text;
+  c.appendChild(el);
+  setTimeout(()=>el.remove(),3100);
+}
+
+function flashMilestone(text){
+  const el=document.getElementById('milestone-flash');
+  const t=document.getElementById('ms-text');
+  t.textContent=text;
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),1600);
+}
+
+// ===== SAVE/LOAD =====
+function saveGame(){
+  const save={
+    quarks:G.quarks.serialize(),
+    energy:G.energy.serialize(),
+    stardust:G.stardust.serialize(),
+    voidEssence:G.voidEssence.serialize(),
+    lifetimeQuarks:G.lifetimeQuarks.serialize(),
+    totalQuarksSpent:G.totalQuarksSpent.serialize(),
+    totalClicks:G.totalClicks,
+    playTime:G.playTime,
+    bigBangs:G.bigBangs,
+    ascensions:G.ascensions,
+    singularities:G.singularities,
+    voidShards:G.voidShards.serialize(),
+    cosmicDNA:G.cosmicDNA.serialize(),
+    omegaCrystals:G.omegaCrystals.serialize(),
+    dimension:G.dimension,
+    bestQPS:G.bestQPS.serialize(),
+    totalPrestiges:G.totalPrestiges,
+    comboMax:G.comboMax,
+    autoBuyerActive:G.autoBuyerActive,
+    producers:G.producers.map(p=>p.count),
+    upgrades:G.upgrades.map(u=>u.purchased),
+    achievements:G.achievements.map(a=>a.unlocked),
+    achUnlocked:G.achUnlocked,
+    version:2,
+  };
+  try{localStorage.setItem('voidArchitect_v2',JSON.stringify(save))}catch(e){}
+}
+
+function loadGame(){
+  try{
+    const raw=localStorage.getItem('voidArchitect_v2');
+    if(!raw)return;
+    const s=JSON.parse(raw);
+    if(s.version!==2)return;
+    G.quarks=BN.deserialize(s.quarks);
+    G.energy=BN.deserialize(s.energy);
+    G.stardust=BN.deserialize(s.stardust);
+    G.voidEssence=BN.deserialize(s.voidEssence);
+    G.lifetimeQuarks=BN.deserialize(s.lifetimeQuarks);
+    G.totalQuarksSpent=BN.deserialize(s.totalQuarksSpent);
+    G.totalClicks=s.totalClicks||0;
+    G.playTime=s.playTime||0;
+    G.bigBangs=s.bigBangs||0;
+    G.ascensions=s.ascensions||0;
+    G.singularities=s.singularities||0;
+    G.voidShards=BN.deserialize(s.voidShards);
+    G.cosmicDNA=BN.deserialize(s.cosmicDNA);
+    G.omegaCrystals=BN.deserialize(s.omegaCrystals);
+    G.dimension=s.dimension||1;
+    G.bestQPS=BN.deserialize(s.bestQPS);
+    G.totalPrestiges=s.totalPrestiges||0;
+    G.comboMax=s.comboMax||3;
+    G.autoBuyerActive=s.autoBuyerActive||false;
+    if(s.producers)s.producers.forEach((c,i)=>{if(G.producers[i])G.producers[i].count=c});
+    if(s.upgrades)s.upgrades.forEach((p,i)=>{if(G.upgrades[i])G.upgrades[i].purchased=p});
+    if(s.achievements)s.achievements.forEach((u,i)=>{if(G.achievements[i])G.achievements[i].unlocked=u});
+    G.achUnlocked=s.achUnlocked||G.achievements.filter(a=>a.unlocked).length;
+    notify('💾 セーブデータ読み込み完了','');
+  }catch(e){console.log('Load error',e)}
+}
+
+function autoSave(){
+  saveGame();
+}
+
+// ===== EVENT LISTENERS =====
+document.getElementById('main-btn').addEventListener('click',handleClick);
+document.getElementById('main-btn').addEventListener('contextmenu',e=>{e.preventDefault()});
+
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    const pId='panel-'+tab.dataset.tab;
+    document.getElementById(pId)?.classList.add('active');
+    if(tab.dataset.tab==='prestige')renderPrestige();
+    if(tab.dataset.tab==='stats')renderStats();
+  });
+});
+
+document.querySelectorAll('.buy-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('.buy-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const n=btn.dataset.n;
+    buyMode=n==='max'?'max':parseInt(n);
+    renderProducers();
+  });
+});
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault();handleClick(e)}
+  if(e.code==='Digit1')document.querySelectorAll('.buy-btn')[0].click();
+  if(e.code==='Digit2')document.querySelectorAll('.buy-btn')[1].click();
+  if(e.code==='Digit3')document.querySelectorAll('.buy-btn')[2].click();
+  if(e.code==='Digit4')document.querySelectorAll('.buy-btn')[3].click();
+});
+
+// ===== START =====
+initGame();
+</script>
+</body>
+</html>
