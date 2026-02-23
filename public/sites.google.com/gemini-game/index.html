@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Infinite Web-RPG Core</title>
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; color: #fff; font-family: monospace; }
+        #gameCanvas { display: block; margin: 0 auto; background: #111; box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        #uiLayer { position: absolute; top: 10px; left: 10px; pointer-events: none; text-shadow: 1px 1px 2px #000; }
+    </style>
+</head>
+<body>
+    <div id="uiLayer">
+        <h2 id="biomeName">Biome: Loading...</h2>
+        <p id="timeLog">Time: 00:00</p>
+        <div id="eventLog"></div>
+    </div>
+    <canvas id="gameCanvas" width="1280" height="800"></canvas>
+    
+    <script src="engine.js"></script>
+    <script src="data.js"></script>
+    <script src="render.js"></script>
+</body>
+</html>
