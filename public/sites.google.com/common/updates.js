@@ -3,6 +3,13 @@
 
 export const UPDATES=[
   {
+    version:"1.6.6",
+    date:"2026-02-23",
+    changes:[
+      "ChatHubのUI・UXを改善しました。"
+    ]
+  },
+  {
     version:"1.6.5",
     date:"2026-02-11 16:18",
     changes:[
