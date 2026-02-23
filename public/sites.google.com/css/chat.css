@@ -1023,3 +1023,105 @@
     display:flex;
   }
 }
+
+
+
+
+
+/* chat.cssに追記するスタイル */
+
+/* ========================================
+   日付セパレーター
+   ======================================== */
+
+.date-separator{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:8px 0;
+  margin:4px 0;
+  user-select:none;
+}
+
+.date-separator::before,
+.date-separator::after{
+  content:'';
+  flex:1;
+  height:1px;
+  background:var(--border);
+}
+
+.date-separator span{
+  font-size:12px;
+  font-weight:600;
+  color:var(--text-tertiary);
+  white-space:nowrap;
+  padding:2px 8px;
+  background:var(--bg-secondary);
+  border-radius:10px;
+  border:1px solid var(--border);
+}
+
+/* ========================================
+   スクロールダウンボタン
+   ======================================== */
+
+.scroll-down-btn{
+  position:absolute;
+  bottom:80px;
+  right:24px;
+  width:40px;
+  height:40px;
+  border-radius:50%;
+  background:var(--main);
+  color:#fff;
+  border:none;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 4px 12px rgba(0,0,0,0.2);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.2s,transform 0.2s;
+  transform:translateY(8px);
+  z-index:100;
+}
+
+.scroll-down-btn.visible{
+  opacity:1;
+  pointer-events:all;
+  transform:translateY(0);
+}
+
+.scroll-down-btn:hover{
+  background:var(--main-hover,#e55a2b);
+}
+
+.scroll-down-btn .material-symbols-outlined{
+  font-size:22px;
+}
+
+/* ========================================
+   もっと読み込むインジケーター
+   ======================================== */
+
+.load-more-indicator{
+  display:flex;
+  justify-content:center;
+  padding:12px;
+}
+
+.load-more-spinner{
+  width:24px;
+  height:24px;
+  border:2px solid var(--border);
+  border-top-color:var(--main);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+}
+
+/* chat-mainをrelativeに（すでに設定済みであれば不要） */
+#chat-main{
+  position:relative;
+}
