@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>PolyGlide - Infinite Terrain Exploration</title>
+    <title>VoxelForge - Infinite Block World</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.4.0/simplex-noise.min.js"></script>
@@ -12,61 +12,28 @@
     <div id="game-container"></div>
 
     <div id="ui-layer">
-        
-        <div id="hud" class="hidden">
-            <div class="hud-panel top-left">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                </svg>
-                <span id="altitude-display">ALT: 0m</span>
-            </div>
-            
-            <div class="hud-panel top-right">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <polyline points="12 16 12 12 16 8"></polyline>
-                </svg>
-                <span id="speed-display">SPD: 0km/h</span>
-            </div>
-
-            <div class="crosshair">
-                <svg width="40" height="40" viewBox="0 0 40 40">
-                    <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>
-                    <line x1="20" y1="10" x2="20" y2="15" stroke="white" stroke-width="2"/>
-                    <line x1="20" y1="30" x2="20" y2="25" stroke="white" stroke-width="2"/>
-                    <line x1="10" y1="20" x2="15" y2="20" stroke="white" stroke-width="2"/>
-                    <line x1="30" y1="20" x2="25" y2="20" stroke="white" stroke-width="2"/>
-                    <circle cx="20" cy="20" r="2" fill="white"/>
-                </svg>
-            </div>
+        <div id="crosshair">
+            <svg width="24" height="24" viewBox="0 0 24 24">
+                <line x1="12" y1="4" x2="12" y2="20" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
+                <line x1="4" y1="12" x2="20" y2="12" stroke="rgba(255,255,255,0.8)" stroke-width="2"/>
+            </svg>
         </div>
 
-        <div id="menu-screen">
-            <div class="menu-content">
-                <svg class="logo-svg" viewBox="0 0 200 80" width="200" height="80">
-                    <polygon points="10,70 50,20 90,70" fill="none" stroke="#4a90e2" stroke-width="3"/>
-                    <polygon points="40,70 100,10 160,70" fill="none" stroke="#50e3c2" stroke-width="4"/>
-                    <polygon points="110,70 150,30 190,70" fill="none" stroke="#b8e986" stroke-width="3"/>
-                </svg>
-                <h1>PolyGlide</h1>
-                <p>Infinite Procedural Flight</p>
-                
-                <button id="start-btn" class="glass-btn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
-                    </svg>
-                    START ENGINE
-                </button>
-                
-                <div class="controls-info">
-                    <p><b>[ W / S ]</b> または <b>[ マウス上下 ]</b> : ピッチ（機首の上下）</p>
-                    <p><b>[ A / D ]</b> または <b>[ マウス左右 ]</b> : ロール（旋回）</p>
-                </div>
-            </div>
+        <div id="hotbar">
+            <div class="slot active"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
+            <div class="slot"></div>
         </div>
 
+        <div id="debug-info">
+            <p>VoxelForge v0.1.0</p>
+            <p id="pos-display">XYZ: 0.000 / 0.000 / 0.000</p>
+            <p id="chunk-display">Chunk: 0, 0</p>
+        </div>
     </div>
 
-    <script src="main.js"></script>
+    <script type="module" src="./src/main.js"></script>
 </body>
 </html>
