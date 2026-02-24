@@ -1,0 +1,174 @@
+/* リセットと基本設定 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+
+body, html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #05050c;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    color: #ffffff;
+}
+
+/* 3Dキャンバスコンテナ */
+#game-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+}
+
+/* UIレイヤー（3Dより上に表示） */
+#ui-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 10;
+    pointer-events: none; /* UIの隙間からキャンバスをクリックできるようにする */
+}
+
+/* --- メニュー画面 --- */
+#menu-screen {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle, rgba(5,5,12,0.4) 0%, rgba(5,5,12,0.9) 100%);
+    backdrop-filter: blur(8px);
+    pointer-events: auto;
+    transition: opacity 0.5s ease-out;
+}
+
+.menu-content {
+    text-align: center;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 3rem 4rem;
+    border-radius: 24px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    transform: translateY(0);
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+
+.logo-svg {
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 0 10px rgba(80, 227, 194, 0.5));
+}
+
+#menu-screen h1 {
+    font-size: 3rem;
+    letter-spacing: 4px;
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #50e3c2, #4a90e2);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+#menu-screen p {
+    color: #a0aab5;
+    margin-bottom: 2rem;
+    letter-spacing: 1px;
+}
+
+/* グラスモーフィズムボタン */
+.glass-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(80, 227, 194, 0.2);
+    border: 1px solid rgba(80, 227, 194, 0.4);
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 1rem 2.5rem;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(80, 227, 194, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.glass-btn:hover {
+    background: rgba(80, 227, 194, 0.4);
+    box-shadow: 0 6px 20px rgba(80, 227, 194, 0.4);
+    transform: scale(1.05);
+}
+
+.controls-info {
+    margin-top: 2rem;
+    font-size: 0.85rem;
+    color: #707b85;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1.5rem;
+}
+
+.controls-info b {
+    color: #50e3c2;
+}
+
+/* --- HUD (プレイ中画面) --- */
+#hud {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    transition: opacity 0.3s ease;
+}
+
+.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.hud-panel {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    padding: 0.8rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    color: #50e3c2;
+}
+
+.top-left {
+    top: 20px;
+    left: 20px;
+}
+
+.top-right {
+    top: 20px;
+    right: 20px;
+}
+
+.crosshair {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.7;
+}
