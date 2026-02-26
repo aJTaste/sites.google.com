@@ -3,35 +3,34 @@
 import{state,CHANNELS}from'./chat-state.js';
 import{formatLastOnline}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
+import{geoAvatarDataUrl}from'../common/geo-avatar.js';
 
 // ユーザー一覧を表示
 export function displayUsers(){
   const dmList=document.getElementById('dm-list');
   if(!dmList)return;
-  
+
   dmList.innerHTML='';
-  
+
   // チャンネルを追加（権限チェック）
   CHANNELS.forEach(channel=>{
-    // 権限チェック
     if(!canAccessChannel(state.currentProfile.role,channel.requiredRole)){
       return;
     }
-    
+
     const channelItem=document.createElement('div');
     channelItem.className='channel-item';
     if(state.selectedChannelId===channel.id){
       channelItem.classList.add('active');
     }
-    
-    // モデレーター専用チャンネルのスタイル
+
     if(channel.requiredRole==='moderator'){
       channelItem.classList.add('moderator-only');
     }
-    
+
     const unreadCount=state.unreadCounts[channel.id]||0;
     const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
-    
+
     channelItem.innerHTML=`
       <div class="channel-icon">
         <span class="material-symbols-outlined">${channel.icon}</span>
@@ -44,21 +43,21 @@ export function displayUsers(){
         <div class="channel-desc">${channel.desc}</div>
       </div>
     `;
-    
+
     channelItem.addEventListener('click',()=>{
       if(window.selectChannel){
         window.selectChannel(channel.id);
       }
     });
-    
+
     dmList.appendChild(channelItem);
   });
-  
+
   // 区切り線
   const divider=document.createElement('div');
   divider.style.cssText='height:1px;background:var(--border);margin:8px 0;';
   dmList.appendChild(divider);
-  
+
   // 最終ログイン時刻でソート（新しい順）
   if(state.allUsers&&state.allUsers.length>0){
     state.allUsers.sort((a,b)=>{
@@ -66,31 +65,24 @@ export function displayUsers(){
       const bTime=new Date(b.last_online||b.created_at).getTime();
       return bTime-aTime;
     });
-    
+
     state.allUsers.forEach(user=>{
       const dmItem=document.createElement('div');
       dmItem.className='dm-item';
       if(state.selectedUserId===user.user_id){
         dmItem.classList.add('active');
       }
-      
-      // アイコン表示
-      let iconHtml;
-      if(user.avatar_url){
-        iconHtml=`<img src="${user.avatar_url}" alt="${user.display_name}">`;
-      }else{
-        const initial=user.display_name.charAt(0).toUpperCase();
-        const bgColor=user.avatar_color||'#FF6B35';
-        iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:#fff;font-weight:600;font-size:16px;">${initial}</div>`;
-      }
-      
+
+      // アイコン表示（avatar_urlがなければ幾何学フォールバック）
+      const iconHtml=`<img src="${user.avatar_url||geoAvatarDataUrl(user.id,40)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+
       const isOnline=user.is_online||false;
       const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
       const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(user.last_online||user.created_at)}`;
-      
+
       const unreadCount=state.unreadCounts[user.user_id]||0;
       const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
-      
+
       dmItem.innerHTML=`
         <div class="dm-item-avatar">
           ${iconHtml}
@@ -104,13 +96,13 @@ export function displayUsers(){
           <div class="dm-item-status">${statusText}</div>
         </div>
       `;
-      
+
       dmItem.addEventListener('click',()=>{
         if(window.selectUser){
           window.selectUser(user.user_id);
         }
       });
-      
+
       dmList.appendChild(dmItem);
     });
   }
@@ -118,19 +110,12 @@ export function displayUsers(){
 
 // チャット画面のHTMLを生成（DM）
 export function createChatHTML(selectedUser){
-  // アイコン表示
-  let iconHtml;
-  if(selectedUser.avatar_url){
-    iconHtml=`<img src="${selectedUser.avatar_url}" alt="${selectedUser.display_name}">`;
-  }else{
-    const initial=selectedUser.display_name.charAt(0).toUpperCase();
-    const bgColor=selectedUser.avatar_color||'#FF6B35';
-    iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:#fff;font-weight:600;font-size:18px;border-radius:50%;">${initial}</div>`;
-  }
-  
+  // アイコン表示（avatar_urlがなければ幾何学フォールバック）
+  const iconHtml=`<img src="${selectedUser.avatar_url||geoAvatarDataUrl(selectedUser.id,36)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+
   const isOnline=selectedUser.is_online||false;
   const statusText=isOnline?'オンライン':`最終: ${formatLastOnline(selectedUser.last_online||selectedUser.created_at)}`;
-  
+
   return`
     <div class="chat-header">
       <button class="back-btn" id="back-to-list">

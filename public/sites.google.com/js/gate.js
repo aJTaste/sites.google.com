@@ -1,5 +1,6 @@
 import{initPage,supabase,getCurrentProfile}from'../common/core.js';
 import{uploadToCloudinary}from'../common/cloudinary.js';
+import{geoAvatarDataUrl}from'../common/geo-avatar.js';
 
 // ========================================
 // 状態管理
@@ -216,9 +217,7 @@ function createUserSearchCard(user){
   item.className='post-card';
   item.style.cursor='pointer';
 
-  const avatarHtml=user.avatar_url
-    ?`<img src="${user.avatar_url}" alt="${user.display_name}">`
-    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${user.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${user.display_name.charAt(0).toUpperCase()}</div>`;
+  const avatarHtml=`<img src="${user.avatar_url||geoAvatarDataUrl(user.id,44)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 
   const isSelf=user.id===state.currentProfile.id;
 
@@ -321,9 +320,7 @@ async function showUserProfile(userId){
     const isFollowing=await checkFollowStatus(userId);
     const isSelf=userId===state.currentProfile.id;
 
-    const avatarHtml=profile.avatar_url
-      ?`<img src="${profile.avatar_url}" alt="${profile.display_name}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`
-      :`<div style="width:80px;height:80px;display:flex;align-items:center;justify-content:center;background:${profile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:32px;border-radius:50%;">${profile.display_name.charAt(0).toUpperCase()}</div>`;
+    const avatarHtml=`<img src="${profile.avatar_url||geoAvatarDataUrl(profile.id,80)}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`;
 
     timeline.innerHTML='';
 
@@ -505,9 +502,7 @@ function createPostCard(post){
   card.dataset.postId=post.id;
 
   const profile=post.profiles;
-  const avatarHtml=profile?.avatar_url
-    ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
-    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
+  const avatarHtml=`<img src="${profile?.avatar_url||geoAvatarDataUrl(profile?.id||'x',44)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 
   const timeAgo=getTimeAgo(post.created_at);
 
@@ -643,9 +638,7 @@ async function openPostDetail(postId){
     const commentsSection=document.createElement('div');
     commentsSection.className='comments-section';
 
-    const currentAvatarHtml=state.currentProfile.avatar_url
-      ?`<img src="${state.currentProfile.avatar_url}" alt="${state.currentProfile.display_name}">`
-      :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${state.currentProfile.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${state.currentProfile.display_name.charAt(0).toUpperCase()}</div>`;
+    const currentAvatarHtml=`<img src="${state.currentProfile.avatar_url||geoAvatarDataUrl(state.currentProfile.id,38)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 
     commentsSection.innerHTML=`
       <h4>コメント</h4>
@@ -681,9 +674,7 @@ function createCommentCard(comment){
   card.className='comment-card';
 
   const profile=comment.profiles;
-  const avatarHtml=profile?.avatar_url
-    ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
-    :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:14px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
+  const avatarHtml=`<img src="${profile?.avatar_url||geoAvatarDataUrl(profile?.id||'x',34)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 
   const timeAgo=getTimeAgo(comment.created_at);
 
@@ -1090,9 +1081,7 @@ function showNotifications(){
     card.className='post-card';
 
     const profile=notif.profiles;
-    const avatarHtml=profile?.avatar_url
-      ?`<img src="${profile.avatar_url}" alt="${profile.display_name}">`
-      :`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${profile?.avatar_color||'#ff6b35'};color:#fff;font-weight:600;font-size:20px;border-radius:50%;">${profile?.display_name?.charAt(0).toUpperCase()||'?'}</div>`;
+    const avatarHtml=`<img src="${profile?.avatar_url||geoAvatarDataUrl(profile?.id||'x',44)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 
     const typeText=notif.type==='like'?'があなたの投稿にいいねしました'
       :notif.type==='comment'?'があなたの投稿にコメントしました'

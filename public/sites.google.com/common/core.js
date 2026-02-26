@@ -2,7 +2,8 @@
 import{supabase}from'/sites.google.com/common/supabase-config.js';
 import{checkPermission}from'/sites.google.com/common/permissions.js';
 import{NAV_ITEMS,APP_INFO}from'/sites.google.com/common/config.js';
-import{UPDATE_INFO}from'/sites.google.com/common/updates.js'; // 変更点
+import{UPDATE_INFO}from'/sites.google.com/common/updates.js';
+import{geoAvatarDataUrl}from'/sites.google.com/common/geo-avatar.js';
 
 // グローバルな現在のユーザー情報
 let currentUser=null;
@@ -272,16 +273,9 @@ async function updateOnlineStatus(isOnline){
 function updateAvatarDisplay(){
   const userAvatar=document.getElementById('user-avatar');
   if(!userAvatar||!currentProfile)return;
-  
-  if(currentProfile.avatar_url){
-    // 画像URLがある場合
-    userAvatar.innerHTML=`<img src="${currentProfile.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
-  }else{
-    // デフォルト：イニシャル + 背景色
-    const initial=currentProfile.display_name.charAt(0).toUpperCase();
-    userAvatar.style.background=currentProfile.avatar_color||'#FF6B35';
-    userAvatar.textContent=initial;
-  }
+  const url=currentProfile.avatar_url
+  ||geoAvatarDataUrl(currentProfile.id,40);
+  userAvatar.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 }
 
 // ========================================

@@ -5,6 +5,7 @@ import{state,updateState,resetMessageState}from'./chat-state.js';
 import{getDmId,formatMessageTime,showNotification}from'./chat-utils.js';
 import{displayUsers}from'./chat-ui.js';
 import{uploadBase64ToCloudinary}from'../common/cloudinary.js';
+import{geoAvatarDataUrl}from'../common/geo-avatar.js';
 
 const PAGE_SIZE=30;
 
@@ -413,14 +414,7 @@ async function buildMessageElement(msg,otherUserId,checkRead){
   let senderData=isCurrentUser?state.currentProfile:state.allUsers.find(u=>u.id===msg.sender_id);
   if(!senderData)return null;
 
-  let iconHtml;
-  if(senderData.avatar_url){
-    iconHtml=`<img src="${senderData.avatar_url}" alt="${senderData.display_name}">`;
-  }else{
-    const initial=senderData.display_name.charAt(0).toUpperCase();
-    const bgColor=senderData.avatar_color||'#FF6B35';
-    iconHtml=`<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:${bgColor};color:#fff;font-weight:600;font-size:16px;border-radius:50%;">${initial}</div>`;
-  }
+  const iconHtml=`<img src="${senderData.avatar_url||geoAvatarDataUrl(senderData.id,40)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 
   let isRead=false;
   if(checkRead&&isCurrentUser&&otherUserId){
