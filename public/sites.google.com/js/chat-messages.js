@@ -513,9 +513,9 @@ async function displaySingleMessage(msg,otherUserId,shouldScroll){
 
   const isCurrentUser=msg.sender_id===state.currentProfile.id;
 
-  // リアルタイム受信時の日付セパレーター
   const dk=getDateKey(msg.created_at);
-  const lastDateEl=chatMessages.querySelector('.date-separator:last-of-type');
+  const allSeps=chatMessages.querySelectorAll('.date-separator');
+  const lastDateEl=allSeps.length?allSeps[allSeps.length-1]:null;
   const lastDateKey=lastDateEl?lastDateEl.getAttribute('data-date-key'):null;
   if(dk!==lastDateKey)chatMessages.appendChild(createDateSeparator(msg.created_at));
 
@@ -635,7 +635,8 @@ async function displaySingleChannelMessage(msg,shouldScroll=true){
 
   if(shouldScroll){
     const dk=getDateKey(msg.created_at);
-    const lastDateEl=chatMessages.querySelector('.date-separator:last-of-type');
+    const allSeps=chatMessages.querySelectorAll('.date-separator');
+    const lastDateEl=allSeps.length?allSeps[allSeps.length-1]:null;
     const lastDateKey=lastDateEl?lastDateEl.getAttribute('data-date-key'):null;
     if(dk!==lastDateKey)chatMessages.appendChild(createDateSeparator(msg.created_at));
   }

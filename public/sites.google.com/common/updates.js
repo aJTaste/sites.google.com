@@ -3,6 +3,14 @@
 
 export const UPDATES=[
   {
+    version:"1.7.0",
+    date:"2026-2-26",
+    changes:[
+      "画像が変更できない問題を修正しました。",
+      "自動生成幾何学アイコン昨日を追加しました。"
+  ]
+  },
+  {
     version:"1.6.6",
     date:"2026-02-23",
     changes:[
