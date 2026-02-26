@@ -38,7 +38,6 @@ document.getElementById('display-name-save-btn').addEventListener('click',async(
   const displayNameSuccess=document.getElementById('display-name-success');
   displayNameError.textContent='';
   displayNameSuccess.textContent='';
-
   if(displayName.length<1||displayName.length>100){
     displayNameError.textContent='表示名は1-100文字で入力してください';
     return;
@@ -131,15 +130,21 @@ document.getElementById('icon-save-btn').addEventListener('click',async()=>{
     let avatarUrl=currentProfile.avatar_url;
 
     if(currentIconFile==='geo'&&geoAvatarBlob){
-      avatarUrl=await uploadAvatarBlob(geoAvatarBlob,'png');
+      avatarUrl=await uploadBlob(geoAvatarBlob,'png');
     }else if(currentIconFile instanceof File){
-      const fileExt=currentIconFile.name.split('.').pop().toLowerCase()||'jpg';
-      avatarUrl=await uploadAvatarFile(currentIconFile,fileExt);
+      const ext=currentIconFile.name.split('.').pop().toLowerCase()||'jpg';
+      avatarUrl=await uploadFile(currentIconFile,ext);
     }
 
     const{error}=await supabase
       .from('profiles').update({avatar_url:avatarUrl}).eq('id',currentProfile.id);
     if(error)throw error;
+
+    // 古いファイルを削除（ベストエフォート）
+    if(currentProfile.avatar_url){
+      const oldPath=extractStoragePath(currentProfile.avatar_url);
+      if(oldPath)supabase.storage.from('avatars').remove([oldPath]).catch(()=>{});
+    }
 
     currentProfile.avatar_url=avatarUrl;
     currentIconFile=null;
@@ -152,6 +157,15 @@ document.getElementById('icon-save-btn').addEventListener('click',async()=>{
   }
 });
 
+// ========================================
+// ストレージヘルパー
+// ========================================
+
+// 毎回タイムスタンプ付きの新規パスを使う → "already exists"を根本回避
+function newStoragePath(ext){
+  return`${currentProfile.id}_${Date.now()}.${ext}`;
+}
+
 function extractStoragePath(url){
   if(!url)return null;
   try{
@@ -163,36 +177,24 @@ function extractStoragePath(url){
   }catch{return null;}
 }
 
-async function uploadAvatarFile(file,ext){
-  const storagePath=`${currentProfile.id}.${ext}`;
-  if(currentProfile.avatar_url){
-    const oldPath=extractStoragePath(currentProfile.avatar_url);
-    if(oldPath&&oldPath!==storagePath)await supabase.storage.from('avatars').remove([oldPath]).catch(()=>{});
-  }
-  const{error:e1}=await supabase.storage.from('avatars').upload(storagePath,file,{upsert:true,contentType:file.type});
-  if(e1){
-    await supabase.storage.from('avatars').remove([storagePath]).catch(()=>{});
-    const{error:e2}=await supabase.storage.from('avatars').upload(storagePath,file,{contentType:file.type});
-    if(e2)throw e2;
-  }
-  const{data:urlData}=supabase.storage.from('avatars').getPublicUrl(storagePath);
-  return urlData.publicUrl+'?t='+Date.now();
+async function uploadFile(file,ext){
+  const path=newStoragePath(ext);
+  const{error}=await supabase.storage
+    .from('avatars')
+    .upload(path,file,{contentType:file.type});
+  if(error)throw error;
+  const{data}=supabase.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl+'?t='+Date.now();
 }
 
-async function uploadAvatarBlob(blob,ext){
-  const storagePath=`${currentProfile.id}.${ext}`;
-  if(currentProfile.avatar_url){
-    const oldPath=extractStoragePath(currentProfile.avatar_url);
-    if(oldPath&&oldPath!==storagePath)await supabase.storage.from('avatars').remove([oldPath]).catch(()=>{});
-  }
-  const{error:e1}=await supabase.storage.from('avatars').upload(storagePath,blob,{upsert:true,contentType:'image/png'});
-  if(e1){
-    await supabase.storage.from('avatars').remove([storagePath]).catch(()=>{});
-    const{error:e2}=await supabase.storage.from('avatars').upload(storagePath,blob,{contentType:'image/png'});
-    if(e2)throw e2;
-  }
-  const{data:urlData}=supabase.storage.from('avatars').getPublicUrl(storagePath);
-  return urlData.publicUrl+'?t='+Date.now();
+async function uploadBlob(blob,ext){
+  const path=newStoragePath(ext);
+  const{error}=await supabase.storage
+    .from('avatars')
+    .upload(path,blob,{contentType:'image/png'});
+  if(error)throw error;
+  const{data}=supabase.storage.from('avatars').getPublicUrl(path);
+  return data.publicUrl+'?t='+Date.now();
 }
 
 function updateHeaderAvatar(){
