@@ -1,9 +1,11 @@
 import{initPage,supabase}from'../common/core.js';
-import{generateGeoAvatar,canvasToBlob,geoAvatarDataUrl,seedFromId}from'../common/geo-avatar.js';
+import{generateGeoAvatar,canvasToBlob,geoAvatarDataUrl,seedFromId,AVATAR_STYLES}from'../common/geo-avatar.js';
+
 
 let currentProfile=null;
 let currentIconFile=null;
 let geoAvatarBlob=null;
+let selectedStyleIndex=-1;
 
 await initPage('settings','設定',{
   onUserLoaded:async(profile)=>{
@@ -20,6 +22,7 @@ await initPage('settings','設定',{
     document.getElementById('first-name-input').value=profile.first_name||'';
 
     renderIconPreview();
+    renderStylePicker();
   }
 });
 
@@ -112,6 +115,8 @@ if(geoBtn){
 }
 
 document.getElementById('default-icon-btn').addEventListener('click',async()=>{
+  selectedStyleIndex=-1;
+  document.querySelectorAll('.geo-style-card').forEach(c=>c.classList.remove('selected'));
   const canvas=generateGeoAvatar(256,seedFromId(currentProfile.id));
   geoAvatarBlob=await canvasToBlob(canvas);
   currentIconFile='geo';
@@ -204,4 +209,72 @@ function updateHeaderAvatar(){
     ?currentProfile.avatar_url.split('?')[0]+'?t='+Date.now()
     :geoAvatarDataUrl(currentProfile.id,40);
   userAvatar.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+}
+
+// スタイルピッカーを描画
+function renderStylePicker(){
+  const grid=document.getElementById('geo-style-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  AVATAR_STYLES.forEach(style=>{
+    const card=document.createElement('div');
+    card.className='geo-style-card';
+    card.dataset.styleId=style.id;
+    if(style.id===selectedStyleIndex) card.classList.add('selected');
+
+    // プレビューcanvas（64px、ユーザーIDシード固定で表示）
+    const previewSeed=seedFromId(currentProfile.id)+style.id*999983;
+    const canvas=generateGeoAvatar(64,previewSeed,style.id);
+    canvas.style.pointerEvents='none';
+
+    // ラベル
+    const lbl=document.createElement('div');
+    lbl.className='geo-style-card-label';
+    lbl.innerHTML=`<b>${style.label}</b>${style.sub}`;
+
+    // 🎲再生成ボタン
+    const regenBtn=document.createElement('button');
+    regenBtn.className='geo-style-regen';
+    regenBtn.textContent='🎲 生成';
+
+    card.appendChild(canvas);
+    card.appendChild(lbl);
+    card.appendChild(regenBtn);
+    grid.appendChild(card);
+
+    // カードクリック → 選択してメインプレビュー更新
+    card.addEventListener('click',(e)=>{
+      if(e.target===regenBtn)return; // 再生成ボタンは別ハンドラ
+      selectStyleAndGenerate(style.id);
+    });
+
+    // 🎲再生成ボタン → 新しいランダムシードで生成
+    regenBtn.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      selectStyleAndGenerate(style.id,true);
+    });
+  });
+}
+
+// スタイルを選んでメインプレビューに反映
+async function selectStyleAndGenerate(styleId,forceNew=false){
+  selectedStyleIndex=styleId;
+
+  // 選択状態の見た目更新
+  document.querySelectorAll('.geo-style-card').forEach(card=>{
+    card.classList.toggle('selected',Number(card.dataset.styleId)===styleId);
+  });
+
+  // ランダムシードで新しいアイコンを生成
+  const newSeed=forceNew
+    ?Math.floor(Math.random()*2147483647)
+    :Math.floor(Math.random()*2147483647);
+
+  const canvas=generateGeoAvatar(256,newSeed,styleId);
+  geoAvatarBlob=await canvasToBlob(canvas);
+  currentIconFile='geo';
+
+  const p=document.getElementById('icon-preview');
+  p.style.background='';
+  p.innerHTML=`<img src="${canvas.toDataURL('image/png')}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
 }

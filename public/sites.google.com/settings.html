@@ -9,6 +9,80 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
   <link rel="icon" href="assets/favicon1.svg">
   <link rel="apple-touch-icon" href="assets/icon1.svg">
+  <style>
+  .geo-style-picker{
+    margin-top:16px;
+    padding:14px;
+    background:var(--bg-secondary);
+    border:1px solid var(--border);
+    border-radius:8px;
+  }
+  .geo-style-picker-label{
+    font-size:12px;
+    color:var(--text-secondary);
+    margin-bottom:10px;
+    font-weight:500;
+  }
+  .geo-style-grid{
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:8px;
+  }
+  @media(max-width:480px){
+    .geo-style-grid{grid-template-columns:repeat(2,1fr);}
+  }
+  .geo-style-card{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:5px;
+    padding:8px 4px;
+    border:2px solid transparent;
+    border-radius:10px;
+    cursor:pointer;
+    transition:border-color 0.15s,background 0.15s;
+    background:var(--bg-primary);
+  }
+  .geo-style-card:hover{
+    background:var(--bg-secondary);
+    border-color:var(--border);
+  }
+  .geo-style-card.selected{
+    border-color:var(--main);
+    background:var(--main-light,#fff4f0);
+  }
+  .geo-style-card canvas{
+    border-radius:10px;
+    display:block;
+  }
+  .geo-style-card-label{
+    font-size:10px;
+    color:var(--text-secondary);
+    text-align:center;
+    line-height:1.2;
+  }
+  .geo-style-card-label b{
+    display:block;
+    color:var(--text-primary);
+    font-size:11px;
+  }
+  .geo-style-regen{
+    font-size:11px;
+    color:var(--text-secondary);
+    background:none;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:2px 6px;
+    cursor:pointer;
+    transition:background 0.12s;
+    margin-top:1px;
+  }
+  .geo-style-regen:hover{
+    background:var(--bg-secondary);
+    color:var(--main);
+    border-color:var(--main);
+  }
+  </style>
 </head>
 <body class="page-loading">
   <div class="app-container">
@@ -67,12 +141,16 @@
               <div class="icon-controls-vertical">
                 <input type="file" id="icon-file" accept="image/*" hidden>
                 <button class="btn-secondary" id="upload-icon-btn">画像を選択</button>
-                <button class="btn-secondary" id="geo-icon-btn">ランダム幾何学</button>
                 <button class="btn-secondary" id="default-icon-btn">デフォルトに戻す</button>
                 <button class="btn-primary" id="icon-save-btn">保存</button>
               </div>
             </div>
-            <span class="help-text">500KB以下の画像ファイル / ランダム幾何学アイコンも使えます</span>
+            <div class="geo-style-picker" id="geo-style-picker">
+              <div class="geo-style-picker-label">幾何学アイコン生成</div>
+              <div class="geo-style-grid" id="geo-style-grid">
+              </div>
+            </div>
+            <span class="help-text">500KB以下の画像ファイル、またはスタイルを選んで幾何学アイコンを生成</span>
             <span class="error-message" id="icon-error"></span>
             <span class="success-message" id="icon-success"></span>
           </section>
