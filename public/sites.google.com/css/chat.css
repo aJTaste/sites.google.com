@@ -803,18 +803,33 @@
   font-size:20px;
 }
 
+/* ========================================
+   モバイル対応（768px以下）
+   既存の @media(max-width:768px) ブロックをこれで完全差し替え
+   ======================================== */
+
 @media(max-width:768px){
+  /* --- レイアウト --- */
+  .chat-container{
+    /* サイドバーが絶対配置になるため相対の親が必要 */
+    position:relative;
+    overflow:hidden;
+  }
+
   /* dm-sidebar: フルスクリーンオーバーレイ */
   .dm-sidebar{
-    width:100%;
+    width:85%;
+    max-width:320px;
     position:absolute;
     top:0;
     left:0;
     height:100%;
     z-index:100;
     transform:translateX(-100%);
-    transition:transform 0.3s ease;
+    transition:transform 0.25s ease;
+    box-shadow:4px 0 16px rgba(0,0,0,0.15);
   }
+
   .dm-sidebar.show{
     transform:translateX(0);
   }
@@ -827,43 +842,174 @@
     left:0;
     width:100%;
     height:100%;
-    background:rgba(0,0,0,0.4);
+    background:rgba(0,0,0,0.45);
     z-index:99;
+    -webkit-tap-highlight-color:transparent;
   }
+
   .dm-overlay.show{
     display:block;
   }
 
-  /* チャットヘッダー：バックボタン用スペース確保 */
+  /* --- チャットヘッダー --- */
   .chat-header{
-    padding:0 12px;
+    height:52px;
+    padding:0 8px 0 4px;
+    gap:4px;
+  }
+
+  .chat-header-name{
+    font-size:15px;
+  }
+
+  .chat-header-status{
+    font-size:11px;
+  }
+
+  /* バックボタン表示 */
+  .back-btn{
+    display:flex;
+    width:40px;
+    height:40px;
+    flex-shrink:0;
+  }
+
+  /* --- メッセージエリア --- */
+  .chat-messages{
+    padding:8px 10px;
     gap:8px;
   }
 
-  /* メッセージエリアのpadding縮小 */
-  .chat-messages{
-    padding:8px 12px;
+  .message{
+    padding:6px 8px;
+    /* タッチ時のデフォルトハイライト無効 */
+    -webkit-tap-highlight-color:transparent;
   }
 
-  /* 入力欄のpadding縮小 */
-  .chat-input-container{
-    padding:10px 12px;
-  }
-
-  /* 画像の最大幅をモバイル対応 */
-  .message-image{
-    max-width:100%;
-  }
-
-  /* タッチ時にアクションボタンを常時表示 */
+  /* タッチしたメッセージのアクションボタンを表示 */
   .message-actions{
+    display:none;
+  }
+
+  .message.touch-active .message-actions{
     display:flex;
   }
 
-  /* アクションボタンを小さく */
+  /* アクションボタンサイズ */
   .message-action-btn{
-    width:32px;
-    height:32px;
+    width:34px;
+    height:34px;
+  }
+
+  /* 画像は幅いっぱい */
+  .message-image{
+    max-width:100%;
+    max-height:240px;
+  }
+
+  /* アバター縮小 */
+  .message-avatar{
+    width:34px;
+    height:34px;
+  }
+
+  /* --- 入力エリア --- */
+  .chat-input-container{
+    padding:8px 10px;
+    /* Safe Area（ノッチ・ホームバー）対応 */
+    padding-bottom:max(8px,env(safe-area-inset-bottom));
+  }
+
+  /* iOSの自動ズーム防止：font-sizeを16px以上に */
+  .chat-input{
+    font-size:16px;
+    min-height:38px;
+  }
+
+  /* 編集テキストエリアも同様 */
+  #edit-textarea{
+    font-size:16px;
+  }
+
+  /* 送信ボタン */
+  .send-btn{
+    width:38px;
+    height:38px;
+  }
+
+  /* --- スクロールダウンボタン --- */
+  /* キーボード出現時に上にずれないよう bottom を小さく */
+  .scroll-down-btn{
+    bottom:68px;
+    right:12px;
+    width:36px;
+    height:36px;
+  }
+
+  /* --- DM一覧アイテム --- */
+  .dm-item{
+    padding:10px 12px;
+    /* タッチしやすい最小高さ */
+    min-height:56px;
+  }
+
+  .dm-item-avatar{
+    width:40px;
+    height:40px;
+  }
+
+  /* --- チャンネルアイテム --- */
+  .channel-item{
+    min-height:52px;
+  }
+
+  /* --- モーダル --- */
+  .modal-content{
+    width:calc(100% - 32px);
+    max-width:400px;
+    margin:16px;
+  }
+
+  /* --- 画像プレビュー --- */
+  .image-preview{
+    max-width:160px;
+    max-height:160px;
+  }
+
+  /* --- タイピングインジケーター --- */
+  .typing-indicator{
+    font-size:12px;
+  }
+
+  /* --- 日付セパレーター --- */
+  .date-separator span{
+    font-size:11px;
+  }
+}
+
+/* ========================================
+   超小画面（360px以下）追加調整
+   ======================================== */
+@media(max-width:360px){
+  .dm-sidebar{
+    width:92%;
+  }
+
+  .chat-header-name{
+    font-size:14px;
+  }
+
+  .message-avatar{
+    width:30px;
+    height:30px;
+  }
+
+  .message-author{
+    font-size:13px;
+  }
+
+  .message-text{
+    font-size:13px;
   }
 }
 

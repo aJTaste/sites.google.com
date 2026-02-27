@@ -2,7 +2,7 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
     <title>ChatHub | AppHub</title>
     <link rel="stylesheet" href="common/common.css">
     <link rel="stylesheet" href="css/chat.css">
@@ -16,7 +16,7 @@
       <div class="main-container">
         <!-- サイドバーはJSで生成 -->
         <div class="chat-container">
-          <div class="dm-overlay" id="dm-overlay"></div>  <!-- ← 追加 -->
+          <div class="dm-overlay" id="dm-overlay"></div>
           <aside class="dm-sidebar">
             <div class="dm-header">
               <h2>ダイレクトメッセージ</h2>
@@ -34,7 +34,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 画像拡大モーダル -->
     <div class="image-modal" id="image-modal">
       <button class="image-modal-close" id="image-modal-close">
@@ -42,7 +42,7 @@
       </button>
       <img id="image-modal-img" src="" alt="拡大画像">
     </div>
-    
+
     <!-- 編集モーダル -->
     <div class="modal" id="edit-modal">
       <div class="modal-content">
@@ -61,7 +61,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- 削除確認モーダル -->
     <div class="modal" id="delete-modal">
       <div class="modal-content">
@@ -72,33 +72,16 @@
           </button>
         </div>
         <div class="modal-body">
-          <p style="color:var(--text-secondary);">このメッセージを削除しますか？</p>
+          <p>このメッセージを削除しますか？この操作は元に戻せません。</p>
         </div>
         <div class="modal-footer">
           <button class="btn-secondary" id="delete-cancel">キャンセル</button>
-          <button class="btn-primary" id="delete-confirm" style="background:#cf222e;">削除</button>
+          <button class="btn-danger" id="delete-confirm">削除</button>
         </div>
       </div>
     </div>
-    
+
     <script type="module" src="js/chat.js"></script>
-    <script>
-      // モーダルを閉じる
-      document.addEventListener('DOMContentLoaded',()=>{
-        const modal=document.getElementById('image-modal');
-        const closeBtn=document.getElementById('image-modal-close');
-        
-        closeBtn.addEventListener('click',()=>{
-          modal.classList.remove('show');
-        });
-        
-        modal.addEventListener('click',(e)=>{
-          if(e.target===modal){
-            modal.classList.remove('show');
-          }
-        });
-      });
-    </script>
     <script src="common/stealth-mode.js"></script>
     <script src="common/capture-handler.js"></script>
   </body>
