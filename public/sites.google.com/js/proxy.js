@@ -10,7 +10,13 @@ const PROXY_BASE='https://corsproxy.io/?url=';
 const TIMEOUT_MS=15000;
 
 function corsProxyUrl(url){
-  return PROXY_BASE+url;
+  // スキームとホスト部分を壊さずにそれ以外だけエンコード
+  try{
+    const u=new URL(url);
+    return PROXY_BASE+u.href;
+  }catch(e){
+    return PROXY_BASE+url;
+  }
 }
 
 // ========================================
