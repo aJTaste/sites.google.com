@@ -16,7 +16,7 @@ const state={
 const PROXY_SERVICES=[
   {
     name:'corsproxy.io',
-    url:(t)=>`https://corsproxy.io/?${encodeURIComponent(t)}`
+    url:(t)=>`https://corsproxy.io/?url=${encodeURIComponent(t)}`
   },
   {
     name:'AllOrigins',
