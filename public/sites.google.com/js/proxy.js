@@ -7,16 +7,10 @@ await initPage('proxy','Proxy');
 // ========================================
 
 const PROXY_BASE='/api/proxy?url=';
-const TIMEOUT_MS=15000;
+const TIMEOUT_MS=20000;
 
 function corsProxyUrl(url){
-  // スキームとホスト部分を壊さずにそれ以外だけエンコード
-  try{
-    const u=new URL(url);
-    return PROXY_BASE+u.href;
-  }catch(e){
-    return PROXY_BASE+url;
-  }
+  return PROXY_BASE+encodeURIComponent(url);
 }
 
 // ========================================
@@ -102,14 +96,15 @@ async function loadUrl(url,addHistory=true){
       throw new Error('HTTP '+response.status+' '+response.statusText);
     }
 
-    const contentType=response.headers.get('content-type')||'';
+    const ct=response.headers.get('content-type')||'';
+    const finalUrl=response.headers.get('x-final-url')||url;
 
-    if(isBinary(contentType)){
+    if(isBinary(ct)){
       const blob=await response.blob();
       showBlobIframe(URL.createObjectURL(blob));
     }else{
       let html=await response.text();
-      html=processHtml(html,url);
+      html=processHtml(html,finalUrl);
       const blob=new Blob([html],{type:'text/html;charset=utf-8'});
       showBlobIframe(URL.createObjectURL(blob));
     }
@@ -135,7 +130,6 @@ async function loadUrl(url,addHistory=true){
 // HTMLを処理
 // ========================================
 
-// URLを絶対パスにしてproxy経由に変換
 function toProxy(url,baseHref){
   if(!url)return url;
   url=url.trim();
@@ -147,20 +141,16 @@ function toProxy(url,baseHref){
     url.startsWith('mailto:')||
     url.startsWith('tel:')
   )return url;
-  // protocol-relative
-  if(url.startsWith('//')){
-    try{url='https:'+url;}catch(e){return url;}
-  }
+  if(url.startsWith('//')){url='https:'+url;}
   try{
     const abs=new URL(url,baseHref).href;
-    return corsProxyUrl(abs);
+    return PROXY_BASE+encodeURIComponent(abs);
   }catch(e){return url;}
 }
 
-// 特定タグの特定属性を書き換え
 function rewriteAttr(html,tag,attr,baseHref){
   const re=new RegExp(
-    '(<'+tag+'(?:[^>]*?)\\s'+attr+'=)("([^"]*)"|(\'([^\']*)\'))',
+    '(<'+tag+'(?:[^>]*?)\\s'+attr+'\\s*=\\s*)("([^"]*)"|(\'([^\']*)\'))',
     'gi'
   );
   return html.replace(re,(m,pre,q,v1,_,v2)=>{
@@ -170,15 +160,12 @@ function rewriteAttr(html,tag,attr,baseHref){
   });
 }
 
-// srcset属性を書き換え
 function rewriteSrcset(srcset,baseHref){
-  // "url 2x, url2 1x" 形式
   return srcset.replace(/((?:^|,)\s*)([^\s,]+)/g,(m,sep,src)=>{
     return sep+toProxy(src,baseHref);
   });
 }
 
-// CSS内のurl()を書き換え
 function rewriteCssUrls(css,baseHref){
   return css.replace(/url\(\s*(['"]?)([^'"\)\s]+)\1\s*\)/gi,(m,q,url)=>{
     return'url('+q+toProxy(url,baseHref)+q+')';
@@ -190,56 +177,54 @@ function processHtml(html,baseUrl){
     const base=new URL(baseUrl);
     const baseHref=base.href;
 
-    // 既存の<base>タグを除去（相対URL解決は自前で行う）
     html=html.replace(/<base[^>]*>/gi,'');
 
-    // リソース系のsrc属性を書き換え
-    for(const tag of['img','script','video','audio','source','track','embed']){
+    for(const tag of['img','script','video','audio','source','track','embed','input']){
       html=rewriteAttr(html,tag,'src',baseHref);
     }
 
-    // <link href>を書き換え（stylesheet / icon等）
     html=rewriteAttr(html,'link','href',baseHref);
 
-    // srcset属性を書き換え
-    html=html.replace(/(srcset=)("([^"]*)"|(\'([^\']*)\'))/gi,(m,pre,q,v1,_,v2)=>{
+    html=html.replace(/(srcset\s*=\s*)("([^"]*)"|(\'([^\']*)\'))/gi,(m,pre,q,v1,_,v2)=>{
       const val=v1!==undefined?v1:v2;
       const q0=q[0];
       return pre+q0+rewriteSrcset(val,baseHref)+q0;
     });
 
-    // <style>ブロック内のurl()を書き換え
     html=html.replace(/(<style[^>]*>)([\s\S]*?)(<\/style>)/gi,(m,open,css,close)=>{
       return open+rewriteCssUrls(css,baseHref)+close;
     });
 
-    // style属性内のurl()を書き換え
-    html=html.replace(/(\sstyle=)(["'])([\s\S]*?)\2/gi,(m,pre,q,css)=>{
+    html=html.replace(/(\sstyle\s*=\s*)(["'])([\s\S]*?)\2/gi,(m,pre,q,css)=>{
       return pre+q+rewriteCssUrls(css,baseHref)+q;
     });
 
-    // <a href>と<form action>はプロキシせず、JS側でインターセプト
-    // インジェクションスクリプト
     const safeBase=baseHref.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const interceptScript=`<script>
 (function(){
   var BASE='${safeBase}';
   function resolve(url){
-    try{return new URL(url,BASE).href;}catch(e){return url;}
+    if(!url)return null;
+    if(url.startsWith('javascript:')||url.startsWith('mailto:')||url.startsWith('tel:'))return null;
+    try{return new URL(url,BASE).href;}catch(e){return null;}
   }
   document.addEventListener('click',function(e){
     var a=e.target.closest('a');
     if(!a)return;
     var href=a.getAttribute('href');
-    if(!href||href.startsWith('javascript:')||href.startsWith('#'))return;
+    if(!href||href.startsWith('#'))return;
+    var resolved=resolve(href);
+    if(!resolved)return;
     e.preventDefault();
-    window.parent.postMessage({type:'navigate',url:resolve(href)},'*');
+    window.parent.postMessage({type:'navigate',url:resolved},'*');
   },true);
   document.addEventListener('submit',function(e){
     var f=e.target;
     var action=f.getAttribute('action')||BASE;
+    var resolved=resolve(action);
+    if(!resolved)return;
     e.preventDefault();
-    window.parent.postMessage({type:'navigate',url:resolve(action)},'*');
+    window.parent.postMessage({type:'navigate',url:resolved},'*');
   },true);
 })();
 <\/script>`;
@@ -293,7 +278,6 @@ function showLoading(){
     <div class="loading-screen">
       <div class="loading-spinner"></div>
       <p>読み込み中...</p>
-      <p style="font-size:12px;color:var(--text-tertiary);margin-top:8px;">corsproxy.io</p>
     </div>
   `;
 }
@@ -307,9 +291,6 @@ function showError(url,message){
       <h2>読み込みに失敗しました</h2>
       <p>${escHtml(message)}</p>
       <p style="font-size:13px;color:var(--text-tertiary);margin-bottom:20px;word-break:break-all;">${escHtml(url)}</p>
-      <p style="font-size:12px;color:var(--text-tertiary);margin-bottom:20px;">
-        対象サイトがAPIアクセスを拒否しているか、<br>corsproxy.ioが応答していない可能性があります。
-      </p>
       <div class="error-actions">
         <button class="btn-primary" id="retry-btn">再試行</button>
         <button class="btn-secondary" id="home-err-btn">ホームへ</button>
@@ -334,19 +315,13 @@ function escHtml(str){
 function goBack(){
   if(state.historyIdx<=0)return;
   state.historyIdx--;
-  const url=state.history[state.historyIdx];
-  state.currentUrl=url;
-  urlInput.value=url;
-  loadUrl(url,false);
+  loadUrl(state.history[state.historyIdx],false);
 }
 
 function goForward(){
   if(state.historyIdx>=state.history.length-1)return;
   state.historyIdx++;
-  const url=state.history[state.historyIdx];
-  state.currentUrl=url;
-  urlInput.value=url;
-  loadUrl(url,false);
+  loadUrl(state.history[state.historyIdx],false);
 }
 
 function reload(){
