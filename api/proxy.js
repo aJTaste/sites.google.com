@@ -1,70 +1,80 @@
-import https from'https';
-import http from'http';
+export const config={runtime:'edge'};
 
-export default async function handler(req,res){
-  res.setHeader('Access-Control-Allow-Origin','*');
-  if(req.method==='OPTIONS'){res.status(200).end();return;}
+export default async function handler(req){
+  const origin=req.headers.get('origin')||'*';
+  const corsHeaders={
+    'Access-Control-Allow-Origin':origin,
+    'Access-Control-Allow-Methods':'GET,OPTIONS',
+    'Access-Control-Allow-Headers':'*',
+  };
 
-  const{url}=req.query;
-  if(!url){res.status(400).json({error:'url required'});return;}
+  if(req.method==='OPTIONS'){
+    return new Response(null,{status:204,headers:corsHeaders});
+  }
+
+  const{searchParams}=new URL(req.url);
+  const url=searchParams.get('url');
+  if(!url){
+    return new Response(JSON.stringify({error:'url required'}),{
+      status:400,headers:{...corsHeaders,'Content-Type':'application/json'}
+    });
+  }
 
   let target;
-  try{target=decodeURIComponent(url);}catch(e){target=url;}
-  try{new URL(target);}catch(e){res.status(400).json({error:'invalid url'});return;}
+  try{target=decodeURIComponent(url);}catch{target=url;}
+  try{new URL(target);}catch{
+    return new Response(JSON.stringify({error:'invalid url'}),{
+      status:400,headers:{...corsHeaders,'Content-Type':'application/json'}
+    });
+  }
 
   try{
-    const r=await req2(target);
-    const ct=r.headers['content-type']||'application/octet-stream';
-    res.setHeader('Content-Type',ct);
-    res.setHeader('X-Final-Url',r.finalUrl);
-    res.setHeader('Cache-Control','no-store');
-    if(ct.includes('text/css')){
-      res.status(r.status).send(rewriteCss(r.body.toString('utf-8'),r.finalUrl));
-    }else{
-      res.status(r.status).send(r.body);
-    }
-  }catch(e){
-    res.status(500).json({error:e.message});
-  }
-}
-
-function req2(url,n=0){
-  return new Promise((ok,ng)=>{
-    if(n>5){ng(new Error('too many redirects'));return;}
-    let u;
-    try{u=new URL(url);}catch(e){ng(e);return;}
-    const lib=u.protocol==='https:'?https:http;
-    const r=lib.request({
-      hostname:u.hostname,
-      port:u.port||undefined,
-      path:u.pathname+u.search,
+    const res=await fetch(target,{
       method:'GET',
       headers:{
-        'User-Agent':'Mozilla/5.0',
-        'Accept':'*/*',
+        'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept':'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language':'ja,en;q=0.9',
+        'Accept-Encoding':'gzip, deflate, br',
+        'Cache-Control':'no-cache',
+        'Pragma':'no-cache',
       },
-      timeout:15000
-    },res=>{
-      if([301,302,303,307,308].includes(res.statusCode)&&res.headers.location){
-        res.resume();
-        ok(req2(new URL(res.headers.location,url).href,n+1));
-        return;
-      }
-      const chunks=[];
-      res.on('data',c=>chunks.push(c));
-      res.on('end',()=>ok({status:res.statusCode,headers:res.headers,body:Buffer.concat(chunks),finalUrl:url}));
-      res.on('error',ng);
+      redirect:'follow',
     });
-    r.on('error',ng);
-    r.on('timeout',()=>{r.destroy();ng(new Error('timeout'));});
-    r.end();
-  });
+
+    const ct=res.headers.get('content-type')||'application/octet-stream';
+    const finalUrl=res.url||target;
+
+    const resHeaders={
+      ...corsHeaders,
+      'Content-Type':ct,
+      'X-Final-Url':finalUrl,
+      'Cache-Control':'no-store',
+    };
+
+    if(ct.includes('text/css')){
+      const text=await res.text();
+      const rewritten=rewriteCss(text,finalUrl);
+      return new Response(rewritten,{status:res.status,headers:resHeaders});
+    }
+
+    const body=await res.arrayBuffer();
+    return new Response(body,{status:res.status,headers:resHeaders});
+
+  }catch(e){
+    const detail=e?.cause?.message||e?.message||'unknown';
+    return new Response(JSON.stringify({error:'fetch failed',detail}),{
+      status:500,headers:{...corsHeaders,'Content-Type':'application/json'}
+    });
+  }
 }
 
 function rewriteCss(css,base){
   return css.replace(/url\(\s*(['"]?)([^'"\)\s]+)\1\s*\)/gi,(m,q,u)=>{
     if(u.startsWith('data:'))return m;
-    try{return'url('+q+'/api/proxy?url='+encodeURIComponent(new URL(u,base).href)+q+')';}
-    catch(e){return m;}
+    try{
+      const abs=new URL(u,base).href;
+      return'url('+q+'/api/proxy?url='+encodeURIComponent(abs)+q+')';
+    }catch{return m;}
   });
 }
