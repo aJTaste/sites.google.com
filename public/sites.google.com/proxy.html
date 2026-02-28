@@ -18,10 +18,16 @@
         <div class="proxy-container">
           <!-- ブラウザコントロール -->
           <div class="browser-controls">
+            <button class="control-btn" id="back-btn" title="戻る" disabled>
+              <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <button class="control-btn" id="forward-btn" title="進む" disabled>
+              <span class="material-symbols-outlined">arrow_forward_ios</span>
+            </button>
             <button class="control-btn" id="home-btn" title="ホーム">
               <span class="material-symbols-outlined">home</span>
             </button>
-            
+
             <div class="url-bar">
               <span class="lock-icon material-symbols-outlined">lock</span>
               <input type="text" id="url-input" placeholder="URLを入力してください（例: https://example.com）" autocomplete="off">
@@ -29,21 +35,15 @@
                 <span class="material-symbols-outlined">arrow_forward</span>
               </button>
             </div>
-            
+
             <button class="control-btn" id="reload-btn" title="再読み込み">
               <span class="material-symbols-outlined">refresh</span>
             </button>
-            
             <button class="control-btn" id="fullscreen-btn" title="全画面">
               <span class="material-symbols-outlined">fullscreen</span>
             </button>
-            
-            <button class="mode-toggle-btn" id="proxy-mode-btn" title="プロキシモード切替">
-              <span class="material-symbols-outlined">swap_horiz</span>
-              <span id="current-mode">AllOrigins</span>
-            </button>
           </div>
-          
+
           <!-- コンテンツエリア -->
           <div class="browser-content" id="browser-content">
             <div class="welcome-screen">
@@ -56,13 +56,14 @@
                 <h3>使い方</h3>
                 <ol>
                   <li>上部のURLバーにアクセスしたいURLを入力</li>
-                  <li>読み込みに失敗した場合は、右上のモード切替ボタンを押す</li>
+                  <li>Enterキー または → ボタンで読み込み開始</li>
                   <li>全画面ボタンで画面を最大化できます</li>
+                  <li>対応できないサイトもあります（CORS制限等）</li>
                 </ol>
               </div>
-              <div class="mode-info">
-                <p><strong>現在のモード:</strong> <span class="mode-badge">AllOrigins</span></p>
-                <p class="mode-desc">読み込みに失敗した場合は、モードを切り替えてお試しください</p>
+              <div class="proxy-badge">
+                <span class="material-symbols-outlined">vpn_lock</span>
+                corsproxy.io
               </div>
             </div>
           </div>
