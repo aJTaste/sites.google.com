@@ -6,7 +6,7 @@ await initPage('proxy','Proxy');
 // 定数
 // ========================================
 
-const PROXY_BASE='/api/proxy?url=';
+const PROXY_BASE=location.origin+'/api/proxy?url=';
 const TIMEOUT_MS=20000;
 
 function corsProxyUrl(url){
