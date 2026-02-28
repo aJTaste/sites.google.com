@@ -10,12 +10,7 @@ const PROXY_BASE='https://corsproxy.io/?url=';
 const TIMEOUT_MS=15000;
 
 function corsProxyUrl(url){
-  try{
-    const u=new URL(url);
-    return PROXY_BASE+u.href;
-  }catch(e){
-    return PROXY_BASE+url;
-  }
+  return PROXY_BASE+url;
 }
 
 // ========================================
