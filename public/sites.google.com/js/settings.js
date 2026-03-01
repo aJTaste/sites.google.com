@@ -23,6 +23,8 @@ await initPage('settings','設定',{
 
     renderIconPreview();
     renderStylePicker();
+    document.getElementById('bio-input').value=profile.bio||'';
+    updateBioCount();
   }
 });
 
@@ -278,3 +280,41 @@ async function selectStyleAndGenerate(styleId,forceNew=false){
   p.style.background='';
   p.innerHTML=`<img src="${canvas.toDataURL('image/png')}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
 }
+
+
+// bio文字数カウント
+function updateBioCount(){
+  const input=document.getElementById('bio-input');
+  const count=document.getElementById('bio-char-count');
+  if(!input||!count)return;
+  count.textContent=`${input.value.length}/100`;
+}
+
+document.getElementById('bio-input')?.addEventListener('input',updateBioCount);
+
+document.getElementById('bio-save-btn')?.addEventListener('click',async()=>{
+  const bio=(document.getElementById('bio-input')?.value||'').trim();
+  const bioError=document.getElementById('bio-error');
+  const bioSuccess=document.getElementById('bio-success');
+  bioError.textContent='';
+  bioSuccess.textContent='';
+
+  if(bio.length>100){
+    bioError.textContent='100文字以内で入力してください';
+    return;
+  }
+
+  try{
+    const{error}=await supabase
+      .from('profiles')
+      .update({bio})
+      .eq('id',currentProfile.id);
+    if(error)throw error;
+    bioSuccess.textContent='✓ 保存しました';
+    currentProfile.bio=bio;
+    setTimeout(()=>{bioSuccess.textContent='';},3000);
+  }catch(error){
+    console.error(error);
+    bioError.textContent='保存に失敗しました';
+  }
+});

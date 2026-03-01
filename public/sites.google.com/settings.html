@@ -132,6 +132,21 @@
             <span class="success-message" id="name-success"></span>
           </section>
 
+
+<section class="settings-section">
+  <h2>自己紹介（ステータスメッセージ）</h2>
+  <div class="setting-item" style="flex-direction:column;align-items:stretch;gap:8px;">
+    <textarea id="bio-input" placeholder="自己紹介やひとことメモを入力（最大100文字）" maxlength="100" style="width:100%;min-height:72px;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg-secondary);font-size:14px;color:var(--text-primary);resize:vertical;outline:none;font-family:inherit;box-sizing:border-box;"></textarea>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:var(--text-tertiary);" id="bio-char-count">0/100</span>
+      <button class="btn-primary" id="bio-save-btn">保存</button>
+    </div>
+  </div>
+  <span class="error-message" id="bio-error"></span>
+  <span class="success-message" id="bio-success"></span>
+</section>
+          
+
           <section class="settings-section">
             <h2>アイコン画像</h2>
             <div class="icon-setting">
