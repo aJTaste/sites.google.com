@@ -27,37 +27,45 @@
     });
   }
 
-  function killEntryBtn(){
+  function disableEntryBtn(){
+    // Erudaの内部_entryBtnオブジェクトのshowを完全に無効化
+    try{
+      const eb=eruda._entryBtn;
+      if(eb){
+        if(eb.$el){
+          eb.$el.remove();
+        }
+        // show/hideを空関数で上書き
+        eb.show=function(){};
+        eb.hide=function(){};
+      }
+    }catch(e){}
+    // DOM上に残ったボタンも削除
     const btn=document.querySelector('#eruda .eruda-entry-btn');
-    if(btn)btn.style.setProperty('display','none','important');
+    if(btn)btn.remove();
   }
 
-  function injectCss(){
-    const s=document.createElement('style');
-    s.textContent='#eruda .eruda-entry-btn{display:none!important;visibility:hidden!important;pointer-events:none!important;}';
-    document.head.appendChild(s);
-  }
-
-  // eruda.show()をラップしてボタンを毎回消す
-  function wrapErudaShow(){
+  // eruda.show/hideをラップして毎回ボタン無効化
+  function wrapEruda(){
     const _show=eruda.show.bind(eruda);
+    const _hide=eruda.hide.bind(eruda);
     eruda.show=function(){
       _show();
-      // 描画後に消す
-      requestAnimationFrame(killEntryBtn);
-      setTimeout(killEntryBtn,50);
-      setTimeout(killEntryBtn,150);
+      disableEntryBtn();
+    };
+    eruda.hide=function(){
+      _hide();
+      disableEntryBtn();
     };
   }
 
   function setupEruda(){
     if(!(window.eruda&&eruda._isInit)){
       eruda.init();
-      eruda.hide();
     }
-    injectCss();
-    wrapErudaShow();
-    killEntryBtn();
+    disableEntryBtn();
+    wrapEruda();
+    eruda.hide();
     loadPlugins(plugins,0);
     ready=true;
     if(pendingShow){
@@ -68,7 +76,6 @@
   }
 
   function preload(){
-    injectCss();
     if(window.eruda){
       setupEruda();
     } else {
