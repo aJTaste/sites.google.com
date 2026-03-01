@@ -224,7 +224,7 @@ export function createChatHTML(selectedUser){
   const isOnline=selectedUser.is_online||false;
   const currentPage=selectedUser.current_page||'';
   const statusText=isOnline
-    ?(currentPage?`🟢 ${esc(currentPage)}`:'🟢 オンライン')
+    ?(currentPage?`🟢 ${esc(currentPage)}`:'オンライン')
     :`最終: ${formatLastOnline(selectedUser.last_online||selectedUser.created_at)}`;
 
   return`
