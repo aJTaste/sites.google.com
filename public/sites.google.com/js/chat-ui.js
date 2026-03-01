@@ -13,52 +13,105 @@ function esc(text){
 }
 
 // ========================================
-// ユーザー一覧を表示
+// 検索バーの初期化（一度だけ呼ぶ）
+// ========================================
+
+let _searchQuery='';
+
+export function initSearchBar(){
+  const input=document.getElementById('dm-search-input');
+  if(!input||input.dataset.initialized)return;
+  input.dataset.initialized='1';
+  input.addEventListener('input',()=>{
+    _searchQuery=input.value.trim().toLowerCase();
+    renderSidebarItems();
+  });
+}
+
+// ========================================
+// ユーザー一覧を表示（外部API）
 // ========================================
 
 export function displayUsers(){
+  initSearchBar();
+  renderSidebarItems();
+}
+
+// ========================================
+// サイドバーアイテムの描画（内部）
+// ========================================
+
+function renderSidebarItems(){
   const dmList=document.getElementById('dm-list');
   if(!dmList)return;
 
+  const q=_searchQuery;
   dmList.innerHTML='';
 
-  // チャンネル
-  CHANNELS.forEach(channel=>{
-    if(!canAccessChannel(state.currentProfile.role,channel.requiredRole))return;
+  // ---- チャンネルセクション ----
+  const accessibleChannels=CHANNELS.filter(ch=>
+    canAccessChannel(state.currentProfile?.role,ch.requiredRole)
+    &&(!q||ch.name.toLowerCase().includes(q)||ch.desc.toLowerCase().includes(q))
+  );
 
-    const channelItem=document.createElement('div');
-    let cls='channel-item';
-    if(state.selectedChannelId===channel.id)cls+=' active';
-    if(channel.requiredRole==='moderator')cls+=' moderator-only';
-    channelItem.className=cls;
-
-    const unreadCount=state.unreadCounts[channel.id]||0;
-    const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
-
-    channelItem.innerHTML=`
-      <div class="channel-icon">
-        <span class="material-symbols-outlined">${channel.icon}</span>
-      </div>
-      <div class="channel-info">
-        <div class="channel-name">${esc(channel.name)}${unreadBadge}</div>
-        <div class="channel-desc">${esc(channel.desc)}</div>
-      </div>
+  if(accessibleChannels.length>0){
+    const secLabel=document.createElement('div');
+    secLabel.className='dm-section-label';
+    secLabel.innerHTML=`
+      <span class="material-symbols-outlined">tag</span>
+      チャンネル
     `;
-    channelItem.addEventListener('click',()=>window.selectChannel?.(channel.id));
-    dmList.appendChild(channelItem);
-  });
+    dmList.appendChild(secLabel);
 
-  // 区切り線
-  const divider=document.createElement('div');
-  divider.style.cssText='height:1px;background:var(--border);margin:8px 0;';
-  dmList.appendChild(divider);
+    accessibleChannels.forEach(channel=>{
+      let cls='channel-item';
+      if(state.selectedChannelId===channel.id)cls+=' active';
+      if(channel.requiredRole==='moderator')cls+=' moderator-only';
 
-  // ユーザー一覧（最終ログイン順）
+      const unreadCount=state.unreadCounts[channel.id]||0;
+      const unreadBadge=unreadCount>0
+        ?`<span class="unread-badge">${unreadCount}</span>`
+        :'';
+
+      const item=document.createElement('div');
+      item.className=cls;
+      item.innerHTML=`
+        <div class="channel-icon">
+          <span class="material-symbols-outlined">${esc(channel.icon)}</span>
+        </div>
+        <div class="channel-info">
+          <div class="channel-name">${esc(channel.name)}${unreadBadge}</div>
+          <div class="channel-desc">${esc(channel.desc)}</div>
+        </div>
+      `;
+      item.addEventListener('click',()=>window.selectChannel?.(channel.id));
+      dmList.appendChild(item);
+    });
+  }
+
+  // ---- ユーザー一覧セクション ----
   if(!state.allUsers?.length)return;
 
-  [...state.allUsers]
-    .sort((a,b)=>new Date(b.last_online||b.created_at)-new Date(a.last_online||a.created_at))
-    .forEach(user=>{
+  const sorted=[...state.allUsers].sort((a,b)=>{
+    // オンラインを先頭に、次に最終ログイン順
+    if(a.is_online!==b.is_online)return a.is_online?-1:1;
+    return new Date(b.last_online||b.created_at)-new Date(a.last_online||a.created_at);
+  });
+
+  const filtered=q
+    ?sorted.filter(u=>u.display_name?.toLowerCase().includes(q)||u.user_id?.toLowerCase().includes(q))
+    :sorted;
+
+  if(filtered.length>0){
+    const secLabel=document.createElement('div');
+    secLabel.className='dm-section-label';
+    secLabel.innerHTML=`
+      <span class="material-symbols-outlined">person</span>
+      ダイレクトメッセージ
+    `;
+    dmList.appendChild(secLabel);
+
+    filtered.forEach(user=>{
       const dmItem=document.createElement('div');
       let itemCls='dm-item';
       if(state.selectedUserId===user.user_id)itemCls+=' active';
@@ -73,10 +126,12 @@ export function displayUsers(){
         :`最終: ${formatLastOnline(user.last_online||user.created_at)}`;
 
       const unreadCount=state.unreadCounts[user.user_id]||0;
-      const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
+      const unreadBadge=unreadCount>0
+        ?`<span class="unread-badge">${unreadCount}</span>`
+        :'';
 
       dmItem.innerHTML=`
-        <div class="dm-item-avatar" style="cursor:pointer;" title="クリック: プロフィール / Ctrl+クリック: 呼び出し">
+        <div class="dm-item-avatar" title="クリック: プロフィール / Ctrl+クリック: 呼び出し">
           <img src="${esc(iconSrc)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
           ${onlineIndicator}
         </div>
@@ -87,8 +142,6 @@ export function displayUsers(){
       `;
 
       const avatarEl=dmItem.querySelector('.dm-item-avatar');
-
-      // アバタークリック → プロフィールポップアップ / Ctrl+クリック → 呼び出し
       avatarEl.addEventListener('click',(e)=>{
         e.stopPropagation();
         if(e.ctrlKey){
@@ -98,7 +151,6 @@ export function displayUsers(){
         }
       });
 
-      // アイテム本体クリック → DM開く
       dmItem.addEventListener('click',(e)=>{
         if(e.target.closest('.dm-item-avatar'))return;
         window.selectUser?.(user.user_id);
@@ -106,6 +158,15 @@ export function displayUsers(){
 
       dmList.appendChild(dmItem);
     });
+  }
+
+  // 検索結果なし
+  if(q&&accessibleChannels.length===0&&filtered.length===0){
+    const noResult=document.createElement('div');
+    noResult.className='dm-no-results';
+    noResult.textContent=`"${q}" は見つかりませんでした`;
+    dmList.appendChild(noResult);
+  }
 }
 
 // ========================================
@@ -123,7 +184,7 @@ async function _handleCallUser(user){
 
 function _miniToast(html){
   const t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text-primary);box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:99998;white-space:nowrap;';
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text-primary);box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:99998;white-space:nowrap;animation:fadeInUp 0.25s ease;';
   t.innerHTML=html;
   document.body.appendChild(t);
   setTimeout(()=>t.remove(),3000);
@@ -138,7 +199,6 @@ let _popup=null;
 export async function showProfilePopup(user,anchorEl){
   closeProfilePopup();
 
-  // フル情報取得（bio など最新データ）
   let profile={...user};
   try{
     const{data}=await supabase.from('profiles').select('*').eq('id',user.id).single();
@@ -150,15 +210,14 @@ export async function showProfilePopup(user,anchorEl){
   overlay.addEventListener('click',closeProfilePopup);
 
   const popup=document.createElement('div');
-  popup.style.cssText='position:fixed;width:272px;background:var(--bg-primary);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:9991;overflow:hidden;';
+  popup.style.cssText='position:fixed;width:272px;background:var(--bg-primary);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:9991;overflow:hidden;animation:fadeInUp 0.2s ease;';
 
-  // 位置計算
   const rect=anchorEl.getBoundingClientRect();
-  let left=rect.right+8;
-  if(left+272>window.innerWidth-8)left=rect.left-280;
+  let left=rect.right+10;
+  if(left+272>window.innerWidth-8)left=rect.left-282;
   if(left<8)left=8;
   let top=rect.top;
-  if(top+360>window.innerHeight)top=window.innerHeight-368;
+  if(top+380>window.innerHeight)top=window.innerHeight-388;
   if(top<8)top=8;
   popup.style.left=left+'px';
   popup.style.top=top+'px';
@@ -172,23 +231,23 @@ export async function showProfilePopup(user,anchorEl){
   const avatarSrc=profile.avatar_url||geoAvatarDataUrl(profile.id,64);
 
   popup.innerHTML=`
-    <div style="height:44px;background:linear-gradient(135deg,var(--main,#4f46e5),#7c3aed);"></div>
+    <div style="height:44px;background:linear-gradient(135deg,var(--main),#e55a2b);"></div>
     <div style="padding:0 14px 14px;">
       <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:-28px;margin-bottom:10px;">
-        <div style="width:58px;height:58px;border-radius:50%;border:3px solid var(--bg-primary);overflow:hidden;background:var(--bg-secondary);">
+        <div style="width:56px;height:56px;border-radius:50%;border:3px solid var(--bg-primary);overflow:hidden;background:var(--bg-secondary);flex-shrink:0;">
           <img src="${esc(avatarSrc)}" style="width:100%;height:100%;object-fit:cover;">
         </div>
-        ${isOnline?'<button id="pp-call-btn" style="background:var(--main);border:none;border-radius:8px;padding:5px 11px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:2px;">📞 呼び出す</button>':''}
+        ${isOnline?'<button id="pp-call-btn" style="background:var(--main);border:none;border-radius:8px;padding:5px 12px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:2px;">📞 呼び出す</button>':''}
       </div>
-      <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:1px;">${esc(profile.display_name)}</div>
-      <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px;">@${esc(profile.user_id)}</div>
-      ${bio?`<div style="font-size:12px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:8px;padding:7px 9px;margin-bottom:9px;line-height:1.5;word-break:break-word;">${esc(bio)}</div>`:''}
+      <div style="font-size:15px;font-weight:700;color:var(--text-primary);margin-bottom:1px;">${esc(profile.display_name)}</div>
+      <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px;">@${esc(profile.user_id||'')}</div>
+      ${bio?`<div style="font-size:12px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:8px;padding:7px 10px;margin-bottom:9px;line-height:1.5;word-break:break-word;">${esc(bio)}</div>`:''}
       <div style="font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">
         <div>${statusDot} ${esc(statusLabel)}</div>
         ${!isOnline?`<div style="color:var(--text-tertiary);">最終: ${lastOnline}</div>`:''}
         <div style="color:var(--text-tertiary);">登録日: ${createdAt}</div>
       </div>
-      <button id="pp-dm-btn" style="width:100%;padding:8px;background:var(--main);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">💬 メッセージを送る</button>
+      <button id="pp-dm-btn" style="width:100%;padding:8px;background:var(--main);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;transition:background 0.12s;">💬 メッセージを送る</button>
     </div>
   `;
 
@@ -216,7 +275,6 @@ export function closeProfilePopup(){
 
 // ========================================
 // チャット画面のHTML生成（DM）
-// ★ 元のHTML構造を維持（.chat-input-actions + .chat-input-wrapper）
 // ========================================
 
 export function createChatHTML(selectedUser){
@@ -224,7 +282,7 @@ export function createChatHTML(selectedUser){
   const isOnline=selectedUser.is_online||false;
   const currentPage=selectedUser.current_page||'';
   const statusText=isOnline
-    ?(currentPage?`🟢 ${esc(currentPage)}`:'オンライン')
+    ?(currentPage?`🟢 ${esc(currentPage)}`:'🟢 オンライン')
     :`最終: ${formatLastOnline(selectedUser.last_online||selectedUser.created_at)}`;
 
   return`
@@ -278,7 +336,10 @@ export function createChatHTML(selectedUser){
   `;
 }
 
+// ========================================
 // チャット画面のHTML生成（チャンネル）
+// ========================================
+
 export function createChannelChatHTML(channel){
   return`
     <div class="chat-header">
@@ -286,7 +347,7 @@ export function createChannelChatHTML(channel){
         <span class="material-symbols-outlined">arrow_back</span>
       </button>
       <div class="chat-header-user">
-        <div class="channel-icon" style="width:36px;height:36px;">
+        <div class="channel-icon" style="width:36px;height:36px;border-radius:10px;">
           <span class="material-symbols-outlined">${esc(channel.icon)}</span>
         </div>
         <div class="chat-header-info">

@@ -19,16 +19,29 @@
           <div class="dm-overlay" id="dm-overlay"></div>
           <aside class="dm-sidebar">
             <div class="dm-header">
-              <h2>ダイレクトメッセージ</h2>
+              <h2>ChatHub</h2>
+              <div class="dm-search">
+                <span class="material-symbols-outlined dm-search-icon">search</span>
+                <input
+                  class="dm-search-input"
+                  id="dm-search-input"
+                  type="text"
+                  placeholder="検索..."
+                  autocomplete="off"
+                >
+              </div>
             </div>
             <div class="dm-list" id="dm-list">
-              <!-- ユーザー一覧がJSで生成される -->
+              <!-- チャンネル・ユーザー一覧はJSで生成される -->
             </div>
           </aside>
           <main class="chat-main" id="chat-main">
             <div class="chat-empty">
-              <span class="material-symbols-outlined">chat_bubble_outline</span>
-              <p>ユーザーを選択してメッセージを送信</p>
+              <div class="chat-empty-icon">
+                <span class="material-symbols-outlined">forum</span>
+              </div>
+              <h3>ChatHub</h3>
+              <p>チャンネルまたはユーザーを選択してください</p>
             </div>
           </main>
         </div>
@@ -84,6 +97,6 @@
     <script type="module" src="js/chat.js"></script>
     <script src="common/stealth-mode.js"></script>
     <script src="common/capture-handler.js"></script>
-<script src="common/eruda-init.js"></script> 
+    <script src="common/eruda-init.js"></script>
   </body>
 </html>
