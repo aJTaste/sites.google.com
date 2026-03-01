@@ -18,7 +18,7 @@
       display:flex;flex-direction:column;
       align-items:center;justify-content:center;
       gap:20px;z-index:9999;
-      transition:opacity .5s ease;
+
     }
     #loading-overlay.hidden{
       opacity:0;pointer-events:none;
@@ -111,9 +111,16 @@
         },true);
 
         // iキーでErudaをトグル（ゲーム中でも有効）
+        // ただし input/textarea/contenteditable への入力中は無視
         let erudaVisible=false;
+        function isTyping(){
+          const t=document.activeElement;
+          if(!t)return false;
+          const tag=t.tagName;
+          return tag==="INPUT"||tag==="TEXTAREA"||t.isContentEditable;
+        }
         window.addEventListener("keydown",function(e){
-          if(e.key==="i"||e.key==="I"){
+          if((e.key==="i"||e.key==="I")&&!isTyping()){
             e.stopImmediatePropagation();
             erudaVisible=!erudaVisible;
             if(erudaVisible){
