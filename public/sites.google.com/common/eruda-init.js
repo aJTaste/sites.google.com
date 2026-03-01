@@ -3,6 +3,12 @@
   let ready=false;
   let pendingShow=false;
 
+  const style=document.createElement('style');
+  style.textContent=
+    '#eruda .eruda-entry-btn,.eruda-entry-btn{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;}'+
+    '#eruda,#eruda *{transition:none!important;animation:none!important;transform-origin:unset!important;}';
+  (document.head||document.documentElement).appendChild(style);
+
   function loadScript(src,cb){
     const s=document.createElement('script');
     s.src=src;
@@ -27,49 +33,43 @@
     });
   }
 
-  function injectCss(){
-    const s=document.createElement('style');
-    s.textContent=[
-      // アイコン完全非表示
-      '#eruda .eruda-entry-btn{display:none!important;visibility:hidden!important;pointer-events:none!important;}',
-      // パネルのモーション削除
-      '#eruda,#eruda *{transition:none!important;animation:none!important;}'
-    ].join('');
-    document.head.appendChild(s);
-  }
-
-  function disableEntryBtn(){
+  function killEntryBtn(){
+    document.querySelectorAll('#eruda .eruda-entry-btn,.eruda-entry-btn').forEach(el=>el.remove());
     try{
       const eb=eruda._entryBtn;
       if(eb){
         if(eb.$el)eb.$el.remove();
         eb.show=function(){};
         eb.hide=function(){};
+        eb.toggle=function(){};
       }
     }catch(e){}
-    const btn=document.querySelector('#eruda .eruda-entry-btn');
-    if(btn)btn.remove();
   }
 
-  function wrapEruda(){
+  const observer=new MutationObserver(function(){
+    const btn=document.querySelector('#eruda .eruda-entry-btn,.eruda-entry-btn');
+    if(btn)btn.remove();
+  });
+
+  function setupEruda(){
+    if(!(window.eruda&&eruda._isInit)){
+      eruda.init({useShadowDom:false});
+    }
+    killEntryBtn();
+
     const _show=eruda.show.bind(eruda);
     const _hide=eruda.hide.bind(eruda);
     eruda.show=function(){
       _show();
-      disableEntryBtn();
+      requestAnimationFrame(killEntryBtn);
     };
     eruda.hide=function(){
       _hide();
-      disableEntryBtn();
+      requestAnimationFrame(killEntryBtn);
     };
-  }
 
-  function setupEruda(){
-    if(!(window.eruda&&eruda._isInit)){
-      eruda.init();
-    }
-    disableEntryBtn();
-    wrapEruda();
+    observer.observe(document.body,{childList:true,subtree:true});
+
     eruda.hide();
     loadPlugins(plugins,0);
     ready=true;
@@ -81,7 +81,6 @@
   }
 
   function preload(){
-    injectCss();
     if(window.eruda){
       setupEruda();
     } else {
