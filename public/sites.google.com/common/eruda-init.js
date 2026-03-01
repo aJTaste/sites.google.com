@@ -27,25 +27,30 @@
     });
   }
 
+  function injectCss(){
+    const s=document.createElement('style');
+    s.textContent=[
+      // アイコン完全非表示
+      '#eruda .eruda-entry-btn{display:none!important;visibility:hidden!important;pointer-events:none!important;}',
+      // パネルのモーション削除
+      '#eruda,#eruda *{transition:none!important;animation:none!important;}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
   function disableEntryBtn(){
-    // Erudaの内部_entryBtnオブジェクトのshowを完全に無効化
     try{
       const eb=eruda._entryBtn;
       if(eb){
-        if(eb.$el){
-          eb.$el.remove();
-        }
-        // show/hideを空関数で上書き
+        if(eb.$el)eb.$el.remove();
         eb.show=function(){};
         eb.hide=function(){};
       }
     }catch(e){}
-    // DOM上に残ったボタンも削除
     const btn=document.querySelector('#eruda .eruda-entry-btn');
     if(btn)btn.remove();
   }
 
-  // eruda.show/hideをラップして毎回ボタン無効化
   function wrapEruda(){
     const _show=eruda.show.bind(eruda);
     const _hide=eruda.hide.bind(eruda);
@@ -76,6 +81,7 @@
   }
 
   function preload(){
+    injectCss();
     if(window.eruda){
       setupEruda();
     } else {
