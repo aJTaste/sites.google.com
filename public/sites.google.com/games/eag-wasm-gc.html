@@ -110,8 +110,7 @@
           }
         },true);
 
-        // iキーでErudaをトグル（ゲーム中でも有効）
-        // ただし input/textarea/contenteditable への入力中は無視
+        // Ctrl+IでErudaをトグル（ゲーム中でも有効）
         let erudaVisible=false;
         function isTyping(){
           const t=document.activeElement;
@@ -120,7 +119,7 @@
           return tag==="INPUT"||tag==="TEXTAREA"||t.isContentEditable;
         }
         window.addEventListener("keydown",function(e){
-          if((e.key==="i"||e.key==="I")&&!isTyping()){
+          if((e.key==="i"||e.key==="I")&&e.ctrlKey){
             e.stopImmediatePropagation();
             erudaVisible=!erudaVisible;
             if(erudaVisible){
