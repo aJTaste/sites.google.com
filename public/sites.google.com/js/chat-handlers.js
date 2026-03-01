@@ -2,7 +2,7 @@
 
 import{supabase}from'../common/supabase-config.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
-import{displayUsers,createChatHTML,createChannelChatHTML}from'./chat-ui.js';
+import{displayUsers,createChatHTML,createChannelChatHTML,showProfilePopup}from'./chat-ui.js'
 import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
 import{handleImageFile}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
@@ -149,6 +149,13 @@ export async function selectUser(userId){
 
   chatMain.innerHTML=createChatHTML(selectedUser);
   setupChatInput();
+  // ★ チャットヘッダークリック → プロフィールポップアップ
+  const headerUserArea=document.getElementById('chat-header-user-area');
+  if(headerUserArea){
+    headerUserArea.addEventListener('click',()=>{
+      showProfilePopup(selectedUser,headerUserArea);
+    });
+  }
   loadMessages(userId);
 }
 

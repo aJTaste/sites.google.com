@@ -6,6 +6,12 @@ import{canAccessChannel}from'../common/permissions.js';
 import{geoAvatarDataUrl}from'../common/geo-avatar.js';
 import{supabase}from'../common/supabase-config.js';
 
+function esc(text){
+  const d=document.createElement('div');
+  d.textContent=text||'';
+  return d.innerHTML;
+}
+
 // ========================================
 // ユーザー一覧を表示
 // ========================================
@@ -21,9 +27,11 @@ export function displayUsers(){
     if(!canAccessChannel(state.currentProfile.role,channel.requiredRole))return;
 
     const channelItem=document.createElement('div');
-    channelItem.className='channel-item';
-    if(state.selectedChannelId===channel.id)channelItem.classList.add('active');
-    if(channel.requiredRole==='moderator')channelItem.classList.add('moderator-only');
+    // ★ 構文修正: クォートの位置
+    let cls='channel-item';
+    if(state.selectedChannelId===channel.id)cls+=' active';
+    if(channel.requiredRole==='moderator')cls+=' moderator-only';
+    channelItem.className=cls;
 
     const unreadCount=state.unreadCounts[channel.id]||0;
     const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
@@ -33,15 +41,11 @@ export function displayUsers(){
         <span class="material-symbols-outlined">${channel.icon}</span>
       </div>
       <div class="channel-info">
-        <div class="channel-name">${channel.name}${unreadBadge}</div>
-        <div class="channel-desc">${channel.desc}</div>
+        <div class="channel-name">${esc(channel.name)}${unreadBadge}</div>
+        <div class="channel-desc">${esc(channel.desc)}</div>
       </div>
     `;
-
-    channelItem.addEventListener('click',()=>{
-      if(window.selectChannel)window.selectChannel(channel.id);
-    });
-
+    channelItem.addEventListener('click',()=>window.selectChannel?.(channel.id));
     dmList.appendChild(channelItem);
   });
 
@@ -51,82 +55,77 @@ export function displayUsers(){
   dmList.appendChild(divider);
 
   // ユーザー一覧（最終ログイン順）
-  if(state.allUsers&&state.allUsers.length>0){
-    state.allUsers.sort((a,b)=>{
-      const at=new Date(a.last_online||a.created_at).getTime();
-      const bt=new Date(b.last_online||b.created_at).getTime();
-      return bt-at;
-    });
+  if(!state.allUsers?.length)return;
 
-    state.allUsers.forEach(user=>{
+  [...state.allUsers]
+    .sort((a,b)=>new Date(b.last_online||b.created_at)-new Date(a.last_online||a.created_at))
+    .forEach(user=>{
       const dmItem=document.createElement('div');
-      dmItem.className='dm-item';
-      if(state.selectedUserId===user.user_id)dmItem.classList.add('active');
+      let itemCls='dm-item';
+      if(state.selectedUserId===user.user_id)itemCls+=' active';
+      dmItem.className=itemCls;
 
-      const iconHtml=`<img src="${user.avatar_url||geoAvatarDataUrl(user.id,40)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+      const iconSrc=user.avatar_url||geoAvatarDataUrl(user.id,40);
       const isOnline=user.is_online||false;
       const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
+      const currentPage=user.current_page||'';
       const statusText=isOnline
-        ?(user.current_page?`🟢 ${user.current_page}`:'🟢 オンライン')
+        ?(currentPage?`🟢 ${esc(currentPage)}`:'🟢 オンライン')
         :`最終: ${formatLastOnline(user.last_online||user.created_at)}`;
 
       const unreadCount=state.unreadCounts[user.user_id]||0;
       const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
 
       dmItem.innerHTML=`
-        <div class="dm-item-avatar" data-user-id="${user.id}" title="Ctrl+クリックで呼び出し">
-          ${iconHtml}
+        <div class="dm-item-avatar" style="cursor:pointer;">
+          <img src="${esc(iconSrc)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
           ${onlineIndicator}
         </div>
         <div class="dm-item-info">
-          <div class="dm-item-name">${user.display_name}${unreadBadge}</div>
+          <div class="dm-item-name">${esc(user.display_name)}${unreadBadge}</div>
           <div class="dm-item-status">${statusText}</div>
         </div>
       `;
 
-      // アバタークリック → プロフィールポップアップ (Ctrl+クリック → 呼び出し)
       const avatarEl=dmItem.querySelector('.dm-item-avatar');
-      avatarEl.style.cursor='pointer';
+
+      // アバタークリック → プロフィールポップアップ (Ctrl+クリック → 呼び出し)
       avatarEl.addEventListener('click',(e)=>{
         e.stopPropagation();
         if(e.ctrlKey){
-          // 呼び出し
-          handleCallUser(user);
+          _handleCallUser(user);
         }else{
           showProfilePopup(user,avatarEl);
         }
       });
 
-      // DMアイテム本体クリック → チャット開く
+      // アイテム本体クリック → DM開く
       dmItem.addEventListener('click',(e)=>{
         if(e.target.closest('.dm-item-avatar'))return;
-        if(window.selectUser)window.selectUser(user.user_id);
+        window.selectUser?.(user.user_id);
       });
 
       dmList.appendChild(dmItem);
     });
-  }
 }
 
 // ========================================
-// 呼び出し処理
+// 呼び出し
 // ========================================
 
-async function handleCallUser(user){
+async function _handleCallUser(user){
   if(!user.is_online){
-    showCallToast(`${user.display_name}はオフラインです`);
+    _miniToast(`${esc(user.display_name)} はオフラインです`);
     return;
   }
-  if(window.sendCall){
-    await window.sendCall(user.id,user.display_name);
-    showCallToast(`${user.display_name}を呼び出しました 📞`);
-  }
+  const ok=await window.sendCall?.(user.id,user.display_name);
+  if(ok!==false)_miniToast(`${esc(user.display_name)} を呼び出しました 📞`);
 }
 
-function showCallToast(msg){
+function _miniToast(html){
   const t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text-primary);box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:99998;animation:toastIn 0.2s ease;';
-  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;color:var(--text-primary);box-shadow:0 4px 16px rgba(0,0,0,0.15);z-index:99998;white-space:nowrap;';
+  t.innerHTML=html;
   document.body.appendChild(t);
   setTimeout(()=>t.remove(),3000);
 }
@@ -135,52 +134,35 @@ function showCallToast(msg){
 // プロフィールポップアップ
 // ========================================
 
-let currentPopup=null;
+let _popup=null;
 
 export async function showProfilePopup(user,anchorEl){
   closeProfilePopup();
 
-  // フル情報を取得（bioなど）
-  let profile=user;
+  // フル情報取得（bio など最新データ）
+  let profile={...user};
   try{
-    const{data}=await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id',user.id)
-      .single();
-    if(data)profile=data;
+    const{data}=await supabase.from('profiles').select('*').eq('id',user.id).single();
+    if(data)profile={...profile,...data};
   }catch(e){}
 
   const overlay=document.createElement('div');
-  overlay.id='profile-popup-overlay';
   overlay.style.cssText='position:fixed;inset:0;z-index:9990;';
   overlay.addEventListener('click',closeProfilePopup);
 
   const popup=document.createElement('div');
-  popup.id='profile-popup';
+  popup.style.cssText='position:fixed;width:272px;background:var(--bg-primary);border:1px solid var(--border);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.2);z-index:9991;overflow:hidden;';
 
-  // アンカー位置計算
+  // 位置計算
   const rect=anchorEl.getBoundingClientRect();
-  const popupWidth=280;
   let left=rect.right+8;
-  if(left+popupWidth>window.innerWidth-8)left=rect.left-popupWidth-8;
+  if(left+272>window.innerWidth-8)left=rect.left-280;
+  if(left<8)left=8;
   let top=rect.top;
-  if(top+400>window.innerHeight)top=window.innerHeight-408;
+  if(top+360>window.innerHeight)top=window.innerHeight-368;
   if(top<8)top=8;
-
-  popup.style.cssText=`
-    position:fixed;
-    left:${left}px;
-    top:${top}px;
-    width:${popupWidth}px;
-    background:var(--bg-primary);
-    border:1px solid var(--border);
-    border-radius:16px;
-    box-shadow:0 8px 32px rgba(0,0,0,0.2);
-    z-index:9991;
-    overflow:hidden;
-    animation:toastIn 0.2s ease;
-  `;
+  popup.style.left=left+'px';
+  popup.style.top=top+'px';
 
   const isOnline=profile.is_online||false;
   const statusDot=isOnline?'🟢':'⚫';
@@ -188,63 +170,48 @@ export async function showProfilePopup(user,anchorEl){
   const lastOnline=formatLastOnline(profile.last_online||profile.created_at);
   const createdAt=profile.created_at?new Date(profile.created_at).toLocaleDateString('ja-JP'):'不明';
   const bio=profile.bio||'';
-
-  const avatarSrc=profile.avatar_url||geoAvatarDataUrl(profile.id,72);
+  const avatarSrc=profile.avatar_url||geoAvatarDataUrl(profile.id,64);
 
   popup.innerHTML=`
-    <div style="background:var(--main,#4f46e5);height:48px;"></div>
-    <div style="padding:0 16px 16px;">
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:-32px;margin-bottom:8px;">
-        <div style="width:64px;height:64px;border-radius:50%;border:3px solid var(--bg-primary);overflow:hidden;background:var(--bg-secondary);">
-          <img src="${avatarSrc}" style="width:100%;height:100%;object-fit:cover;">
+    <div style="height:44px;background:linear-gradient(135deg,var(--main,#4f46e5),#7c3aed);"></div>
+    <div style="padding:0 14px 14px;">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-top:-28px;margin-bottom:10px;">
+        <div style="width:58px;height:58px;border-radius:50%;border:3px solid var(--bg-primary);overflow:hidden;background:var(--bg-secondary);">
+          <img src="${esc(avatarSrc)}" style="width:100%;height:100%;object-fit:cover;">
         </div>
-        <div style="font-size:20px;margin-bottom:4px;" title="Ctrl+クリックでこの人を呼び出し">
-          ${isOnline?`<button class="profile-call-btn" data-id="${profile.id}" data-name="${escHtml(profile.display_name)}" title="呼び出し（Ctrl+クリック）" style="background:var(--main);border:none;border-radius:8px;padding:6px 12px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;">📞 呼び出す</button>`:''}
-        </div>
+        ${isOnline?'<button id="pp-call-btn" style="background:var(--main);border:none;border-radius:8px;padding:5px 11px;color:#fff;font-size:12px;font-weight:700;cursor:pointer;margin-bottom:2px;">📞 呼び出す</button>':''}
       </div>
-      <div style="font-size:17px;font-weight:700;color:var(--text-primary);margin-bottom:2px;">${escHtml(profile.display_name)}</div>
-      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:8px;">@${escHtml(profile.user_id)}</div>
-      ${bio?`<div style="font-size:13px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5;">${escHtml(bio)}</div>`:''}
-      <div style="display:flex;flex-direction:column;gap:4px;">
-        <div style="font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:6px;">
-          <span>${statusDot}</span>
-          <span>${escHtml(statusLabel)}</span>
-        </div>
-        ${!isOnline?`<div style="font-size:12px;color:var(--text-tertiary);">最終ログイン: ${lastOnline}</div>`:''}
-        <div style="font-size:12px;color:var(--text-tertiary);">登録日: ${createdAt}</div>
+      <div style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:1px;">${esc(profile.display_name)}</div>
+      <div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px;">@${esc(profile.user_id)}</div>
+      ${bio?`<div style="font-size:12px;color:var(--text-secondary);background:var(--bg-secondary);border-radius:8px;padding:7px 9px;margin-bottom:9px;line-height:1.5;word-break:break-word;">${esc(bio)}</div>`:''}
+      <div style="font-size:12px;color:var(--text-secondary);display:flex;flex-direction:column;gap:3px;margin-bottom:10px;">
+        <div>${statusDot} ${esc(statusLabel)}</div>
+        ${!isOnline?`<div style="color:var(--text-tertiary);">最終: ${lastOnline}</div>`:''}
+        <div style="color:var(--text-tertiary);">登録日: ${createdAt}</div>
       </div>
-      <button id="popup-dm-btn" style="width:100%;margin-top:12px;padding:8px;background:var(--main);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">💬 メッセージを送る</button>
+      <button id="pp-dm-btn" style="width:100%;padding:8px;background:var(--main);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">💬 メッセージを送る</button>
     </div>
   `;
 
   document.body.appendChild(overlay);
   document.body.appendChild(popup);
-  currentPopup={overlay,popup};
+  _popup={overlay,popup};
 
-  // メッセージを送るボタン
-  popup.querySelector('#popup-dm-btn')?.addEventListener('click',()=>{
+  popup.querySelector('#pp-dm-btn')?.addEventListener('click',()=>{
     closeProfilePopup();
-    if(window.selectUser)window.selectUser(profile.user_id);
+    window.selectUser?.(profile.user_id);
   });
-
-  // 呼び出しボタン
-  popup.querySelector('.profile-call-btn')?.addEventListener('click',async()=>{
+  popup.querySelector('#pp-call-btn')?.addEventListener('click',()=>{
     closeProfilePopup();
-    await handleCallUser(profile);
+    _handleCallUser(profile);
   });
 }
 
-function escHtml(text){
-  const d=document.createElement('div');
-  d.textContent=text||'';
-  return d.innerHTML;
-}
-
-function closeProfilePopup(){
-  if(currentPopup){
-    currentPopup.overlay.remove();
-    currentPopup.popup.remove();
-    currentPopup=null;
+export function closeProfilePopup(){
+  if(_popup){
+    _popup.overlay.remove();
+    _popup.popup.remove();
+    _popup=null;
   }
 }
 
@@ -253,10 +220,11 @@ function closeProfilePopup(){
 // ========================================
 
 export function createChatHTML(selectedUser){
-  const iconHtml=`<img src="${selectedUser.avatar_url||geoAvatarDataUrl(selectedUser.id,36)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+  const iconSrc=selectedUser.avatar_url||geoAvatarDataUrl(selectedUser.id,36);
   const isOnline=selectedUser.is_online||false;
+  const currentPage=selectedUser.current_page||'';
   const statusText=isOnline
-    ?(selectedUser.current_page?`🟢 ${selectedUser.current_page}`:'🟢 オンライン')
+    ?(currentPage?`🟢 ${esc(currentPage)}`:'🟢 オンライン')
     :`最終: ${formatLastOnline(selectedUser.last_online||selectedUser.created_at)}`;
 
   return`
@@ -264,12 +232,12 @@ export function createChatHTML(selectedUser){
       <button class="back-btn" id="back-to-list">
         <span class="material-symbols-outlined">arrow_back</span>
       </button>
-      <div class="chat-header-user" style="cursor:pointer;" id="chat-header-user-btn" title="プロフィールを表示">
+      <div class="chat-header-user" style="cursor:pointer;" id="chat-header-user-area" title="プロフィールを表示">
         <div class="chat-header-avatar">
-          ${iconHtml}
+          <img src="${esc(iconSrc)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
         </div>
         <div class="chat-header-info">
-          <div class="chat-header-name">${selectedUser.display_name}</div>
+          <div class="chat-header-name">${esc(selectedUser.display_name)}</div>
           <div class="chat-header-status">${statusText}</div>
         </div>
       </div>
@@ -317,11 +285,11 @@ export function createChannelChatHTML(channel){
       </button>
       <div class="chat-header-user">
         <div class="chat-header-avatar" style="background:var(--main-light);display:flex;align-items:center;justify-content:center;">
-          <span class="material-symbols-outlined" style="color:var(--main);font-size:20px;">${channel.icon}</span>
+          <span class="material-symbols-outlined" style="color:var(--main);font-size:20px;">${esc(channel.icon)}</span>
         </div>
         <div class="chat-header-info">
-          <div class="chat-header-name">${channel.name}</div>
-          <div class="chat-header-status">${channel.desc}</div>
+          <div class="chat-header-name">${esc(channel.name)}</div>
+          <div class="chat-header-status">${esc(channel.desc)}</div>
         </div>
       </div>
     </div>
@@ -349,7 +317,7 @@ export function createChannelChatHTML(channel){
           <span class="material-symbols-outlined">image</span>
         </button>
         <input type="file" id="image-file-input" accept="image/*" hidden>
-        <textarea class="chat-input" id="chat-input" placeholder="${channel.name}にメッセージを送る..." rows="1"></textarea>
+        <textarea class="chat-input" id="chat-input" placeholder="${esc(channel.name)}にメッセージを送る..." rows="1"></textarea>
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
         </button>

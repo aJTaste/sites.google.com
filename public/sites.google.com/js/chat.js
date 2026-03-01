@@ -3,7 +3,7 @@
 import{initPage,supabase}from'../common/core.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
 import{displayUsers}from'./chat-ui.js';
-import{requestNotificationPermission,showNotification,playCallSound,playNotificationSound}from'./chat-utils.js';
+import{requestNotificationPermission,showNotification}from'./chat-utils.js';
 import'./chat-handlers.js';
 import'./chat-modals.js';
 
@@ -17,17 +17,20 @@ function isStealthModeActive(){
 await initPage('chat','ChatHub',{
   onUserLoaded:async(profile)=>{
     updateState('currentProfile',profile);
-    await updateOnlineStatus(true);
-    await requestNotificationPermission();
-    await loadUsers();
-    autoRestoreLastChat();
-    subscribeToProfiles();
-    subscribeToGlobalDmNotifications();
-    subscribeToCallChannel();
-    startLastOnlineUpdateTimer();
-    startOnlineHeartbeat();
-    setupVisibilityHandlers();
-    setupMobileTouchActions();
+
+    // ★ 各初期化を個別try-catchで包む
+    // → 一つの失敗がinitPage全体のcatchに伝播してlogin.htmlへリダイレクトするのを防ぐ
+    try{await updateOnlineStatus(true);}catch(e){console.error('online:',e);}
+    try{await requestNotificationPermission();}catch(e){}
+    try{await loadUsers();}catch(e){console.error('loadUsers:',e);}
+    try{autoRestoreLastChat();}catch(e){}
+    try{subscribeToProfiles();}catch(e){}
+    try{subscribeToGlobalDmNotifications();}catch(e){console.error('globalDm:',e);}
+    try{subscribeToCallChannel();}catch(e){console.error('callCh:',e);}
+    try{startLastOnlineUpdateTimer();}catch(e){}
+    try{startOnlineHeartbeat();}catch(e){}
+    try{setupVisibilityHandlers();}catch(e){}
+    try{setupMobileTouchActions();}catch(e){}
 
     if(isMobile()){
       setTimeout(()=>{
@@ -44,32 +47,33 @@ function isMobile(){
 }
 
 // ========================================
-// オンライン状態・現在ページを更新
+// オンライン状態を更新
 // ========================================
 
-async function updateOnlineStatus(isOnline,currentPage=''){
-  try{
-    await supabase
-      .from('profiles')
-      .update({
-        is_online:isOnline,
-        last_online:new Date().toISOString(),
-        current_page:isOnline?currentPage:''
-      })
-      .eq('id',state.currentProfile.id);
-  }catch(error){
-    console.error('オンライン状態更新エラー:',error);
+async function updateOnlineStatus(isOnline){
+  if(!state.currentProfile?.id)return;
+  const updates={
+    is_online:isOnline,
+    last_online:new Date().toISOString()
+  };
+  // current_page カラムも更新（列がない場合はSupabaseがエラーを返すだけで例外は出ない）
+  const{error}=await supabase
+    .from('profiles')
+    .update({...updates,current_page:isOnline?'ChatHub':''})
+    .eq('id',state.currentProfile.id);
+
+  // current_page が存在しない場合はフォールバック
+  if(error&&error.message?.includes('current_page')){
+    await supabase.from('profiles').update(updates).eq('id',state.currentProfile.id);
   }
 }
 
 // ハートビート（30秒ごと）
 function startOnlineHeartbeat(){
-  if(state.onlineHeartbeatInterval){
-    clearInterval(state.onlineHeartbeatInterval);
-  }
+  if(state.onlineHeartbeatInterval)clearInterval(state.onlineHeartbeatInterval);
   const interval=setInterval(async()=>{
     if(!document.hidden){
-      await updateOnlineStatus(true,'ChatHub');
+      try{await updateOnlineStatus(true);}catch(e){}
     }
   },30000);
   updateState('onlineHeartbeatInterval',interval);
@@ -78,60 +82,62 @@ function startOnlineHeartbeat(){
 // ページ可視性・クローズ時の処理
 function setupVisibilityHandlers(){
   document.addEventListener('visibilitychange',async()=>{
-    if(document.hidden){
-      await updateOnlineStatus(false,'');
-    }else{
-      await updateOnlineStatus(true,'ChatHub');
-    }
+    try{
+      if(document.hidden)await updateOnlineStatus(false);
+      else await updateOnlineStatus(true);
+    }catch(e){}
   });
 
   window.addEventListener('beforeunload',()=>{
-    // sendBeaconでオフライン設定
-    const headers={'Content-Type':'application/json','apikey':supabase.supabaseKey,'Authorization':'Bearer '+supabase.supabaseKey};
-    const data=JSON.stringify({is_online:false,last_online:new Date().toISOString(),current_page:''});
-    navigator.sendBeacon(
-      `${supabase.supabaseUrl}/rest/v1/profiles?id=eq.${state.currentProfile.id}`,
-      new Blob([data],{type:'application/json'})
-    );
+    if(!state.currentProfile?.id)return;
+    try{
+      const data=JSON.stringify({
+        is_online:false,
+        last_online:new Date().toISOString(),
+        current_page:''
+      });
+      navigator.sendBeacon(
+        `${supabase.supabaseUrl}/rest/v1/profiles?id=eq.${state.currentProfile.id}`,
+        new Blob([data],{type:'application/json'})
+      );
+    }catch(e){}
   });
 }
 
 // ========================================
-// グローバルDM通知購読（全DMを監視）
+// グローバルDM通知購読
 // ========================================
 
 function subscribeToGlobalDmNotifications(){
-  // RLSにより自分が参加するDMのみ受信される
-  const ch=supabase
-    .channel('global-dm-notifications')
+  supabase
+    .channel('global-dm-notif-'+state.currentProfile.id)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'dm_messages'},
-      async(payload)=>{
-        const msg=payload.new;
-        if(!msg||msg.sender_id===state.currentProfile.id)return;
-        if(isStealthModeActive())return;
+      (payload)=>{
+        try{
+          const msg=payload.new;
+          if(!msg||msg.sender_id===state.currentProfile.id)return;
+          if(isStealthModeActive())return;
 
-        // 現在開いているDMは除外（chat-messages.jsで処理済み）
-        const currentDmId=getCurrentOpenDmId();
-        if(msg.dm_id===currentDmId)return;
+          // 現在開いているDMは通知しない（chat-messages.jsで既に処理）
+          const currentDmId=getCurrentOpenDmId();
+          if(currentDmId&&msg.dm_id===currentDmId)return;
 
-        const sender=state.allUsers.find(u=>u.id===msg.sender_id);
-        const name=sender?.display_name||'不明';
-        const icon=sender?.avatar_url||null;
-        showNotification(name,msg.text||'画像を送信しました',icon);
+          const sender=state.allUsers.find(u=>u.id===msg.sender_id);
+          if(!sender)return;
 
-        // 未読カウント更新
-        const senderId=sender?.user_id||msg.sender_id;
-        state.unreadCounts[senderId]=(state.unreadCounts[senderId]||0)+1;
-        displayUsers();
+          showNotification(sender.display_name,msg.text||'画像を送信しました',sender.avatar_url||null);
+
+          // 未読カウント更新
+          state.unreadCounts[sender.user_id]=(state.unreadCounts[sender.user_id]||0)+1;
+          displayUsers();
+        }catch(e){console.error('dm通知エラー:',e);}
       })
     .subscribe((status)=>{
       if(status==='CHANNEL_ERROR'){
-        console.warn('グローバルDM購読エラー。再接続します...');
-        setTimeout(subscribeToGlobalDmNotifications,3000);
+        console.warn('グローバルDM購読エラー。3秒後に再接続...');
+        setTimeout(()=>{try{subscribeToGlobalDmNotifications();}catch(e){}},3000);
       }
     });
-
-  updateState('globalDmSubscription',ch);
 }
 
 function getCurrentOpenDmId(){
@@ -142,46 +148,50 @@ function getCurrentOpenDmId(){
 }
 
 // ========================================
-// 呼び出し機能（Broadcastチャンネル）
+// 呼び出し機能（Supabase Broadcast）
 // ========================================
 
-let callChannel=null;
+let _callChannel=null;
 
 function subscribeToCallChannel(){
-  callChannel=supabase
-    .channel('apphub-calls')
+  _callChannel=supabase
+    .channel('apphub-calls-v1')
     .on('broadcast',{event:'call'},(data)=>{
-      const payload=data.payload;
-      if(!payload||payload.target_id!==state.currentProfile.id)return;
-      if(isStealthModeActive())return;
-
-      // 呼び出し受信！
-      const callerName=payload.caller_name||'不明';
-      const callerIcon=payload.caller_icon||null;
-      showNotification(callerName,'あなたを呼び出しています！',callerIcon,true);
+      try{
+        const payload=data.payload;
+        if(!payload||payload.target_id!==state.currentProfile.id)return;
+        if(isStealthModeActive())return;
+        showNotification(
+          payload.caller_name||'不明',
+          'あなたを呼び出しています！📞',
+          payload.caller_icon||null,
+          true
+        );
+      }catch(e){console.error('call受信エラー:',e);}
     })
     .subscribe();
-
-  updateState('callChannel',callChannel);
 }
 
-// 呼び出しを送信（chat-ui.jsから呼ぶ）
-export async function sendCall(targetId,targetName){
-  if(!callChannel)return;
-  await callChannel.send({
-    type:'broadcast',
-    event:'call',
-    payload:{
-      caller_id:state.currentProfile.id,
-      caller_name:state.currentProfile.display_name,
-      caller_icon:state.currentProfile.avatar_url||null,
-      target_id:targetId
-    }
-  });
-  showNotification(`${targetName}を呼び出しました`,'','',false);
+// window経由で公開（chat-ui.jsから呼ぶ）
+async function sendCall(targetProfileId,targetName){
+  if(!_callChannel)return false;
+  try{
+    await _callChannel.send({
+      type:'broadcast',
+      event:'call',
+      payload:{
+        caller_id:state.currentProfile.id,
+        caller_name:state.currentProfile.display_name,
+        caller_icon:state.currentProfile.avatar_url||null,
+        target_id:targetProfileId
+      }
+    });
+    return true;
+  }catch(e){
+    console.error('呼び出し送信エラー:',e);
+    return false;
+  }
 }
-
-// window経由で公開
 window.sendCall=sendCall;
 
 // ========================================
@@ -189,24 +199,19 @@ window.sendCall=sendCall;
 // ========================================
 
 async function loadUsers(){
-  try{
-    const{data:profiles,error}=await supabase
-      .from('profiles')
-      .select('*')
-      .neq('id',state.currentProfile.id)
-      .order('last_online',{ascending:false,nullsFirst:false});
+  const{data:profiles,error}=await supabase
+    .from('profiles')
+    .select('*')
+    .neq('id',state.currentProfile.id)
+    .order('last_online',{ascending:false,nullsFirst:false});
 
-    if(error)throw error;
+  if(error)throw error;
 
-    updateState('allUsers',profiles||[]);
-    await loadUnreadCounts();
-    displayUsers();
-  }catch(error){
-    console.error('ユーザー一覧読み込みエラー:',error);
-  }
+  updateState('allUsers',profiles||[]);
+  await loadUnreadCounts();
+  displayUsers();
 }
 
-// 未読数を取得
 async function loadUnreadCounts(){
   try{
     const{data:readStatuses}=await supabase
@@ -219,48 +224,46 @@ async function loadUnreadCounts(){
 
     for(const user of state.allUsers){
       const dmId=[state.currentProfile.user_id,user.user_id].sort().join('_');
-      const lastRead=readMap[user.user_id]||readMap[dmId];
-      let query=supabase
+      const lastRead=readMap[user.user_id];
+      let q=supabase
         .from('dm_messages')
         .select('id',{count:'exact',head:true})
         .eq('dm_id',dmId)
         .neq('sender_id',state.currentProfile.id);
-      if(lastRead)query=query.gt('created_at',lastRead);
-      const{count}=await query;
+      if(lastRead)q=q.gt('created_at',lastRead);
+      const{count}=await q;
       state.unreadCounts[user.user_id]=count||0;
     }
 
     for(const channel of CHANNELS){
       const lastRead=readMap[channel.id];
-      let query=supabase
+      let q=supabase
         .from('channel_messages')
         .select('id',{count:'exact',head:true})
         .eq('channel_id',channel.id)
         .neq('sender_id',state.currentProfile.id);
-      if(lastRead)query=query.gt('created_at',lastRead);
-      const{count}=await query;
+      if(lastRead)q=q.gt('created_at',lastRead);
+      const{count}=await q;
       state.unreadCounts[channel.id]=count||0;
     }
-  }catch(error){
-    console.error('未読数取得エラー:',error);
+  }catch(e){
+    console.error('未読数取得エラー:',e);
   }
 }
 
-// 最後のチャットを自動復元
 function autoRestoreLastChat(){
   try{
     const last=localStorage.getItem('chathub_last');
     if(!last)return;
     const{type,id}=JSON.parse(last);
-    if(type==='user'&&id){window.selectUser?.(id);}
-    else if(type==='channel'&&id){window.selectChannel?.(id);}
+    if(type==='user'&&id)window.selectUser?.(id);
+    else if(type==='channel'&&id)window.selectChannel?.(id);
   }catch(e){}
 }
 
-// プロフィール変更のリアルタイム購読
 function subscribeToProfiles(){
   supabase
-    .channel('profiles-changes')
+    .channel('profiles-chat-changes')
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},
       (payload)=>{
         const updated=payload.new;
@@ -273,14 +276,9 @@ function subscribeToProfiles(){
     .subscribe();
 }
 
-// last_onlineを定期更新（表示用）
 function startLastOnlineUpdateTimer(){
-  setInterval(()=>{displayUsers();},60000);
+  setInterval(()=>{try{displayUsers();}catch(e){}},60000);
 }
-
-// ========================================
-// モバイル：タッチ長押し
-// ========================================
 
 function setupMobileTouchActions(){
   if(!isMobile())return;
@@ -299,15 +297,8 @@ function setupMobileTouchActions(){
     },400);
   },{passive:true});
 
-  document.addEventListener('touchend',()=>{
-    clearTimeout(touchTimer);
-    touchTimer=null;
-  },{passive:true});
-
-  document.addEventListener('touchmove',()=>{
-    clearTimeout(touchTimer);
-    touchTimer=null;
-  },{passive:true});
+  document.addEventListener('touchend',()=>{clearTimeout(touchTimer);touchTimer=null;},{passive:true});
+  document.addEventListener('touchmove',()=>{clearTimeout(touchTimer);touchTimer=null;},{passive:true});
 
   document.addEventListener('touchstart',(e)=>{
     if(!e.target.closest('.message')&&!e.target.closest('.message-actions')){
