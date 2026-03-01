@@ -110,10 +110,27 @@
           }
         },true);
 
+        // iキーでErudaをトグル（ゲーム中でも有効）
+        let erudaVisible=false;
+        window.addEventListener("keydown",function(e){
+          if(e.key==="i"||e.key==="I"){
+            e.stopImmediatePropagation();
+            erudaVisible=!erudaVisible;
+            if(erudaVisible){
+              eruda.show();
+              erudaActive=true;
+            }else{
+              eruda.hide();
+              erudaActive=false;
+            }
+          }
+        },true);
+
         // キーボードイベントをキャプチャフェーズで横取り
         ["keydown","keyup","keypress"].forEach(function(type){
           window.addEventListener(type,function(e){
-            if(!erudaActive)return;
+            // iキー自体はトグル処理に任せる
+            if(!erudaActive||e.key==="i"||e.key==="I")return;
             // ゲームのリスナーに届く前に止める
             e.stopImmediatePropagation();
           },true);
