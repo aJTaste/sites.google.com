@@ -26,17 +26,38 @@
     });
   }
 
-  function hideEntryBtn(){
-    const s=document.createElement('style');
-    s.textContent='#eruda .eruda-entry-btn{display:none!important;}';
-    document.head.appendChild(s);
+  // MutationObserverでErudaのエントリーボタンが生成されたら即非表示
+  function watchAndHideEntryBtn(){
+    const style=document.createElement('style');
+    style.textContent='#eruda .eruda-entry-btn{display:none!important;}';
+    document.head.appendChild(style);
+
+    const observer=new MutationObserver(function(){
+      const btn=document.querySelector('#eruda .eruda-entry-btn');
+      if(btn){
+        btn.style.setProperty('display','none','important');
+      }
+    });
+    observer.observe(document.body,{childList:true,subtree:true});
   }
 
   function initEruda(){
+    // 既にinitされている場合はスキップ
+    if(window.eruda&&eruda._isInit){
+      eruda.hide();
+      loadPlugins(plugins,0);
+      return;
+    }
     eruda.init();
-    hideEntryBtn();
     eruda.hide();
     loadPlugins(plugins,0);
+  }
+
+  // ページ読み込み時にエントリーボタン監視開始
+  if(document.body){
+    watchAndHideEntryBtn();
+  } else {
+    document.addEventListener('DOMContentLoaded',watchAndHideEntryBtn);
   }
 
   document.addEventListener('keydown',function(e){
@@ -44,12 +65,20 @@
     if(e.altKey&&(e.key==='i'||e.key==='I'||e.key==='\u3044')){
       e.preventDefault();
       if(!loaded){
-        loadScript('https://cdn.jsdelivr.net/npm/eruda',function(){
+        // 既にwindow.erudaが存在する場合（proxy.htmlのインラインloadなど）
+        if(window.eruda){
           loaded=true;
           initEruda();
           eruda.show();
           visible=true;
-        });
+        } else {
+          loadScript('https://cdn.jsdelivr.net/npm/eruda',function(){
+            loaded=true;
+            initEruda();
+            eruda.show();
+            visible=true;
+          });
+        }
       } else {
         if(visible){
           eruda.hide();
