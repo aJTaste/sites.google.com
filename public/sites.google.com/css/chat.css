@@ -1,68 +1,114 @@
-/* chat.html 固有のスタイル */
+/* ========================================
+   ChatHub — Refined Warm UI v2.0
+   ======================================== */
+
+/* ========================================
+   チャットコンテナ
+   ======================================== */
 
 .chat-container{
   flex:1;
   display:flex;
   overflow:hidden;
   position:relative;
+  background:var(--bg-secondary);
 }
 
+/* ========================================
+   DM サイドバー
+   ======================================== */
+
 .dm-sidebar{
-  width:280px;
+  width:290px;
   background:var(--bg-primary);
-  border-right:1px solid var(--border);
+  border-right:1px solid var(--border-light);
   display:flex;
   flex-direction:column;
   flex-shrink:0;
+  box-shadow:2px 0 12px rgba(0,0,0,0.04);
 }
 
 .dm-header{
-  padding:16px;
-  border-bottom:1px solid var(--border);
+  padding:20px 16px 14px;
+  border-bottom:1px solid var(--border-light);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
 }
 
 .dm-header h2{
-  font-size:14px;
-  font-weight:600;
-  color:var(--text-secondary);
+  font-size:11px;
+  font-weight:700;
+  color:var(--text-tertiary);
   text-transform:uppercase;
-  letter-spacing:0.5px;
+  letter-spacing:0.8px;
 }
 
 .dm-list{
   flex:1;
   overflow-y:auto;
-  padding:8px;
+  padding:6px 8px;
+  scroll-behavior:smooth;
 }
+
+.dm-list::-webkit-scrollbar{
+  width:4px;
+}
+
+.dm-list::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.dm-list::-webkit-scrollbar-thumb{
+  background:var(--border);
+  border-radius:4px;
+}
+
+/* ========================================
+   DM アイテム
+   ======================================== */
 
 .dm-item{
   display:flex;
   align-items:center;
-  gap:12px;
-  padding:8px 12px;
+  gap:10px;
+  padding:9px 10px;
   margin-bottom:2px;
-  border-radius:6px;
+  border-radius:10px;
   cursor:pointer;
-  transition:background-color 0.15s;
+  transition:background-color 0.15s,transform 0.12s;
   position:relative;
 }
 
 .dm-item:hover{
   background:var(--bg-secondary);
+  transform:translateX(2px);
 }
 
 .dm-item.active{
-  background:var(--main-light);
+  background:linear-gradient(135deg,var(--main-light),rgba(255,107,53,0.06));
+  border-left:3px solid var(--main);
+  padding-left:7px;
+}
+
+.dm-item.active .dm-item-name{
+  color:var(--main);
 }
 
 .dm-item-avatar{
-  width:36px;
-  height:36px;
+  width:40px;
+  height:40px;
   border-radius:50%;
   overflow:hidden;
   flex-shrink:0;
   background:var(--bg-secondary);
   position:relative;
+  transition:transform 0.2s;
+}
+
+.dm-item:hover .dm-item-avatar{
+  transform:scale(1.05);
 }
 
 .dm-item-avatar img{
@@ -73,13 +119,17 @@
 
 .online-indicator{
   position:absolute;
-  bottom:0;
-  right:0;
-  width:12px;
-  height:12px;
+  bottom:1px;
+  right:1px;
+  width:11px;
+  height:11px;
   background:#2da44e;
-  border:2px solid var(--bg-primary);
+  border:2.5px solid var(--bg-primary);
   border-radius:50%;
+}
+
+.dm-item.active .online-indicator{
+  border-color:var(--main-light);
 }
 
 .dm-item-info{
@@ -97,21 +147,28 @@
   display:flex;
   align-items:center;
   gap:6px;
+  transition:color 0.15s;
 }
 
 .unread-badge{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  min-width:20px;
-  height:20px;
-  padding:0 6px;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
   background:var(--main);
   color:#ffffff;
-  font-size:11px;
+  font-size:10px;
   font-weight:700;
-  border-radius:10px;
+  border-radius:9px;
   flex-shrink:0;
+  animation:badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes badgePop{
+  from{transform:scale(0);}
+  to{transform:scale(1);}
 }
 
 .dm-item-status{
@@ -120,551 +177,55 @@
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+  margin-top:1px;
 }
 
-.chat-main{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  background:var(--bg-secondary);
-  overflow:hidden;
-}
-
-.chat-empty{
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  color:var(--text-tertiary);
-}
-
-.chat-empty .material-symbols-outlined{
-  font-size:64px;
-  margin-bottom:16px;
-  opacity:0.3;
-}
-
-.chat-empty p{
-  font-size:16px;
-}
-
-.loading{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:32px;
-  color:var(--text-tertiary);
-}
-
-.loading-spinner{
-  width:40px;
-  height:40px;
-  border:3px solid var(--border);
-  border-top-color:var(--main);
-  border-radius:50%;
-  animation:spin 0.8s linear infinite;
-}
-
-@keyframes spin{
-  to{transform:rotate(360deg);}
-}
-
-.loading-text{
-  font-size:14px;
-  margin-top:12px;
-}
-
-.chat-header{
-  height:64px;
-  background:var(--bg-primary);
-  border-bottom:1px solid var(--border);
-  display:flex;
-  align-items:center;
-  padding:0 24px;
-  flex-shrink:0;
-}
-
-.chat-header-user{
-  display:flex;
-  align-items:center;
-  gap:12px;
-}
-
-.chat-header-avatar{
-  width:36px;
-  height:36px;
-  border-radius:50%;
-  overflow:hidden;
-  background:var(--bg-secondary);
-}
-
-.chat-header-avatar img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-.chat-header-info{
-  display:flex;
-  flex-direction:column;
-}
-
-.chat-header-name{
-  font-size:16px;
-  font-weight:600;
-  color:var(--text-primary);
-}
-
-.chat-header-status{
-  font-size:12px;
-  color:var(--text-secondary);
-}
-
-.chat-messages{
-  flex:1;
-  overflow-y:auto;
-  padding:16px 24px;
-  display:flex;
-  flex-direction:column;
-  gap:12px;
-}
-
-.message{
-  display:flex;
-  gap:12px;
-  padding:8px 12px;
-  border-radius:8px;
-  transition:background-color 0.15s;
-  position:relative;
-}
-
-.message:hover{
-  background:var(--bg-primary);
-}
-
-.message:hover .message-actions{
-  display:flex;
-}
-
-.message-actions{
-  display:none;
-  position:absolute;
-  top:4px;
-  right:8px;
-  gap:4px;
-  background:var(--bg-primary);
-  border:1px solid var(--border);
-  border-radius:6px;
-  padding:4px;
-  box-shadow:0 2px 8px rgba(0,0,0,0.1);
-}
-
-.message-action-btn{
-  width:28px;
-  height:28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:transparent;
-  border:none;
-  border-radius:4px;
-  color:var(--text-secondary);
-  cursor:pointer;
-  transition:all 0.15s;
-}
-
-.message-action-btn:hover{
-  background:var(--bg-secondary);
-  color:var(--main);
-}
-
-.message-action-btn .material-symbols-outlined{
-  font-size:16px;
-}
-
-.message-action-btn.delete:hover{
-  color:#cf222e;
-}
-
-.message-avatar{
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  overflow:hidden;
-  background:var(--bg-primary);
-  flex-shrink:0;
-}
-
-.message-avatar img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
-
-.message-content{
-  flex:1;
-  min-width:0;
-}
-
-.message-header{
-  display:flex;
-  align-items:baseline;
-  gap:8px;
-  margin-bottom:4px;
-  flex-wrap:wrap;
-}
-
-.message-author{
-  font-size:14px;
-  font-weight:600;
-  color:var(--text-primary);
-}
-
-.message-time{
-  font-size:12px;
-  color:var(--text-tertiary);
-}
-
-.message-read{
-  font-size:11px;
-  color:#2da44e;
-  margin-left:8px;
-}
-
-.message-text{
-  font-size:14px;
-  color:var(--text-primary);
-  line-height:1.5;
-  word-wrap:break-word;
-}
-
-.message-text a{
-  color:var(--main);
-  text-decoration:underline;
-}
-
-.message-text a:hover{
-  color:var(--main-hover);
-}
-
-.message-reply{
-  font-size:12px;
-  color:var(--text-secondary);
-  padding:4px 8px;
-  background:var(--bg-secondary);
-  border-left:3px solid var(--main);
-  border-radius:4px;
-  margin-bottom:4px;
-}
-
-.message-edited{
-  font-size:11px;
-  color:var(--text-tertiary);
-  margin-top:4px;
-}
-
-.message-image{
-  max-width:400px;
-  max-height:300px;
-  border-radius:8px;
-  margin-top:8px;
-  cursor:pointer;
-  transition:transform 0.15s;
-}
-
-.message-image:hover{
-  transform:scale(1.02);
-}
-
-.image-modal{
-  display:none;
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.9);
-  z-index:2000;
-  align-items:center;
-  justify-content:center;
-}
-
-.image-modal.show{
-  display:flex;
-}
-
-.image-modal img{
-  max-width:90%;
-  max-height:90%;
-  object-fit:contain;
-}
-
-.image-modal-close{
-  position:absolute;
-  top:20px;
-  right:20px;
-  width:40px;
-  height:40px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(255,255,255,0.1);
-  border:none;
-  border-radius:50%;
-  color:#ffffff;
-  cursor:pointer;
-  transition:background 0.15s;
-}
-
-.image-modal-close:hover{
-  background:rgba(255,255,255,0.2);
-}
-
-.image-modal-close .material-symbols-outlined{
-  font-size:24px;
-}
-
-.image-preview-container{
-  display:none;
-  padding:12px;
-  background:var(--bg-secondary);
-  border-radius:6px;
-  margin-bottom:8px;
-  position:relative;
-}
-
-.image-preview-container.show{
-  display:block;
-}
-
-.image-preview{
-  max-width:200px;
-  max-height:200px;
-  border-radius:6px;
-}
-
-.image-preview-close{
-  position:absolute;
-  top:8px;
-  right:8px;
-  width:24px;
-  height:24px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,0.5);
-  border:none;
-  border-radius:50%;
-  color:#ffffff;
-  cursor:pointer;
-}
-
-.image-preview-close .material-symbols-outlined{
-  font-size:16px;
-}
-
-.reply-preview{
-  display:none;
-  padding:8px 12px;
-  background:var(--bg-secondary);
-  border-left:3px solid var(--main);
-  border-radius:4px;
-  margin-bottom:8px;
-  position:relative;
-}
-
-.reply-preview.show{
-  display:block;
-}
-
-.reply-preview-header{
-  font-size:12px;
-  color:var(--text-secondary);
-  margin-bottom:4px;
-}
-
-.reply-preview-text{
-  font-size:13px;
-  color:var(--text-primary);
-}
-
-.reply-preview-close{
-  position:absolute;
-  top:8px;
-  right:8px;
-  width:20px;
-  height:20px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:transparent;
-  border:none;
-  color:var(--text-tertiary);
-  cursor:pointer;
-  border-radius:4px;
-}
-
-.reply-preview-close:hover{
-  background:var(--bg-primary);
-  color:var(--text-primary);
-}
-
-.reply-preview-close .material-symbols-outlined{
-  font-size:14px;
-}
-
-.modal{
-  display:none;
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.5);
-  z-index:2000;
-  align-items:center;
-  justify-content:center;
-}
-
-.modal.show{
-  display:flex;
-}
-
-.modal-content{
-  width:90%;
-  max-width:500px;
-  background:var(--bg-primary);
-  border-radius:8px;
-  overflow:hidden;
-}
-
-.modal-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:16px 20px;
-  border-bottom:1px solid var(--border);
-}
-
-.modal-header h3{
-  font-size:16px;
-  font-weight:600;
-  color:var(--text-primary);
-}
-
-.modal-close{
-  width:32px;
-  height:32px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:transparent;
-  border:none;
-  border-radius:6px;
-  color:var(--text-secondary);
-  cursor:pointer;
-  transition:background-color 0.15s;
-}
-
-.modal-close:hover{
-  background:var(--bg-secondary);
-}
-
-.modal-body{
-  padding:20px;
-}
-
-.modal-body textarea{
-  width:100%;
-  min-height:100px;
-  padding:12px;
-  font-size:14px;
-  border:1px solid var(--border);
-  border-radius:6px;
-  background:var(--bg-primary);
-  color:var(--text-primary);
-  resize:vertical;
-  font-family:inherit;
-}
-
-.modal-body textarea:focus{
-  outline:none;
-  border-color:var(--main);
-  box-shadow:0 0 0 3px var(--main-light);
-}
-
-.modal-footer{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:12px;
-  padding:16px 20px;
-  border-top:1px solid var(--border);
-}
-
-/* 削除モーダルの警告スタイル */
-#delete-modal .modal-header{
-  background:#fff4f4;
-  border-bottom-color:#ffdddd;
-}
-
-#delete-modal .modal-header h3{
-  color:#cf222e;
-}
-
-#delete-modal .modal-body{
-  background:#fff8f8;
-}
-
-#delete-modal .modal-body p{
-  color:#cf222e;
-  font-weight:500;
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-
-#delete-modal .modal-body p::before{
-  content:'⚠️';
-  font-size:20px;
-}
-
+/* チャンネルアイテム */
 .channel-item{
   display:flex;
   align-items:center;
-  gap:12px;
-  padding:8px 12px;
+  gap:10px;
+  padding:9px 10px;
   margin-bottom:2px;
-  border-radius:6px;
+  border-radius:10px;
   cursor:pointer;
-  transition:background-color 0.15s;
-  position:relative;
+  transition:background-color 0.15s,transform 0.12s;
 }
 
 .channel-item:hover{
   background:var(--bg-secondary);
+  transform:translateX(2px);
 }
 
 .channel-item.active{
-  background:var(--main-light);
+  background:linear-gradient(135deg,var(--main-light),rgba(255,107,53,0.06));
+  border-left:3px solid var(--main);
+  padding-left:7px;
 }
 
 .channel-icon{
   width:36px;
   height:36px;
-  border-radius:50%;
+  border-radius:8px;
   background:var(--bg-secondary);
   display:flex;
   align-items:center;
   justify-content:center;
   flex-shrink:0;
+  transition:background-color 0.15s;
+}
+
+.channel-item.active .channel-icon{
+  background:rgba(255,107,53,0.12);
 }
 
 .channel-icon .material-symbols-outlined{
-  font-size:20px;
+  font-size:18px;
   color:var(--text-secondary);
+}
+
+.channel-item.active .channel-icon .material-symbols-outlined{
+  color:var(--main);
 }
 
 .channel-info{
@@ -684,347 +245,980 @@
   gap:6px;
 }
 
+.channel-item.active .channel-name{
+  color:var(--main);
+}
+
 .channel-desc{
   font-size:12px;
   color:var(--text-tertiary);
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+  margin-top:1px;
 }
 
-.chat-input-container{
-  padding:16px 24px;
+/* ========================================
+   チャットメイン
+   ======================================== */
+
+.chat-main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  background:var(--bg-secondary);
+  overflow:hidden;
+  position:relative;
+}
+
+#chat-main{
+  position:relative;
+}
+
+/* ========================================
+   空の状態
+   ======================================== */
+
+.chat-empty{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  color:var(--text-tertiary);
+  gap:12px;
+  padding:32px;
+}
+
+.chat-empty .material-symbols-outlined{
+  font-size:72px;
+  opacity:0.15;
+  animation:floatIcon 3s ease-in-out infinite;
+}
+
+@keyframes floatIcon{
+  0%,100%{transform:translateY(0);}
+  50%{transform:translateY(-8px);}
+}
+
+.chat-empty p{
+  font-size:15px;
+  opacity:0.6;
+}
+
+/* ========================================
+   ローディング
+   ======================================== */
+
+.loading{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:40px;
+  color:var(--text-tertiary);
+  gap:12px;
+}
+
+.loading-spinner{
+  width:36px;
+  height:36px;
+  border:3px solid var(--border-light);
+  border-top-color:var(--main);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg);}
+}
+
+.loading-text{
+  font-size:13px;
+  color:var(--text-tertiary);
+}
+
+/* ========================================
+   チャットヘッダー
+   ======================================== */
+
+.chat-header{
+  height:60px;
+  background:rgba(255,255,255,0.88);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border-light);
+  display:flex;
+  align-items:center;
+  padding:0 20px;
+  flex-shrink:0;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:10;
+}
+
+[data-theme="dark"] .chat-header{
+  background:rgba(28,28,30,0.88);
+}
+
+.chat-header-user{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex:1;
+}
+
+.chat-header-avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  overflow:hidden;
+  background:var(--bg-secondary);
+  flex-shrink:0;
+  box-shadow:0 0 0 2px var(--border-light);
+}
+
+.chat-header-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.chat-header-info{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+}
+
+.chat-header-name{
+  font-size:15px;
+  font-weight:700;
+  color:var(--text-primary);
+  line-height:1.2;
+}
+
+.chat-header-status{
+  font-size:12px;
+  color:var(--text-tertiary);
+  line-height:1.2;
+}
+
+/* ========================================
+   メッセージエリア
+   ======================================== */
+
+.chat-messages{
+  flex:1;
+  overflow-y:auto;
+  padding:20px 20px 8px;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  scroll-behavior:smooth;
+}
+
+.chat-messages::-webkit-scrollbar{
+  width:4px;
+}
+
+.chat-messages::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.chat-messages::-webkit-scrollbar-thumb{
+  background:var(--border);
+  border-radius:4px;
+}
+
+/* ========================================
+   メッセージ
+   ======================================== */
+
+.message{
+  display:flex;
+  gap:10px;
+  padding:6px 10px;
+  border-radius:12px;
+  transition:background-color 0.15s;
+  position:relative;
+  animation:msgSlideIn 0.2s ease;
+}
+
+@keyframes msgSlideIn{
+  from{opacity:0;transform:translateY(6px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.message:hover{
+  background:rgba(0,0,0,0.025);
+}
+
+[data-theme="dark"] .message:hover{
+  background:rgba(255,255,255,0.04);
+}
+
+.message:hover .message-actions{
+  display:flex;
+}
+
+/* ========================================
+   メッセージアクション
+   ======================================== */
+
+.message-actions{
+  display:none;
+  position:absolute;
+  top:-8px;
+  right:10px;
+  gap:2px;
   background:var(--bg-primary);
-  border-top:1px solid var(--border);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:4px 6px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.12);
+  z-index:5;
+}
+
+.message-action-btn{
+  width:28px;
+  height:28px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  border:none;
+  border-radius:50%;
+  color:var(--text-secondary);
+  cursor:pointer;
+  transition:all 0.15s;
+}
+
+.message-action-btn:hover{
+  background:var(--bg-secondary);
+  color:var(--main);
+  transform:scale(1.1);
+}
+
+.message-action-btn .material-symbols-outlined{
+  font-size:15px;
+}
+
+.message-action-btn.delete:hover{
+  color:#cf222e;
+  background:rgba(207,34,46,0.08);
+}
+
+/* ========================================
+   メッセージ内アバター
+   ======================================== */
+
+.message-avatar{
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  overflow:hidden;
+  background:var(--bg-primary);
+  flex-shrink:0;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
+  align-self:flex-end;
+  margin-bottom:2px;
+  transition:transform 0.2s;
+}
+
+.message:hover .message-avatar{
+  transform:scale(1.05);
+}
+
+.message-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+/* ========================================
+   メッセージコンテンツ
+   ======================================== */
+
+.message-content{
+  flex:1;
+  min-width:0;
+}
+
+.message-header{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  margin-bottom:4px;
+  flex-wrap:wrap;
+}
+
+.message-author{
+  font-size:13px;
+  font-weight:700;
+  color:var(--text-primary);
+}
+
+.message-time{
+  font-size:11px;
+  color:var(--text-tertiary);
+}
+
+/* 既読バッジ */
+.message-read{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:2px 7px;
+  background:rgba(45,164,78,0.1);
+  color:#2da44e;
+  font-size:10px;
+  font-weight:600;
+  border-radius:10px;
+  margin-left:6px;
+}
+
+/* 編集済みラベル */
+.edited-label{
+  font-size:10px;
+  color:var(--text-tertiary);
+  margin-left:4px;
+  font-style:italic;
+}
+
+.message-text{
+  font-size:14px;
+  color:var(--text-primary);
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  line-height:1.55;
+}
+
+.message-text a{
+  color:var(--main);
+  text-decoration:underline;
+  text-underline-offset:2px;
+  word-break:break-all;
+  transition:color 0.15s;
+}
+
+.message-text a:hover{
+  color:var(--main-hover);
+}
+
+/* ========================================
+   画像メッセージ
+   ======================================== */
+
+.message-image{
+  max-width:280px;
+  max-height:280px;
+  border-radius:12px;
+  border:1px solid var(--border-light);
+  cursor:pointer;
+  transition:transform 0.2s,box-shadow 0.2s,filter 0.15s;
+  display:block;
+  margin-top:6px;
+}
+
+.message-image:hover{
+  transform:scale(1.02);
+  box-shadow:0 8px 24px rgba(0,0,0,0.15);
+  filter:brightness(1.03);
+}
+
+/* ========================================
+   リプライ
+   ======================================== */
+
+.reply-container{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:6px 10px;
+  margin-bottom:6px;
+  background:var(--bg-secondary);
+  border-left:3px solid var(--main);
+  border-radius:0 8px 8px 0;
+}
+
+.reply-author{
+  font-size:12px;
+  font-weight:700;
+  color:var(--main);
+}
+
+.reply-preview-text{
+  font-size:12px;
+  color:var(--text-secondary);
+  max-height:40px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  line-clamp:2;
+}
+
+/* ========================================
+   日付セパレーター
+   ======================================== */
+
+.date-separator{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:12px 0;
+  user-select:none;
+}
+
+.date-separator::before,
+.date-separator::after{
+  content:'';
+  flex:1;
+  height:1px;
+  background:var(--border-light);
+}
+
+.date-separator span{
+  font-size:11px;
+  font-weight:700;
+  color:var(--text-tertiary);
+  white-space:nowrap;
+  padding:3px 12px;
+  background:var(--bg-secondary);
+  border:1px solid var(--border-light);
+  border-radius:20px;
+  letter-spacing:0.3px;
+}
+
+/* ========================================
+   入力コンテナ
+   ======================================== */
+
+.chat-input-container{
+  padding:12px 20px 16px;
+  background:var(--bg-secondary);
   flex-shrink:0;
 }
 
 .chat-input-actions{
   display:flex;
-  gap:8px;
+  gap:6px;
   margin-bottom:8px;
 }
 
 .action-btn{
-  width:32px;
-  height:32px;
+  width:30px;
+  height:30px;
   display:flex;
   align-items:center;
   justify-content:center;
   background:transparent;
   border:1px solid var(--border);
-  border-radius:6px;
+  border-radius:8px;
   color:var(--text-secondary);
   cursor:pointer;
   transition:all 0.15s;
 }
 
 .action-btn:hover{
-  background:var(--bg-secondary);
+  background:var(--bg-primary);
   border-color:var(--main);
   color:var(--main);
+  transform:translateY(-1px);
+  box-shadow:0 2px 8px rgba(255,107,53,0.15);
 }
 
 .action-btn .material-symbols-outlined{
-  font-size:18px;
+  font-size:16px;
 }
 
+/* メインの入力ラッパー */
 .chat-input-wrapper{
   display:flex;
   gap:8px;
   align-items:flex-end;
+  background:var(--bg-primary);
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  padding:6px 6px 6px 14px;
+  transition:all 0.2s;
+  box-shadow:0 1px 4px rgba(0,0,0,0.04);
+}
+
+.chat-input-wrapper:focus-within{
+  border-color:var(--main);
+  box-shadow:0 0 0 3px var(--main-light),0 2px 8px rgba(255,107,53,0.08);
+}
+
+/* 旧レイアウト互換 */
+.chat-input-row{
+  display:flex;
+  gap:8px;
+  align-items:flex-end;
+  background:var(--bg-primary);
+  border:1.5px solid var(--border);
+  border-radius:16px;
+  padding:6px 6px 6px 14px;
+  transition:all 0.2s;
+  box-shadow:0 1px 4px rgba(0,0,0,0.04);
+}
+
+.chat-input-row:focus-within{
+  border-color:var(--main);
+  box-shadow:0 0 0 3px var(--main-light);
 }
 
 .chat-input{
   flex:1;
-  min-height:40px;
+  min-height:36px;
   max-height:120px;
-  padding:10px 14px;
+  padding:6px 0;
   font-size:14px;
-  border:1px solid var(--border);
-  border-radius:6px;
-  background:var(--bg-secondary);
+  border:none;
+  background:transparent;
   color:var(--text-primary);
   resize:none;
   font-family:inherit;
   overflow-y:auto;
+  line-height:1.5;
+  outline:none;
+  box-shadow:none;
 }
 
 .chat-input:focus{
   outline:none;
-  border-color:var(--main);
-  box-shadow:0 0 0 3px var(--main-light);
+  border-color:transparent;
+  box-shadow:none;
 }
 
 .chat-input::placeholder{
   color:var(--text-tertiary);
 }
 
+/* 画像アップロードボタン */
+.image-upload-btn{
+  width:34px;
+  height:34px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  border:none;
+  border-radius:10px;
+  color:var(--text-tertiary);
+  cursor:pointer;
+  transition:all 0.15s;
+  flex-shrink:0;
+}
+
+.image-upload-btn:hover{
+  background:var(--bg-secondary);
+  color:var(--main);
+  transform:scale(1.1);
+}
+
+.image-upload-btn .material-symbols-outlined{
+  font-size:20px;
+}
+
+/* 送信ボタン */
 .send-btn{
-  width:40px;
-  height:40px;
+  width:36px;
+  height:36px;
   display:flex;
   align-items:center;
   justify-content:center;
   background:var(--main);
   border:none;
-  border-radius:6px;
+  border-radius:10px;
   color:#ffffff;
   cursor:pointer;
-  transition:all 0.15s;
+  transition:all 0.2s;
   flex-shrink:0;
   position:relative;
+  box-shadow:0 2px 8px rgba(255,107,53,0.3);
 }
 
 .send-btn:hover:not(:disabled){
   background:var(--main-hover);
+  transform:scale(1.08);
+  box-shadow:0 4px 12px rgba(255,107,53,0.4);
+}
+
+.send-btn:active:not(:disabled){
+  transform:scale(0.95);
 }
 
 .send-btn:disabled{
-  opacity:0.5;
+  opacity:0.4;
   cursor:not-allowed;
+  box-shadow:none;
 }
 
-/* 送信中のアニメーション */
 .send-btn.sending{
   pointer-events:none;
 }
 
 .send-btn.sending .material-symbols-outlined{
-  animation:sendPulse 0.6s infinite;
+  animation:sendPulse 0.5s ease infinite;
 }
 
 @keyframes sendPulse{
-  0%,100%{transform:scale(1);}
-  50%{transform:scale(1.1);}
+  0%,100%{transform:scale(1) rotate(0deg);}
+  50%{transform:scale(1.15) rotate(-10deg);}
 }
 
 .send-btn .material-symbols-outlined{
+  font-size:18px;
+}
+
+/* ========================================
+   画像プレビュー
+   ======================================== */
+
+.image-preview-container{
+  display:none;
+  padding:12px;
+  background:var(--bg-primary);
+  border:1px solid var(--border-light);
+  border-radius:12px;
+  margin-bottom:10px;
+  position:relative;
+  animation:msgSlideIn 0.2s ease;
+}
+
+.image-preview-container.show{
+  display:block;
+}
+
+.image-preview{
+  max-width:240px;
+  max-height:240px;
+  border-radius:8px;
+  border:1px solid var(--border-light);
+}
+
+.image-preview-close{
+  position:absolute;
+  top:8px;
+  right:8px;
+  width:24px;
+  height:24px;
+  background:var(--text-secondary);
+  border:none;
+  border-radius:50%;
+  color:#fff;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0.8;
+  transition:opacity 0.15s,transform 0.15s;
+}
+
+.image-preview-close:hover{
+  opacity:1;
+  transform:scale(1.1);
+}
+
+.image-preview-close .material-symbols-outlined{
+  font-size:14px;
+}
+
+/* ========================================
+   タイピングインジケーター
+   ======================================== */
+
+.typing-indicator{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 12px;
+  margin:4px 0;
+  border-radius:20px;
+  font-size:12px;
+  color:var(--text-secondary);
+  animation:fadeIn 0.25s ease;
+  align-self:flex-start;
+  background:var(--bg-primary);
+  border:1px solid var(--border-light);
+  width:fit-content;
+  box-shadow:0 1px 4px rgba(0,0,0,0.04);
+}
+
+@keyframes fadeIn{
+  from{opacity:0;transform:translateY(4px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.typing-text{
+  font-weight:600;
+  font-size:12px;
+}
+
+.typing-dots{
+  display:inline-flex;
+  gap:3px;
+  align-items:center;
+}
+
+.typing-dots span{
+  width:4px;
+  height:4px;
+  background:var(--text-tertiary);
+  border-radius:50%;
+  animation:typingDot 1.4s ease infinite;
+  opacity:0;
+  display:inline-block;
+}
+
+.typing-dots span:nth-child(1){animation-delay:0s;}
+.typing-dots span:nth-child(2){animation-delay:0.18s;}
+.typing-dots span:nth-child(3){animation-delay:0.36s;}
+
+@keyframes typingDot{
+  0%,70%,100%{opacity:0;transform:scale(0.8);}
+  35%{opacity:1;transform:scale(1);}
+}
+
+/* ========================================
+   スクロールダウンボタン
+   ======================================== */
+
+.scroll-down-btn{
+  position:absolute;
+  bottom:90px;
+  right:20px;
+  width:38px;
+  height:38px;
+  border-radius:50%;
+  background:var(--main);
+  color:#fff;
+  border:none;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 4px 16px rgba(255,107,53,0.35);
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.2s,transform 0.2s,box-shadow 0.2s;
+  transform:translateY(10px);
+  z-index:100;
+}
+
+.scroll-down-btn.visible{
+  opacity:1;
+  pointer-events:all;
+  transform:translateY(0);
+}
+
+.scroll-down-btn:hover{
+  background:var(--main-hover);
+  box-shadow:0 6px 20px rgba(255,107,53,0.45);
+  transform:scale(1.08);
+}
+
+.scroll-down-btn .material-symbols-outlined{
   font-size:20px;
 }
 
 /* ========================================
-   モバイル対応（768px以下）
-   既存の @media(max-width:768px) ブロックをこれで完全差し替え
+   もっと読み込む
    ======================================== */
 
-@media(max-width:768px){
-  /* --- レイアウト --- */
-  .chat-container{
-    /* サイドバーが絶対配置になるため相対の親が必要 */
-    position:relative;
-    overflow:hidden;
-  }
+.load-more-indicator{
+  display:flex;
+  justify-content:center;
+  padding:16px;
+}
 
-  /* dm-sidebar: フルスクリーンオーバーレイ */
-  .dm-sidebar{
-    width:85%;
-    max-width:320px;
-    position:absolute;
-    top:0;
-    left:0;
-    height:100%;
-    z-index:100;
-    transform:translateX(-100%);
-    transition:transform 0.25s ease;
-    box-shadow:4px 0 16px rgba(0,0,0,0.15);
-  }
-
-  .dm-sidebar.show{
-    transform:translateX(0);
-  }
-
-  /* オーバーレイ背景 */
-  .dm-overlay{
-    display:none;
-    position:absolute;
-    top:0;
-    left:0;
-    width:100%;
-    height:100%;
-    background:rgba(0,0,0,0.45);
-    z-index:99;
-    -webkit-tap-highlight-color:transparent;
-  }
-
-  .dm-overlay.show{
-    display:block;
-  }
-
-  /* --- チャットヘッダー --- */
-  .chat-header{
-    height:52px;
-    padding:0 8px 0 4px;
-    gap:4px;
-  }
-
-  .chat-header-name{
-    font-size:15px;
-  }
-
-  .chat-header-status{
-    font-size:11px;
-  }
-
-  /* バックボタン表示 */
-  .back-btn{
-    display:flex;
-    width:40px;
-    height:40px;
-    flex-shrink:0;
-  }
-
-  /* --- メッセージエリア --- */
-  .chat-messages{
-    padding:8px 10px;
-    gap:8px;
-  }
-
-  .message{
-    padding:6px 8px;
-    /* タッチ時のデフォルトハイライト無効 */
-    -webkit-tap-highlight-color:transparent;
-  }
-
-  /* タッチしたメッセージのアクションボタンを表示 */
-  .message-actions{
-    display:none;
-  }
-
-  .message.touch-active .message-actions{
-    display:flex;
-  }
-
-  /* アクションボタンサイズ */
-  .message-action-btn{
-    width:34px;
-    height:34px;
-  }
-
-  /* 画像は幅いっぱい */
-  .message-image{
-    max-width:100%;
-    max-height:240px;
-  }
-
-  /* アバター縮小 */
-  .message-avatar{
-    width:34px;
-    height:34px;
-  }
-
-  /* --- 入力エリア --- */
-  .chat-input-container{
-    padding:8px 10px;
-    /* Safe Area（ノッチ・ホームバー）対応 */
-    padding-bottom:max(8px,env(safe-area-inset-bottom));
-  }
-
-  /* iOSの自動ズーム防止：font-sizeを16px以上に */
-  .chat-input{
-    font-size:16px;
-    min-height:38px;
-  }
-
-  /* 編集テキストエリアも同様 */
-  #edit-textarea{
-    font-size:16px;
-  }
-
-  /* 送信ボタン */
-  .send-btn{
-    width:38px;
-    height:38px;
-  }
-
-  /* --- スクロールダウンボタン --- */
-  /* キーボード出現時に上にずれないよう bottom を小さく */
-  .scroll-down-btn{
-    bottom:68px;
-    right:12px;
-    width:36px;
-    height:36px;
-  }
-
-  /* --- DM一覧アイテム --- */
-  .dm-item{
-    padding:10px 12px;
-    /* タッチしやすい最小高さ */
-    min-height:56px;
-  }
-
-  .dm-item-avatar{
-    width:40px;
-    height:40px;
-  }
-
-  /* --- チャンネルアイテム --- */
-  .channel-item{
-    min-height:52px;
-  }
-
-  /* --- モーダル --- */
-  .modal-content{
-    width:calc(100% - 32px);
-    max-width:400px;
-    margin:16px;
-  }
-
-  /* --- 画像プレビュー --- */
-  .image-preview{
-    max-width:160px;
-    max-height:160px;
-  }
-
-  /* --- タイピングインジケーター --- */
-  .typing-indicator{
-    font-size:12px;
-  }
-
-  /* --- 日付セパレーター --- */
-  .date-separator span{
-    font-size:11px;
-  }
+.load-more-spinner{
+  width:22px;
+  height:22px;
+  border:2px solid var(--border-light);
+  border-top-color:var(--main);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
 }
 
 /* ========================================
-   超小画面（360px以下）追加調整
+   モーダル
    ======================================== */
-@media(max-width:360px){
-  .dm-sidebar{
-    width:92%;
-  }
 
-  .chat-header-name{
-    font-size:14px;
-  }
-
-  .message-avatar{
-    width:30px;
-    height:30px;
-  }
-
-  .message-author{
-    font-size:13px;
-  }
-
-  .message-text{
-    font-size:13px;
-  }
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.45);
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.2s;
 }
 
-/* モデレーター専用チャンネルのスタイル */
+.modal.show{
+  opacity:1;
+  pointer-events:all;
+}
+
+.modal-content{
+  width:480px;
+  max-width:90vw;
+  background:var(--bg-primary);
+  border-radius:16px;
+  overflow:hidden;
+  border:1px solid var(--border-light);
+  box-shadow:0 24px 64px rgba(0,0,0,0.18);
+  transform:scale(0.95) translateY(8px);
+  transition:transform 0.2s;
+}
+
+.modal.show .modal-content{
+  transform:scale(1) translateY(0);
+}
+
+.modal-header{
+  padding:18px 20px;
+  border-bottom:1px solid var(--border-light);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+
+.modal-header h3{
+  font-size:16px;
+  font-weight:700;
+  color:var(--text-primary);
+}
+
+.modal-close{
+  width:32px;
+  height:32px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:transparent;
+  border:none;
+  border-radius:8px;
+  color:var(--text-tertiary);
+  cursor:pointer;
+  transition:all 0.15s;
+}
+
+.modal-close:hover{
+  background:var(--bg-secondary);
+  color:var(--text-primary);
+}
+
+.modal-close .material-symbols-outlined{
+  font-size:18px;
+}
+
+.modal-body{
+  padding:20px;
+}
+
+.modal-body textarea{
+  min-height:100px;
+  border-radius:10px;
+}
+
+.modal-footer{
+  padding:16px 20px;
+  border-top:1px solid var(--border-light);
+  display:flex;
+  gap:8px;
+  justify-content:flex-end;
+}
+
+/* ========================================
+   画像拡大モーダル
+   ======================================== */
+
+.image-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.88);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity 0.2s;
+}
+
+.image-modal.show{
+  opacity:1;
+  pointer-events:all;
+}
+
+.image-modal img{
+  max-width:90vw;
+  max-height:90vh;
+  object-fit:contain;
+  border-radius:8px;
+  box-shadow:0 16px 48px rgba(0,0,0,0.4);
+  transform:scale(0.96);
+  transition:transform 0.2s;
+}
+
+.image-modal.show img{
+  transform:scale(1);
+}
+
+.image-modal-close{
+  position:absolute;
+  top:20px;
+  right:20px;
+  width:40px;
+  height:40px;
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.2);
+  border-radius:50%;
+  color:#fff;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:all 0.15s;
+  backdrop-filter:blur(4px);
+}
+
+.image-modal-close:hover{
+  background:rgba(255,255,255,0.22);
+  transform:scale(1.1);
+}
+
+.image-modal-close .material-symbols-outlined{
+  font-size:20px;
+}
+
+/* ========================================
+   モデレーター専用チャンネル
+   ======================================== */
+
 .channel-item.moderator-only{
-  background:linear-gradient(135deg,rgba(124,58,237,0.05),rgba(139,92,246,0.05));
+  background:linear-gradient(135deg,rgba(124,58,237,0.05),rgba(139,92,246,0.04));
   border-left:3px solid #7c3aed;
+  padding-left:7px;
 }
 
 .channel-item.moderator-only:hover{
-  background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(139,92,246,0.1));
+  background:linear-gradient(135deg,rgba(124,58,237,0.1),rgba(139,92,246,0.08));
 }
 
 .channel-item.moderator-only.active{
-  background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(139,92,246,0.15));
+  background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(139,92,246,0.12));
   border-left-color:#7c3aed;
 }
 
@@ -1036,119 +1230,9 @@
   color:#7c3aed;
 }
 
-/* 画像プレビューのサイズを拡大 */
-.image-preview-container{
-  display:none;
-  padding:16px;
-  background:var(--bg-secondary);
-  border-radius:8px;
-  margin-bottom:12px;
-  position:relative;
-}
-
-.image-preview-container.show{
-  display:block;
-}
-
-.image-preview{
-  max-width:300px;
-  max-height:300px;
-  border-radius:8px;
-  border:1px solid var(--border);
-}
-
-/* リプライプレビューの改善 */
-.reply-preview-text{
-  font-size:13px;
-  color:var(--text-primary);
-  max-height:60px;
-  overflow:hidden;
-  text-overflow:ellipsis;
-  display:-webkit-box;
-  -webkit-line-clamp:3;
-  -webkit-box-orient:vertical;
-  line-clamp:3;
-}
-
-/* 入力中インジケーター */
-.typing-indicator{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 12px;
-  margin:8px 0;
-  background:var(--bg-primary);
-  border-radius:8px;
-  font-size:13px;
-  color:var(--text-secondary);
-  animation:fadeIn 0.3s ease;
-}
-
-.typing-text{
-  font-weight:600;
-}
-
-.typing-dots{
-  display:inline-flex;
-  gap:2px;
-}
-
-.typing-dots span{
-  animation:typingDot 1.4s infinite;
-  opacity:0;
-}
-
-.typing-dots span:nth-child(1){
-  animation-delay:0s;
-}
-
-.typing-dots span:nth-child(2){
-  animation-delay:0.2s;
-}
-
-.typing-dots span:nth-child(3){
-  animation-delay:0.4s;
-}
-
-@keyframes typingDot{
-  0%,80%,100%{opacity:0;}
-  40%{opacity:1;}
-}
-
-@keyframes fadeIn{
-  from{opacity:0;transform:translateY(10px);}
-  to{opacity:1;transform:translateY(0);}
-}
-
-/* 既読バッジ */
-.message-read{
-  display:inline-flex;
-  align-items:center;
-  padding:2px 8px;
-  background:#d1f4e0;
-  color:#2da44e;
-  font-size:11px;
-  font-weight:600;
-  border-radius:4px;
-  margin-left:8px;
-}
-
-/* メッセージテキスト内の改行とURL */
-.message-text{
-  white-space:pre-wrap;
-  word-wrap:break-word;
-  line-height:1.5;
-}
-
-.message-text a{
-  color:var(--main);
-  text-decoration:underline;
-  word-break:break-all;
-}
-
-.message-text a:hover{
-  color:var(--main-hover);
-}
+/* ========================================
+   バックボタン（モバイル用）
+   ======================================== */
 
 .back-btn{
   display:none;
@@ -1158,116 +1242,198 @@
   justify-content:center;
   background:transparent;
   border:none;
-  border-radius:6px;
+  border-radius:8px;
   color:var(--text-secondary);
   cursor:pointer;
   flex-shrink:0;
+  transition:all 0.15s;
 }
+
+.back-btn:hover{
+  background:var(--bg-secondary);
+  color:var(--main);
+}
+
+/* ========================================
+   モバイル対応（768px以下）
+   ======================================== */
 
 @media(max-width:768px){
   .back-btn{
     display:flex;
   }
+
+  .chat-container{
+    position:relative;
+    overflow:hidden;
+  }
+
+  .dm-sidebar{
+    width:85%;
+    max-width:300px;
+    position:absolute;
+    top:0;
+    left:0;
+    height:100%;
+    z-index:100;
+    transform:translateX(-100%);
+    transition:transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    box-shadow:8px 0 32px rgba(0,0,0,0.15);
+  }
+
+  .dm-sidebar.show{
+    transform:translateX(0);
+  }
+
+  .dm-overlay{
+    display:none;
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.4);
+    z-index:99;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .dm-overlay.show{
+    display:block;
+    animation:fadeIn 0.2s ease;
+  }
+
+  .chat-header{
+    height:52px;
+    padding:0 8px 0 4px;
+  }
+
+  .chat-header-name{
+    font-size:15px;
+  }
+
+  .chat-header-status{
+    font-size:11px;
+  }
+
+  .chat-messages{
+    padding:10px 10px 6px;
+    gap:2px;
+  }
+
+  .message{
+    padding:5px 8px;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .message-actions{
+    display:none;
+  }
+
+  .message.touch-active .message-actions{
+    display:flex;
+  }
+
+  .message-action-btn{
+    width:32px;
+    height:32px;
+  }
+
+  .message-image{
+    max-width:100%;
+    max-height:220px;
+  }
+
+  .message-avatar{
+    width:32px;
+    height:32px;
+  }
+
+  .chat-input-container{
+    padding:8px 10px;
+    padding-bottom:max(10px,env(safe-area-inset-bottom));
+  }
+
+  .chat-input{
+    font-size:16px;
+    min-height:34px;
+  }
+
+  #edit-textarea{
+    font-size:16px;
+  }
+
+  .send-btn{
+    width:34px;
+    height:34px;
+  }
+
+  .scroll-down-btn{
+    bottom:72px;
+    right:12px;
+    width:36px;
+    height:36px;
+  }
+
+  .dm-item{
+    padding:9px 10px;
+    min-height:54px;
+  }
+
+  .dm-item-avatar{
+    width:40px;
+    height:40px;
+  }
+
+  .channel-item{
+    min-height:50px;
+  }
+
+  .modal-content{
+    width:calc(100% - 32px);
+    margin:16px;
+    border-radius:16px;
+  }
+
+  .image-preview{
+    max-width:150px;
+    max-height:150px;
+  }
+
+  .typing-indicator{
+    font-size:11px;
+  }
+
+  .date-separator span{
+    font-size:10px;
+  }
+
+  .chat-input-wrapper,
+  .chat-input-row{
+    border-radius:14px;
+    padding:5px 5px 5px 12px;
+  }
 }
-
-
-
-
-
-/* chat.cssに追記するスタイル */
 
 /* ========================================
-   日付セパレーター
+   超小画面（360px以下）
    ======================================== */
 
-.date-separator{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  padding:8px 0;
-  margin:4px 0;
-  user-select:none;
-}
+@media(max-width:360px){
+  .dm-sidebar{
+    width:92%;
+  }
 
-.date-separator::before,
-.date-separator::after{
-  content:'';
-  flex:1;
-  height:1px;
-  background:var(--border);
-}
+  .chat-header-name{
+    font-size:14px;
+  }
 
-.date-separator span{
-  font-size:12px;
-  font-weight:600;
-  color:var(--text-tertiary);
-  white-space:nowrap;
-  padding:2px 8px;
-  background:var(--bg-secondary);
-  border-radius:10px;
-  border:1px solid var(--border);
-}
+  .message-avatar{
+    width:28px;
+    height:28px;
+  }
 
-/* ========================================
-   スクロールダウンボタン
-   ======================================== */
+  .message-author{
+    font-size:12px;
+  }
 
-.scroll-down-btn{
-  position:absolute;
-  bottom:80px;
-  right:24px;
-  width:40px;
-  height:40px;
-  border-radius:50%;
-  background:var(--main);
-  color:#fff;
-  border:none;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow:0 4px 12px rgba(0,0,0,0.2);
-  opacity:0;
-  pointer-events:none;
-  transition:opacity 0.2s,transform 0.2s;
-  transform:translateY(8px);
-  z-index:100;
-}
-
-.scroll-down-btn.visible{
-  opacity:1;
-  pointer-events:all;
-  transform:translateY(0);
-}
-
-.scroll-down-btn:hover{
-  background:var(--main-hover,#e55a2b);
-}
-
-.scroll-down-btn .material-symbols-outlined{
-  font-size:22px;
-}
-
-/* ========================================
-   もっと読み込むインジケーター
-   ======================================== */
-
-.load-more-indicator{
-  display:flex;
-  justify-content:center;
-  padding:12px;
-}
-
-.load-more-spinner{
-  width:24px;
-  height:24px;
-  border:2px solid var(--border);
-  border-top-color:var(--main);
-  border-radius:50%;
-  animation:spin 0.7s linear infinite;
-}
-
-/* chat-mainをrelativeに（すでに設定済みであれば不要） */
-#chat-main{
-  position:relative;
+  .message-text{
+    font-size:13px;
+  }
 }
