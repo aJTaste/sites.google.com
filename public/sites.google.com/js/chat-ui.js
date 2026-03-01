@@ -27,7 +27,6 @@ export function displayUsers(){
     if(!canAccessChannel(state.currentProfile.role,channel.requiredRole))return;
 
     const channelItem=document.createElement('div');
-    // ★ 構文修正: クォートの位置
     let cls='channel-item';
     if(state.selectedChannelId===channel.id)cls+=' active';
     if(channel.requiredRole==='moderator')cls+=' moderator-only';
@@ -77,7 +76,7 @@ export function displayUsers(){
       const unreadBadge=unreadCount>0?`<span class="unread-badge">${unreadCount}</span>`:'';
 
       dmItem.innerHTML=`
-        <div class="dm-item-avatar" style="cursor:pointer;">
+        <div class="dm-item-avatar" style="cursor:pointer;" title="クリック: プロフィール / Ctrl+クリック: 呼び出し">
           <img src="${esc(iconSrc)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
           ${onlineIndicator}
         </div>
@@ -89,7 +88,7 @@ export function displayUsers(){
 
       const avatarEl=dmItem.querySelector('.dm-item-avatar');
 
-      // アバタークリック → プロフィールポップアップ (Ctrl+クリック → 呼び出し)
+      // アバタークリック → プロフィールポップアップ / Ctrl+クリック → 呼び出し
       avatarEl.addEventListener('click',(e)=>{
         e.stopPropagation();
         if(e.ctrlKey){
@@ -217,6 +216,7 @@ export function closeProfilePopup(){
 
 // ========================================
 // チャット画面のHTML生成（DM）
+// ★ 元のHTML構造を維持（.chat-input-actions + .chat-input-wrapper）
 // ========================================
 
 export function createChatHTML(selectedUser){
@@ -259,14 +259,16 @@ export function createChatHTML(selectedUser){
         <button class="image-preview-close" id="image-preview-close">
           <span class="material-symbols-outlined">close</span>
         </button>
-        <img class="image-preview" id="image-preview" alt="プレビュー">
+        <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
       </div>
-      <div class="chat-input-row">
-        <button class="image-upload-btn" id="image-upload-btn">
+      <div class="chat-input-actions">
+        <input type="file" id="image-file-input" accept="image/*" hidden>
+        <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-symbols-outlined">image</span>
         </button>
-        <input type="file" id="image-file-input" accept="image/*" hidden>
-        <textarea class="chat-input" id="chat-input" placeholder="メッセージを入力..." rows="1"></textarea>
+      </div>
+      <div class="chat-input-wrapper">
+        <textarea class="chat-input" id="chat-input" placeholder="${esc(selectedUser.display_name)} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
         </button>
@@ -284,8 +286,8 @@ export function createChannelChatHTML(channel){
         <span class="material-symbols-outlined">arrow_back</span>
       </button>
       <div class="chat-header-user">
-        <div class="chat-header-avatar" style="background:var(--main-light);display:flex;align-items:center;justify-content:center;">
-          <span class="material-symbols-outlined" style="color:var(--main);font-size:20px;">${esc(channel.icon)}</span>
+        <div class="channel-icon" style="width:36px;height:36px;">
+          <span class="material-symbols-outlined">${esc(channel.icon)}</span>
         </div>
         <div class="chat-header-info">
           <div class="chat-header-name">${esc(channel.name)}</div>
@@ -310,14 +312,16 @@ export function createChannelChatHTML(channel){
         <button class="image-preview-close" id="image-preview-close">
           <span class="material-symbols-outlined">close</span>
         </button>
-        <img class="image-preview" id="image-preview" alt="プレビュー">
+        <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
       </div>
-      <div class="chat-input-row">
-        <button class="image-upload-btn" id="image-upload-btn">
+      <div class="chat-input-actions">
+        <input type="file" id="image-file-input" accept="image/*" hidden>
+        <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-symbols-outlined">image</span>
         </button>
-        <input type="file" id="image-file-input" accept="image/*" hidden>
-        <textarea class="chat-input" id="chat-input" placeholder="${esc(channel.name)}にメッセージを送る..." rows="1"></textarea>
+      </div>
+      <div class="chat-input-wrapper">
+        <textarea class="chat-input" id="chat-input" placeholder="${esc(channel.name)} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
         </button>
