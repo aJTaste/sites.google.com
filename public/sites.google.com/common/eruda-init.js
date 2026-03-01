@@ -3,12 +3,10 @@
   let ready=false;
   let pendingShow=false;
 
-  // できる限り早くCSSを注入
   const style=document.createElement('style');
   style.textContent=
-    '#eruda .eruda-entry-btn{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;}'+
-    '#eruda,#eruda *{transition:none!important;animation:none!important;transform-origin:unset!important;}'+
-    '#eruda .eruda-dev-tools{transition:none!important;animation:none!important;}';
+    '#eruda .eruda-entry-btn,.eruda-entry-btn{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important;width:0!important;height:0!important;}'+
+    '#eruda,#eruda *{transition:none!important;animation:none!important;transform-origin:unset!important;}';
   (document.head||document.documentElement).appendChild(style);
 
   function loadScript(src,cb){
@@ -23,6 +21,7 @@
     {src:'https://cdn.jsdelivr.net/npm/eruda-code',init:()=>eruda.add(erudaCode)},
     {src:'https://cdn.jsdelivr.net/npm/eruda-monitor',init:()=>eruda.add(erudaMonitor)},
     {src:'https://cdn.jsdelivr.net/npm/eruda-timing',init:()=>eruda.add(erudaTiming)},
+    {src:'https://cdn.jsdelivr.net/npm/eruda-memory',init:()=>eruda.add(erudaMemory)},
   ];
 
   function loadPlugins(list,idx){
@@ -35,9 +34,7 @@
   }
 
   function killEntryBtn(){
-    // DOM要素を削除
-    document.querySelectorAll('#eruda .eruda-entry-btn').forEach(el=>el.remove());
-    // erudaの内部オブジェクトを無効化
+    document.querySelectorAll('#eruda .eruda-entry-btn,.eruda-entry-btn').forEach(el=>el.remove());
     try{
       const eb=eruda._entryBtn;
       if(eb){
@@ -49,19 +46,17 @@
     }catch(e){}
   }
 
-  // MutationObserverでeruda DOM追加後もアイコンを即削除
   const observer=new MutationObserver(function(){
-    const btn=document.querySelector('#eruda .eruda-entry-btn');
+    const btn=document.querySelector('#eruda .eruda-entry-btn,.eruda-entry-btn');
     if(btn)btn.remove();
   });
 
   function setupEruda(){
     if(!(window.eruda&&eruda._isInit)){
-      eruda.init();
+      eruda.init({useShadowDom:false});
     }
     killEntryBtn();
 
-    // show/hideをラップしてモーションをスキップ
     const _show=eruda.show.bind(eruda);
     const _hide=eruda.hide.bind(eruda);
     eruda.show=function(){
