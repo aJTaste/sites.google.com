@@ -15,9 +15,6 @@
     {src:'https://cdn.jsdelivr.net/npm/eruda-monitor',init:()=>eruda.add(erudaMonitor)},
     {src:'https://cdn.jsdelivr.net/npm/eruda-timing',init:()=>eruda.add(erudaTiming)},
     {src:'https://cdn.jsdelivr.net/npm/eruda-memory',init:()=>eruda.add(erudaMemory)},
-    {src:'https://cdn.jsdelivr.net/npm/eruda-touches',init:()=>eruda.add(erudaTouches)},
-    {src:'https://cdn.jsdelivr.net/npm/eruda-pixel',init:()=>eruda.add(erudaPixel)},
-    {src:'https://cdn.jsdelivr.net/npm/eruda-features',init:()=>eruda.add(erudaFeatures)},
   ];
 
   function loadPlugins(list,idx){
