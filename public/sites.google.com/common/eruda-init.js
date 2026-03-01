@@ -1,67 +1,65 @@
-// ================================
-// Eruda DevTools 初期化
-// Alt+I で開閉
-// ================================
-
 (function(){
-  // Erudaスクリプトを動的ロード
+  let loaded=false;
+  let visible=false;
+
   function loadScript(src,cb){
     const s=document.createElement('script');
     s.src=src;
     s.onload=cb;
+    s.onerror=function(){console.warn('[Eruda] failed to load:',src);};
+    document.head.appendChild(s);
+  }
+
+  const plugins=[
+    {src:'https://cdn.jsdelivr.net/npm/eruda-code',init:()=>eruda.add(erudaCode)},
+    {src:'https://cdn.jsdelivr.net/npm/eruda-monitor',init:()=>eruda.add(erudaMonitor)},
+    {src:'https://cdn.jsdelivr.net/npm/eruda-timing',init:()=>eruda.add(erudaTiming)},
+    {src:'https://cdn.jsdelivr.net/npm/eruda-memory',init:()=>eruda.add(erudaMemory)},
+    {src:'https://cdn.jsdelivr.net/npm/eruda-touches',init:()=>eruda.add(erudaTouches)},
+    {src:'https://cdn.jsdelivr.net/npm/eruda-pixel',init:()=>eruda.add(erudaPixel)},
+    {src:'https://cdn.jsdelivr.net/npm/eruda-features',init:()=>eruda.add(erudaFeatures)},
+  ];
+
+  function loadPlugins(list,idx){
+    if(idx>=list.length)return;
+    const p=list[idx];
+    loadScript(p.src,function(){
+      try{p.init();}catch(e){console.warn('[Eruda] plugin init failed:',e);}
+      loadPlugins(list,idx+1);
+    });
+  }
+
+  function hideEntryBtn(){
+    const s=document.createElement('style');
+    s.textContent='#eruda .eruda-entry-btn{display:none!important;}';
     document.head.appendChild(s);
   }
 
   function initEruda(){
     eruda.init();
-
-    // プラグイン: JS実行（アドレスバーJS不可環境で超重要）
-    loadScript('https://cdn.jsdelivr.net/npm/eruda-code',function(){
-      eruda.add(erudaCode);
-    });
-
-    // プラグイン: FPS・メモリモニター
-    loadScript('https://cdn.jsdelivr.net/npm/eruda-monitor',function(){
-      eruda.add(erudaMonitor);
-    });
-
-    // プラグイン: タッチ・クリック可視化
-    loadScript('https://cdn.jsdelivr.net/npm/eruda-touches',function(){
-      eruda.add(erudaTouches);
-    });
-
-    // デフォルトで非表示
+    hideEntryBtn();
     eruda.hide();
-
-    // Erudaのコンテナをbodyの直下に確実に配置
-    // （z-indexがAppHubのモーダルと競合しないよう調整）
-    const container=document.getElementById('eruda');
-    if(container){
-      container.style.zIndex='999999';
-    }
+    loadPlugins(plugins,0);
   }
 
-  // Alt+I でトグル
-  let erudaLoaded=false;
-  let erudaVisible=false;
-
   document.addEventListener('keydown',function(e){
-    if(e.altKey&&(e.key==='i'||e.key==='I'||e.key==='ｉ')){
+    if(e.repeat)return;
+    if(e.altKey&&(e.key==='i'||e.key==='I'||e.key==='\u3044')){
       e.preventDefault();
-      if(!erudaLoaded){
+      if(!loaded){
         loadScript('https://cdn.jsdelivr.net/npm/eruda',function(){
-          erudaLoaded=true;
+          loaded=true;
           initEruda();
           eruda.show();
-          erudaVisible=true;
+          visible=true;
         });
       } else {
-        if(erudaVisible){
+        if(visible){
           eruda.hide();
-          erudaVisible=false;
+          visible=false;
         } else {
           eruda.show();
-          erudaVisible=true;
+          visible=true;
         }
       }
     }
