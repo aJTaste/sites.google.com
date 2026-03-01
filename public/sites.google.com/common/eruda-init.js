@@ -1,5 +1,7 @@
 (function(){
   let visible=false;
+  let ready=false;
+  let pendingShow=false;
 
   function loadScript(src,cb){
     const s=document.createElement('script');
@@ -25,56 +27,48 @@
     });
   }
 
-  // アイコンを徹底的に隠すCSS + MutationObserver
-  function suppressEntryBtn(){
-    const style=document.createElement('style');
-    style.textContent=[
-      '#eruda .eruda-entry-btn{',
-      '  display:none!important;',
-      '  visibility:hidden!important;',
-      '  opacity:0!important;',
-      '  pointer-events:none!important;',
-      '}'
-    ].join('');
-    document.head.appendChild(style);
-
-    const obs=new MutationObserver(function(mutations){
-      mutations.forEach(function(m){
-        m.addedNodes.forEach(function(node){
-          if(node.nodeType!==1)return;
-          // 追加されたノード自身＆子孫を検索
-          const btns=[
-            ...( node.matches&&node.matches('.eruda-entry-btn') ? [node] : [] ),
-            ...Array.from(node.querySelectorAll('.eruda-entry-btn'))
-          ];
-          btns.forEach(function(btn){
-            btn.style.setProperty('display','none','important');
-          });
-        });
-      });
-    });
-    obs.observe(document.documentElement,{childList:true,subtree:true});
+  function killEntryBtn(){
+    const btn=document.querySelector('#eruda .eruda-entry-btn');
+    if(btn)btn.style.setProperty('display','none','important');
   }
 
-  let ready=false;
-  let pendingShow=false;
+  function injectCss(){
+    const s=document.createElement('style');
+    s.textContent='#eruda .eruda-entry-btn{display:none!important;visibility:hidden!important;pointer-events:none!important;}';
+    document.head.appendChild(s);
+  }
+
+  // eruda.show()をラップしてボタンを毎回消す
+  function wrapErudaShow(){
+    const _show=eruda.show.bind(eruda);
+    eruda.show=function(){
+      _show();
+      // 描画後に消す
+      requestAnimationFrame(killEntryBtn);
+      setTimeout(killEntryBtn,50);
+      setTimeout(killEntryBtn,150);
+    };
+  }
 
   function setupEruda(){
-    if(window.eruda&&eruda._isInit){
-      ready=true;
-      if(pendingShow){eruda.show();visible=true;pendingShow=false;}
-      return;
+    if(!(window.eruda&&eruda._isInit)){
+      eruda.init();
+      eruda.hide();
     }
-    eruda.init();
-    eruda.hide();
+    injectCss();
+    wrapErudaShow();
+    killEntryBtn();
     loadPlugins(plugins,0);
     ready=true;
-    if(pendingShow){eruda.show();visible=true;pendingShow=false;}
+    if(pendingShow){
+      eruda.show();
+      visible=true;
+      pendingShow=false;
+    }
   }
 
-  // ページ読み込み時に裏で先読み（Alt+I前に準備完了させる）
   function preload(){
-    suppressEntryBtn();
+    injectCss();
     if(window.eruda){
       setupEruda();
     } else {
@@ -92,11 +86,7 @@
     if(e.repeat)return;
     if(e.altKey&&(e.key==='i'||e.key==='I'||e.key==='\u3044')){
       e.preventDefault();
-      if(!ready){
-        // まだ読み込み中なら表示予約
-        pendingShow=true;
-        return;
-      }
+      if(!ready){pendingShow=true;return;}
       if(visible){
         eruda.hide();
         visible=false;
