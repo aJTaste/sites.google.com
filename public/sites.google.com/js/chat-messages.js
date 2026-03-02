@@ -85,6 +85,28 @@ function createDateSeparator(timestamp){
 }
 
 // ========================================
+// グループ化ヘルパー
+// ========================================
+
+// バッチ描画時：直前が同一送信者かつ日付区切りが挿入されていなければグループ化
+function shouldGroup(msg,prevSenderId,dateInserted){
+  return !dateInserted&&prevSenderId===msg.sender_id;
+}
+
+// リアルタイム追加時：DOM上の直前メッセージを見てグループ化を適用
+function tryApplyGrouping(el,container){
+  let prev=el.previousElementSibling;
+  while(prev){
+    if(prev.classList.contains('date-separator'))return;
+    if(prev.classList.contains('message'))break;
+    prev=prev.previousElementSibling;
+  }
+  if(prev&&prev.getAttribute('data-sender-id')===el.getAttribute('data-sender-id')){
+    el.classList.add('grouped');
+  }
+}
+
+// ========================================
 // スクロール制御
 // ========================================
 
@@ -216,11 +238,17 @@ async function loadInitialMessages(dmId,userId){
       pg.hasMore=messages.length===PAGE_SIZE;
 
       let lastDateKey=null;
+      let lastSenderId=null;
       for(const msg of sorted){
         const dk=getDateKey(msg.created_at);
-        if(dk!==lastDateKey){chatMessages.appendChild(createDateSeparator(msg.created_at));lastDateKey=dk;}
+        const dateInserted=dk!==lastDateKey;
+        if(dateInserted){chatMessages.appendChild(createDateSeparator(msg.created_at));lastDateKey=dk;}
         const el=await buildMessageElement(msg,userId,false);
-        if(el)chatMessages.appendChild(el);
+        if(el){
+          if(shouldGroup(msg,lastSenderId,dateInserted))el.classList.add('grouped');
+          chatMessages.appendChild(el);
+          lastSenderId=msg.sender_id;
+        }
       }
       scrollToBottom(chatMessages,true);
       await markAsRead(userId);
@@ -260,14 +288,23 @@ async function loadMoreDmMessages(chatMessages){
 
     const frag=document.createDocumentFragment();
     let lastDateKey=null;
+    let lastSenderId=null;
     for(const msg of sorted){
       const dk=getDateKey(msg.created_at);
-      if(dk!==lastDateKey){frag.appendChild(createDateSeparator(msg.created_at));lastDateKey=dk;}
+      const dateInserted=dk!==lastDateKey;
+      if(dateInserted){frag.appendChild(createDateSeparator(msg.created_at));lastDateKey=dk;}
       const el=await buildMessageElement(msg,pg.userId,false);
-      if(el)frag.appendChild(el);
+      if(el){
+        if(shouldGroup(msg,lastSenderId,dateInserted))el.classList.add('grouped');
+        frag.appendChild(el);
+        lastSenderId=msg.sender_id;
+      }
     }
     if(lastDateKey&&lastDateKey===firstDateKey&&firstDateEl)firstDateEl.remove();
     chatMessages.insertBefore(frag,chatMessages.firstChild);
+    // バッチ挿入直後の既存先頭メッセージを再評価
+    const afterBatch=frag.lastChild?.nextElementSibling;
+    if(afterBatch?.classList.contains('message'))tryApplyGrouping(afterBatch,chatMessages);
     chatMessages.scrollTop=chatMessages.scrollHeight-prevScrollHeight;
   }catch(error){
     console.error('追加読み込みエラー:',error);
@@ -330,11 +367,17 @@ async function loadInitialChannelMessages(channelId){
       pg.hasMore=messages.length===PAGE_SIZE;
 
       let lastDateKey=null;
+      let lastSenderId=null;
       for(const msg of sorted){
         const dk=getDateKey(msg.created_at);
-        if(dk!==lastDateKey){chatMessages.appendChild(createDateSeparator(msg.created_at));lastDateKey=dk;}
+        const dateInserted=dk!==lastDateKey;
+        if(dateInserted){chatMessages.appendChild(createDateSeparator(msg.created_at));lastDateKey=dk;}
         const el=await buildChannelMessageElement(msg);
-        if(el)chatMessages.appendChild(el);
+        if(el){
+          if(shouldGroup(msg,lastSenderId,dateInserted))el.classList.add('grouped');
+          chatMessages.appendChild(el);
+          lastSenderId=msg.sender_id;
+        }
       }
       scrollToBottom(chatMessages,true);
       await markAsRead(channelId);
@@ -374,11 +417,17 @@ async function loadMoreChannelMessages(chatMessages){
 
     const frag=document.createDocumentFragment();
     let lastDateKey=null;
+    let lastSenderId=null;
     for(const msg of sorted){
       const dk=getDateKey(msg.created_at);
-      if(dk!==lastDateKey){frag.appendChild(createDateSeparator(msg.created_at));lastDateKey=dk;}
+      const dateInserted=dk!==lastDateKey;
+      if(dateInserted){frag.appendChild(createDateSeparator(msg.created_at));lastDateKey=dk;}
       const el=await buildChannelMessageElement(msg);
-      if(el)frag.appendChild(el);
+      if(el){
+        if(shouldGroup(msg,lastSenderId,dateInserted))el.classList.add('grouped');
+        frag.appendChild(el);
+        lastSenderId=msg.sender_id;
+      }
     }
     if(lastDateKey&&lastDateKey===firstDateKey&&firstDateEl)firstDateEl.remove();
     chatMessages.insertBefore(frag,chatMessages.firstChild);
@@ -428,9 +477,11 @@ async function buildMessageElement(msg,otherUserId,checkRead){
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
+  messageEl.setAttribute('data-sender-id',msg.sender_id);
 
   const avatarDiv=document.createElement('div');
   avatarDiv.className='message-avatar';
+  avatarDiv.setAttribute('data-time',formatMessageTime(msg.created_at));
   avatarDiv.innerHTML=iconHtml;
   messageEl.appendChild(avatarDiv);
 
@@ -454,8 +505,7 @@ async function buildMessageElement(msg,otherUserId,checkRead){
   }
   if(msg.text){
     const textDiv=document.createElement('div');
-    textDiv.className='message-text';
-    textDiv.innerHTML=formatMessageText(msg.text);
+    textDiv.className='message-text';textDiv.innerHTML=formatMessageText(msg.text);
     contentDiv.appendChild(textDiv);
   }
   if(msg.image_url){
@@ -504,32 +554,6 @@ async function buildMessageElement(msg,otherUserId,checkRead){
 }
 
 // ========================================
-// メッセージ表示（DM）
-// ========================================
-
-async function displaySingleMessage(msg,otherUserId,shouldScroll){
-  const chatMessages=document.getElementById('chat-messages');
-  if(!chatMessages)return;
-
-  const isCurrentUser=msg.sender_id===state.currentProfile.id;
-
-  const dk=getDateKey(msg.created_at);
-  const allSeps=chatMessages.querySelectorAll('.date-separator');
-  const lastDateEl=allSeps.length?allSeps[allSeps.length-1]:null;
-  const lastDateKey=lastDateEl?lastDateEl.getAttribute('data-date-key'):null;
-  if(dk!==lastDateKey)chatMessages.appendChild(createDateSeparator(msg.created_at));
-
-  const el=await buildMessageElement(msg,otherUserId,shouldScroll);
-  if(!el)return;
-
-  const wasAtBottom=isAtBottom(chatMessages);
-  chatMessages.appendChild(el);
-
-  if(shouldScroll&&(isCurrentUser||wasAtBottom))scrollToBottom(chatMessages,false);
-  updateScrollDownBtn(chatMessages);
-}
-
-// ========================================
 // メッセージ要素生成（チャンネル）
 // ========================================
 
@@ -551,9 +575,12 @@ async function buildChannelMessageElement(msg){
   const messageEl=document.createElement('div');
   messageEl.className='message';
   messageEl.setAttribute('data-message-id',msg.id);
+  messageEl.setAttribute('data-sender-id',msg.sender_id);
 
   const avatarDiv=document.createElement('div');
-  avatarDiv.className='message-avatar';avatarDiv.innerHTML=iconHtml;
+  avatarDiv.className='message-avatar';
+  avatarDiv.setAttribute('data-time',formatMessageTime(msg.created_at));
+  avatarDiv.innerHTML=iconHtml;
   messageEl.appendChild(avatarDiv);
 
   const contentDiv=document.createElement('div');
@@ -624,6 +651,33 @@ async function buildChannelMessageElement(msg){
 }
 
 // ========================================
+// メッセージ表示（DM）
+// ========================================
+
+async function displaySingleMessage(msg,otherUserId,shouldScroll){
+  const chatMessages=document.getElementById('chat-messages');
+  if(!chatMessages)return;
+
+  const isCurrentUser=msg.sender_id===state.currentProfile.id;
+
+  const dk=getDateKey(msg.created_at);
+  const allSeps=chatMessages.querySelectorAll('.date-separator');
+  const lastDateEl=allSeps.length?allSeps[allSeps.length-1]:null;
+  const lastDateKey=lastDateEl?lastDateEl.getAttribute('data-date-key'):null;
+  if(dk!==lastDateKey)chatMessages.appendChild(createDateSeparator(msg.created_at));
+
+  const el=await buildMessageElement(msg,otherUserId,shouldScroll);
+  if(!el)return;
+
+  const wasAtBottom=isAtBottom(chatMessages);
+  chatMessages.appendChild(el);
+  tryApplyGrouping(el,chatMessages);
+
+  if(shouldScroll&&(isCurrentUser||wasAtBottom))scrollToBottom(chatMessages,false);
+  updateScrollDownBtn(chatMessages);
+}
+
+// ========================================
 // メッセージ表示（チャンネル）
 // ========================================
 
@@ -646,6 +700,7 @@ async function displaySingleChannelMessage(msg,shouldScroll=true){
 
   const wasAtBottom=isAtBottom(chatMessages);
   chatMessages.appendChild(el);
+  tryApplyGrouping(el,chatMessages);
 
   if(shouldScroll&&(isCurrentUser||wasAtBottom))scrollToBottom(chatMessages,false);
   updateScrollDownBtn(chatMessages);
