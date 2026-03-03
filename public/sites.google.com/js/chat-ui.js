@@ -147,7 +147,7 @@ async function _handleCallUser(user){
     return;
   }
   const ok=await window.sendCall?.(user.id,user.display_name);
-  if(ok)_miniToast(`📞 ${esc(user.display_name)} を呼び出しました`);
+  if(ok)_miniToast(`${esc(user.display_name)} を呼び出しました`);
   else _miniToast('呼び出しに失敗しました');
 }
 
@@ -285,13 +285,11 @@ export function createChatHTML(selectedUser){
         </button>
         <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
       </div>
-      <div class="chat-input-actions">
+      <div class="chat-input-wrapper">
         <input type="file" id="image-file-input" accept="image/*" hidden>
         <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-symbols-outlined">image</span>
         </button>
-      </div>
-      <div class="chat-input-wrapper">
         <textarea class="chat-input" id="chat-input" placeholder="${esc(selectedUser.display_name)} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
@@ -341,13 +339,11 @@ export function createChannelChatHTML(channel){
         </button>
         <img class="image-preview" id="image-preview" src="" alt="画像プレビュー">
       </div>
-      <div class="chat-input-actions">
+      <div class="chat-input-wrapper">
         <input type="file" id="image-file-input" accept="image/*" hidden>
         <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-symbols-outlined">image</span>
         </button>
-      </div>
-      <div class="chat-input-wrapper">
         <textarea class="chat-input" id="chat-input" placeholder="${esc(channel.name)} にメッセージを送信" rows="1"></textarea>
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
