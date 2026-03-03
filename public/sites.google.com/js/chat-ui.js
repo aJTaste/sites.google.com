@@ -98,7 +98,7 @@ function renderSidebarItems(){
       const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
       const currentPage=user.current_page||'';
       const statusText=isOnline
-        ?(currentPage?`🟢 ${esc(currentPage)}`:'🟢 オンライン')
+        ?(currentPage?` ${esc(currentPage)}`:' オンライン')
         :`最終: ${formatLastOnline(user.last_online||user.created_at)}`;
 
       const unreadCount=state.unreadCounts[user.user_id]||0;
@@ -180,7 +180,7 @@ export function showProfilePopup(profile,anchorEl){
   const isOnline=profile.is_online||false;
   const currentPage=profile.current_page||'';
   const statusText=isOnline
-    ?(currentPage?`🟢 ${esc(currentPage)}`:'🟢 オンライン')
+    ?(currentPage?` ${esc(currentPage)}`:' オンライン')
     :`最終: ${formatLastOnline(profile.last_online||profile.created_at)}`;
 
   popup.innerHTML=`
@@ -248,7 +248,7 @@ export function createChatHTML(selectedUser){
   const isOnline=selectedUser.is_online||false;
   const currentPage=selectedUser.current_page||'';
   const statusText=isOnline
-    ?(currentPage?`🟢 ${esc(currentPage)}`:'🟢 オンライン')
+    ?(currentPage?` ${esc(currentPage)}`:' オンライン')
     :`最終: ${formatLastOnline(selectedUser.last_online||selectedUser.created_at)}`;
 
   return`
