@@ -1,34 +1,55 @@
 /* ========================================
-   ChatHub — Redesigned UI
+   ChatHub — v2.0 Redesign
    ======================================== */
+
+/* ----------------------------------------
+   追加トークン
+   ---------------------------------------- */
+:root{
+  --sidebar-surface:#fdf9f7;
+  --msg-hover:rgba(255,107,53,0.04);
+  --active-sidebar:rgba(255,107,53,0.11);
+  --input-radius:14px;
+  --input-shadow:0 1px 8px rgba(0,0,0,0.06);
+  --popup-shadow:0 8px 32px rgba(0,0,0,0.14);
+}
+[data-theme="dark"]{
+  --sidebar-surface:#0f0d0b;
+  --msg-hover:rgba(255,140,90,0.05);
+  --active-sidebar:rgba(255,140,90,0.13);
+  --input-shadow:0 1px 8px rgba(0,0,0,0.28);
+  --popup-shadow:0 8px 32px rgba(0,0,0,0.45);
+}
 
 /* ----------------------------------------
    レイアウト基盤
    ---------------------------------------- */
-
 .chat-container{
   flex:1;
   display:flex;
   overflow:hidden;
   position:relative;
+  background:var(--bg-primary);
 }
 
-/* ----------------------------------------
+/* ========================================
    サイドバー
-   ---------------------------------------- */
+   ======================================== */
 
 .dm-sidebar{
-  width:264px;
-  background:var(--bg-primary);
+  width:272px;
+  background:var(--sidebar-surface);
   border-right:1px solid var(--border);
   display:flex;
   flex-direction:column;
   flex-shrink:0;
+  transition:transform 0.25s ease;
 }
 
-/* ヘッダー部分 */
+/* ヘッダー */
 .dm-header{
-  padding:16px 14px 12px;
+  height:56px;
+  padding:0 14px;
   border-bottom:1px solid var(--border);
   flex-shrink:0;
   display:flex;
@@ -38,94 +59,100 @@
 }
 
 .dm-header h2{
-  font-size:13px;
+  font-size:15px;
   font-weight:700;
-  color:var(--text-secondary);
-  text-transform:uppercase;
-  letter-spacing:0.9px;
+  color:var(--text-primary);
   margin:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
 }
 
-/* リスト本体 */
+.dm-header-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--main);
+  flex-shrink:0;
+  display:inline-block;
+}
+
+.dm-header-new{
+  width:30px;
+  height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:none;
+  border:none;
+  border-radius:7px;
+  color:var(--text-secondary);
+  cursor:pointer;
+  transition:all 0.12s;
+  flex-shrink:0;
+}
+.dm-header-new:hover{
+  background:var(--bg-secondary);
+  color:var(--main);
+}
+.dm-header-new .material-symbols-outlined{font-size:18px;}
+
+/* リスト */
 .dm-list{
   flex:1;
   overflow-y:auto;
-  padding:6px 6px 16px;
+  padding:8px 6px 16px;
   scrollbar-width:thin;
   scrollbar-color:var(--border) transparent;
 }
-
-.dm-list::-webkit-scrollbar{
-  width:4px;
-}
-
-.dm-list::-webkit-scrollbar-track{
-  background:transparent;
-}
-
-.dm-list::-webkit-scrollbar-thumb{
-  background:var(--border);
-  border-radius:4px;
-}
+.dm-list::-webkit-scrollbar{width:3px;}
+.dm-list::-webkit-scrollbar-track{background:transparent;}
+.dm-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 
 /* セクションラベル */
 .dm-section-label{
   display:flex;
   align-items:center;
-  gap:6px;
-  padding:12px 8px 4px;
-  font-size:11px;
+  gap:5px;
+  padding:14px 8px 5px;
+  font-size:10.5px;
   font-weight:700;
   color:var(--text-tertiary);
   text-transform:uppercase;
-  letter-spacing:0.8px;
+  letter-spacing:0.9px;
   user-select:none;
 }
+.dm-section-label .material-symbols-outlined{font-size:13px;}
 
-.dm-section-label .material-symbols-outlined{
-  font-size:14px;
-}
-
-/* ----------------------------------------
+/* ========================================
    チャンネルアイテム
-   ---------------------------------------- */
+   ======================================== */
 
 .channel-item{
   display:flex;
   align-items:center;
   gap:10px;
-  padding:7px 8px;
-  margin-bottom:2px;
+  padding:6px 8px;
+  margin-bottom:1px;
   border-radius:8px;
   cursor:pointer;
   transition:background-color 0.12s;
   position:relative;
+  min-height:46px;
 }
-
-.channel-item:hover{
-  background:var(--bg-secondary);
-}
-
-.channel-item.active{
-  background:var(--main-light);
-}
-
+.channel-item:hover{background:var(--bg-secondary);}
+.channel-item.active{background:var(--active-sidebar);}
 .channel-item.active .channel-icon{
   background:var(--main);
+  border-color:var(--main);
 }
-
-.channel-item.active .channel-icon .material-symbols-outlined{
-  color:#ffffff;
-}
-
-.channel-item.active .channel-name{
-  color:var(--main);
-}
+.channel-item.active .channel-icon .material-symbols-outlined{color:#fff;}
+.channel-item.active .channel-name{color:var(--main);font-weight:700;}
 
 .channel-icon{
-  width:34px;
-  height:34px;
-  border-radius:8px;
+  width:36px;
+  height:36px;
+  border-radius:10px;
   background:var(--bg-secondary);
   border:1px solid var(--border);
   display:flex;
@@ -134,27 +161,18 @@
   flex-shrink:0;
   transition:background-color 0.12s,border-color 0.12s;
 }
-
 .channel-item:hover .channel-icon{
-  background:var(--border-light);
+  background:var(--bg-primary);
   border-color:var(--main);
 }
-
 .channel-icon .material-symbols-outlined{
   font-size:18px;
   color:var(--text-secondary);
   transition:color 0.12s;
 }
+.channel-item:hover .channel-icon .material-symbols-outlined{color:var(--main);}
 
-.channel-item:hover .channel-icon .material-symbols-outlined{
-  color:var(--main);
-}
-
-.channel-info{
-  flex:1;
-  min-width:0;
-}
-
+.channel-info{flex:1;min-width:0;}
 .channel-name{
   font-size:13px;
   font-weight:600;
@@ -167,7 +185,6 @@
   gap:6px;
   transition:color 0.12s;
 }
-
 .channel-desc{
   font-size:11px;
   color:var(--text-tertiary);
@@ -177,89 +194,74 @@
   margin-top:1px;
 }
 
-/* モデレーター専用チャンネル */
+/* モデレーター専用 */
 .channel-item.moderator-only{
   background:linear-gradient(135deg,rgba(124,58,237,0.04),rgba(139,92,246,0.04));
   border-left:2px solid #7c3aed;
 }
-
 .channel-item.moderator-only:hover{
   background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(139,92,246,0.08));
 }
-
 .channel-item.moderator-only.active{
   background:linear-gradient(135deg,rgba(124,58,237,0.14),rgba(139,92,246,0.14));
 }
-
 .channel-item.moderator-only .channel-icon{
   background:rgba(124,58,237,0.08);
   border-color:rgba(124,58,237,0.3);
 }
+.channel-item.moderator-only .channel-icon .material-symbols-outlined{color:#7c3aed;}
 
-.channel-item.moderator-only .channel-icon .material-symbols-outlined{
-  color:#7c3aed;
-}
-
-/* ----------------------------------------
-   DMアイテム（ユーザー一覧）
-   ---------------------------------------- */
+/* ========================================
+   DMアイテム
+   ======================================== */
 
 .dm-item{
   display:flex;
   align-items:center;
   gap:10px;
-  padding:7px 8px;
-  margin-bottom:2px;
+  padding:6px 8px;
+  margin-bottom:1px;
   border-radius:8px;
   cursor:pointer;
   transition:background-color 0.12s;
   position:relative;
+  min-height:50px;
 }
-
-.dm-item:hover{
-  background:var(--bg-secondary);
-}
-
-.dm-item.active{
-  background:var(--main-light);
-}
-
-.dm-item.active .dm-item-name{
-  color:var(--main);
-}
+.dm-item:hover{background:var(--bg-secondary);}
+.dm-item.active{background:var(--active-sidebar);}
+.dm-item.active .dm-item-name{color:var(--main);font-weight:700;}
 
 .dm-item-avatar{
-  width:36px;
-  height:36px;
+  width:38px;
+  height:38px;
   border-radius:50%;
-  overflow:hidden;
+  overflow:visible;
   flex-shrink:0;
   background:var(--bg-secondary);
   position:relative;
 }
-
 .dm-item-avatar img{
-  width:100%;
-  height:100%;
+  width:38px;
+  height:38px;
   object-fit:cover;
+  border-radius:50%;
+  display:block;
 }
 
+/* オンライン表示 */
 .online-indicator{
   position:absolute;
   bottom:0;
-  right:0;
-  width:10px;
-  height:10px;
-  background:#2da44e;
-  border:2px solid var(--bg-primary);
+  right:-1px;
+  width:11px;
+  height:11px;
+  background:#22c55e;
+  border:2.5px solid var(--bg-primary);
   border-radius:50%;
+  pointer-events:none;
 }
 
-.dm-item-info{
-  flex:1;
-  min-width:0;
-}
-
+.dm-item-info{flex:1;min-width:0;}
 .dm-item-name{
   font-size:13px;
   font-weight:600;
@@ -271,8 +273,8 @@
   align-items:center;
   gap:6px;
   transition:color 0.12s;
+  line-height:1.3;
 }
-
 .dm-item-status{
   font-size:11px;
   color:var(--text-tertiary);
@@ -280,6 +282,7 @@
   text-overflow:ellipsis;
   white-space:nowrap;
   margin-top:1px;
+  line-height:1.3;
 }
 
 /* 未読バッジ */
@@ -291,240 +294,201 @@
   height:18px;
   padding:0 5px;
   background:var(--main);
-  color:#ffffff;
+  color:#fff;
   font-size:10px;
   font-weight:700;
   border-radius:9px;
   flex-shrink:0;
+  line-height:1;
 }
 
-/* 区切り線 */
-.sidebar-divider{
-  height:1px;
-  background:var(--border);
-  margin:6px 4px;
-}
-
-/* ----------------------------------------
-   チャットメインエリア
-   ---------------------------------------- */
+/* ========================================
+   チャットメイン
+   ======================================== */
 
 .chat-main{
   flex:1;
   display:flex;
   flex-direction:column;
-  background:var(--bg-secondary);
   overflow:hidden;
+  background:var(--bg-primary);
   position:relative;
 }
 
-/* 空っぽ状態 */
+/* 空の状態 */
 .chat-empty{
   flex:1;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:12px;
-  color:var(--text-tertiary);
-  padding:32px;
+  gap:14px;
+  padding:40px;
+  text-align:center;
+  background:var(--bg-primary);
 }
-
 .chat-empty-icon{
   width:72px;
   height:72px;
-  background:var(--bg-primary);
-  border:1px solid var(--border);
   border-radius:20px;
+  background:var(--main-light);
   display:flex;
   align-items:center;
   justify-content:center;
   margin-bottom:4px;
 }
-
 .chat-empty-icon .material-symbols-outlined{
   font-size:36px;
   color:var(--main);
-  opacity:0.6;
 }
-
 .chat-empty h3{
-  font-size:16px;
-  font-weight:600;
-  color:var(--text-secondary);
-  margin:0;
+  font-size:18px;
+  font-weight:700;
+  color:var(--text-primary);
 }
-
 .chat-empty p{
-  font-size:13px;
+  font-size:14px;
   color:var(--text-tertiary);
-  margin:0;
+  max-width:240px;
+  line-height:1.5;
 }
 
-/* ローディング */
-.loading{
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  padding:32px;
-  color:var(--text-tertiary);
-}
-
-.loading-spinner{
-  width:36px;
-  height:36px;
-  border:3px solid var(--border);
-  border-top-color:var(--main);
-  border-radius:50%;
-  animation:spin 0.8s linear infinite;
-}
-
-@keyframes spin{
-  to{transform:rotate(360deg);}
-}
-
-.loading-text{
-  font-size:13px;
-  margin-top:10px;
-}
-
-/* ----------------------------------------
+/* ========================================
    チャットヘッダー
-   ---------------------------------------- */
+   ======================================== */
 
 .chat-header{
-  height:58px;
-  background:var(--bg-primary);
-  border-bottom:1px solid var(--border);
+  height:56px;
+  padding:0 14px;
   display:flex;
   align-items:center;
-  padding:0 16px;
-  flex-shrink:0;
   gap:8px;
+  background:var(--bg-primary);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  z-index:20;
 }
 
 .chat-header-user{
+  flex:1;
   display:flex;
   align-items:center;
   gap:10px;
-  flex:1;
+  overflow:hidden;
+  cursor:pointer;
+  border-radius:8px;
+  padding:5px 6px;
+  margin:-5px -6px;
+  transition:background-color 0.12s;
+  -webkit-tap-highlight-color:transparent;
 }
+.chat-header-user:hover{background:var(--bg-secondary);}
 
+/* ヘッダーアバター */
 .chat-header-avatar{
   width:36px;
   height:36px;
   border-radius:50%;
-  overflow:hidden;
-  background:var(--bg-secondary);
+  overflow:visible;
   flex-shrink:0;
+  position:relative;
+  background:var(--bg-secondary);
 }
-
 .chat-header-avatar img{
-  width:100%;
-  height:100%;
+  width:36px;
+  height:36px;
   object-fit:cover;
+  border-radius:50%;
+  display:block;
 }
+.chat-header-avatar .online-indicator{border-color:var(--bg-primary);}
 
-.chat-header-info{
-  display:flex;
-  flex-direction:column;
-  gap:1px;
-}
-
+.chat-header-info{flex:1;min-width:0;}
 .chat-header-name{
   font-size:15px;
   font-weight:600;
   color:var(--text-primary);
   line-height:1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
-
 .chat-header-status{
   font-size:12px;
   color:var(--text-tertiary);
   line-height:1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
 
-/* ----------------------------------------
+/* 戻るボタン（モバイル） */
+.back-btn{
+  display:none;
+  width:36px;
+  height:36px;
+  align-items:center;
+  justify-content:center;
+  background:none;
+  border:none;
+  border-radius:8px;
+  color:var(--text-secondary);
+  cursor:pointer;
+  transition:background-color 0.12s,color 0.12s;
+  flex-shrink:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.back-btn:hover{background:var(--bg-secondary);color:var(--text-primary);}
+.back-btn .material-symbols-outlined{font-size:20px;}
+
+/* ========================================
    メッセージエリア
-   ---------------------------------------- */
+   ======================================== */
 
 .chat-messages{
   flex:1;
   overflow-y:auto;
-  /* gap は使わず margin で制御する */
-  padding:8px 16px 8px;
+  padding:8px 16px 12px;
   display:flex;
   flex-direction:column;
   gap:0;
+  background:var(--bg-primary);
   scrollbar-width:thin;
   scrollbar-color:var(--border) transparent;
 }
+.chat-messages::-webkit-scrollbar{width:4px;}
+.chat-messages::-webkit-scrollbar-track{background:transparent;}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
 
-.chat-messages::-webkit-scrollbar{
-  width:4px;
-}
-
-.chat-messages::-webkit-scrollbar-track{
-  background:transparent;
-}
-
-.chat-messages::-webkit-scrollbar-thumb{
-  background:var(--border);
-  border-radius:4px;
-}
-
-/* ----------------------------------------
-   メッセージバブル
-   ---------------------------------------- */
+/* ========================================
+   メッセージ
+   ======================================== */
 
 .message{
   display:flex;
   gap:10px;
-  /* グループ先頭: 上に余白を作り、グループ間を区別する */
   padding:3px 10px 2px;
-  margin-top:4px;
+  margin-top:6px;
   border-radius:10px;
-  transition:background-color 0.12s;
+  transition:background-color 0.1s;
   position:relative;
 }
+.message:hover{background:var(--msg-hover);}
+.message:hover .message-actions{display:flex;}
 
-.message:hover{
-  background:var(--bg-primary);
-}
-
-.message:hover .message-actions{
-  display:flex;
-}
-
-/* ========================================
-   連続メッセージ（グループ化）
-   同一送信者の2件目以降はヘッダーを非表示にし
-   アバターも非表示（スペースは維持）にする。
-   ホバー時にアバター領域へ送信時刻を表示。
-   ======================================== */
-
+/* グループ化 */
 .message.grouped{
-  /* グループ先頭との間を完全に詰める */
   margin-top:0;
   padding-top:0;
   padding-bottom:0;
 }
+.message.grouped .message-avatar{visibility:hidden;}
+.message.grouped .message-header{display:none;}
 
-.message.grouped .message-avatar{
-  visibility:hidden;
-}
-
-.message.grouped .message-header{
-  display:none;
-}
-
-/* グループ化メッセージのホバー時に時刻を左端へ表示 */
 .message.grouped:hover .message-avatar{
   visibility:visible;
   position:relative;
 }
-
 .message.grouped:hover .message-avatar::after{
   content:attr(data-time);
   position:absolute;
@@ -541,56 +505,7 @@
   text-align:center;
   white-space:nowrap;
 }
-
-.message.grouped:hover .message-avatar img{
-  opacity:0;
-}
-
-/* ----------------------------------------
-   アクションボタン
-   ---------------------------------------- */
-
-.message-actions{
-  display:none;
-  position:absolute;
-  top:-4px;
-  right:10px;
-  gap:3px;
-  background:var(--bg-primary);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:3px;
-  box-shadow:0 2px 12px rgba(0,0,0,0.12);
-  z-index:10;
-}
-
-.message-action-btn{
-  width:28px;
-  height:28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:transparent;
-  border:none;
-  border-radius:6px;
-  color:var(--text-secondary);
-  cursor:pointer;
-  transition:all 0.12s;
-}
-
-.message-action-btn:hover{
-  background:var(--bg-secondary);
-  color:var(--main);
-}
-
-.message-action-btn .material-symbols-outlined{
-  font-size:15px;
-}
-
-.message-action-btn.delete:hover{
-  color:#cf222e;
-  background:rgba(207,34,46,0.08);
-}
+.message.grouped:hover .message-avatar img{opacity:0;}
 
 /* アバター */
 .message-avatar{
@@ -598,23 +513,16 @@
   height:36px;
   border-radius:50%;
   overflow:hidden;
-  background:var(--bg-primary);
+  background:var(--bg-secondary);
   flex-shrink:0;
   cursor:pointer;
+  transition:opacity 0.12s;
 }
-
-.message-avatar img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-}
+.message-avatar:hover{opacity:0.82;}
+.message-avatar img{width:100%;height:100%;object-fit:cover;}
 
 /* メッセージ内容 */
-.message-content{
-  flex:1;
-  min-width:0;
-}
-
+.message-content{flex:1;min-width:0;}
 .message-header{
   display:flex;
   align-items:baseline;
@@ -622,104 +530,112 @@
   margin-bottom:2px;
   flex-wrap:wrap;
 }
-
 .message-author{
   font-size:13px;
-  font-weight:600;
+  font-weight:700;
   color:var(--text-primary);
   cursor:pointer;
+  transition:color 0.12s;
 }
-
-.message-author:hover{
-  color:var(--main);
-}
-
-.message-time{
-  font-size:11px;
-  color:var(--text-tertiary);
-}
-
+.message-author:hover{color:var(--main);}
+.message-time{font-size:11px;color:var(--text-tertiary);}
 .message-read{
   display:inline-flex;
   align-items:center;
   padding:1px 6px;
-  background:rgba(45,164,78,0.1);
-  color:#2da44e;
+  background:rgba(34,197,94,0.1);
+  color:#16a34a;
   font-size:10px;
   font-weight:600;
   border-radius:4px;
   margin-left:4px;
 }
-
 .message-text{
   font-size:14px;
   color:var(--text-primary);
-  line-height:1.55;
+  line-height:1.6;
   white-space:pre-wrap;
   word-wrap:break-word;
 }
-
-.message-text a{
-  color:var(--main);
-  text-decoration:underline;
-  word-break:break-all;
-}
-
-.message-text a:hover{
-  color:var(--main-hover);
-}
-
-.message-edited{
-  font-size:11px;
-  color:var(--text-tertiary);
-  margin-top:2px;
-}
+.message-text a{color:var(--main);text-decoration:underline;word-break:break-all;}
+.message-text a:hover{color:var(--main-hover);}
+.message-edited{font-size:11px;color:var(--text-tertiary);margin-top:2px;}
 
 /* リプライ */
 .message-reply{
   font-size:12px;
   color:var(--text-secondary);
-  padding:4px 8px;
+  padding:4px 10px;
   background:var(--bg-secondary);
   border-left:3px solid var(--main);
-  border-radius:4px;
-  margin-bottom:4px;
+  border-radius:0 6px 6px 0;
+  margin-bottom:5px;
   cursor:pointer;
   transition:background-color 0.12s;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
 }
-
-.message-reply:hover{
-  background:var(--border-light);
-}
+.message-reply:hover{background:var(--border-light);}
 
 /* 画像 */
 .message-image{
   max-width:360px;
   max-height:280px;
-  border-radius:10px;
+  border-radius:12px;
   margin-top:6px;
   cursor:pointer;
   transition:opacity 0.15s,transform 0.15s;
   border:1px solid var(--border);
+  display:block;
+}
+.message-image:hover{opacity:0.94;transform:scale(1.01);}
+
+/* アクションボタン */
+.message-actions{
+  display:none;
+  position:absolute;
+  top:-6px;
+  right:10px;
+  gap:2px;
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:3px 4px;
+  box-shadow:0 4px 16px rgba(0,0,0,0.1);
+  z-index:10;
+}
+.message-action-btn{
+  width:30px;
+  height:30px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:none;
+  border:none;
+  border-radius:6px;
+  color:var(--text-secondary);
+  cursor:pointer;
+  transition:all 0.12s;
+}
+.message-action-btn:hover{background:var(--bg-secondary);color:var(--main);}
+.message-action-btn .material-symbols-outlined{font-size:16px;}
+.message-action-btn.delete:hover{
+  color:#ef4444;
+  background:rgba(239,68,68,0.08);
 }
 
-.message-image:hover{
-  opacity:0.95;
-  transform:scale(1.01);
-}
-
-/* ----------------------------------------
+/* ========================================
    日付セパレーター
-   ---------------------------------------- */
+   ======================================== */
 
 .date-separator{
   display:flex;
   align-items:center;
   gap:10px;
-  padding:12px 4px 6px;
+  padding:14px 4px 6px;
   margin:6px 0 2px;
 }
-
 .date-separator::before,
 .date-separator::after{
   content:'';
@@ -727,26 +643,24 @@
   height:1px;
   background:var(--border);
 }
-
 .date-separator span{
   font-size:11px;
   font-weight:600;
   color:var(--text-tertiary);
   white-space:nowrap;
-  padding:3px 8px;
+  padding:3px 10px;
   background:var(--bg-secondary);
   border:1px solid var(--border);
   border-radius:20px;
 }
 
-/* ----------------------------------------
+/* ========================================
    入力エリア
-   ---------------------------------------- */
+   ======================================== */
 
 .chat-input-container{
-  /* 上下パディングを削減し、入力欄がより画面端に近く見えるようにする */
-  padding:6px 14px;
-  padding-bottom:max(6px,env(safe-area-inset-bottom));
+  padding:8px 14px 10px;
+  padding-bottom:max(10px,env(safe-area-inset-bottom));
   background:var(--bg-primary);
   border-top:1px solid var(--border);
   flex-shrink:0;
@@ -765,93 +679,28 @@
   font-size:12px;
   color:var(--text-secondary);
 }
-
-.reply-preview.show{
-  display:flex;
-}
-
+.reply-preview.show{display:flex;}
 .reply-preview-close{
-  background:none;
-  border:none;
-  color:var(--text-tertiary);
-  cursor:pointer;
-  padding:0;
-  line-height:1;
-  flex-shrink:0;
+  background:none;border:none;color:var(--text-tertiary);
+  cursor:pointer;padding:0;line-height:1;flex-shrink:0;
 }
-
-.reply-preview-close .material-symbols-outlined{
-  font-size:16px;
-}
-
-.reply-preview-header{
-  font-weight:600;
-  color:var(--main);
-  margin-bottom:2px;
-}
-
-.reply-preview-text{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-  flex:1;
-}
+.reply-preview-close .material-symbols-outlined{font-size:16px;}
+.reply-preview-header{font-weight:600;color:var(--main);margin-bottom:2px;}
+.reply-preview-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;}
 
 .image-preview-container{
-  display:none;
-  align-items:flex-start;
-  gap:8px;
-  margin-bottom:6px;
+  display:none;align-items:flex-start;gap:8px;margin-bottom:6px;
 }
-
-.image-preview-container.show{
-  display:flex;
-}
-
+.image-preview-container.show{display:flex;}
 .image-preview-close{
-  background:var(--bg-secondary);
-  border:1px solid var(--border);
-  border-radius:6px;
-  color:var(--text-secondary);
-  cursor:pointer;
-  padding:3px;
-  line-height:1;
+  background:var(--bg-secondary);border:1px solid var(--border);
+  border-radius:6px;color:var(--text-secondary);cursor:pointer;
+  padding:3px;line-height:1;
 }
-
-.image-preview-close .material-symbols-outlined{
-  font-size:16px;
-}
-
+.image-preview-close .material-symbols-outlined{font-size:16px;}
 .image-preview{
-  max-width:180px;
-  max-height:180px;
-  border-radius:8px;
-  object-fit:cover;
-  border:1px solid var(--border);
-}
-
-.action-btn{
-  width:32px;
-  height:32px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:none;
-  border:none;
-  border-radius:8px;
-  color:var(--text-secondary);
-  cursor:pointer;
-  transition:all 0.12s;
-  flex-shrink:0;
-}
-
-.action-btn:hover{
-  background:var(--bg-secondary);
-  color:var(--main);
-}
-
-.action-btn .material-symbols-outlined{
-  font-size:20px;
+  max-width:160px;max-height:160px;border-radius:10px;
+  object-fit:cover;border:1px solid var(--border);
 }
 
 .chat-input-wrapper{
@@ -859,20 +708,20 @@
   align-items:flex-end;
   gap:4px;
   background:var(--bg-secondary);
-  border:1px solid var(--border);
-  border-radius:12px;
+  border:1.5px solid var(--border);
+  border-radius:var(--input-radius);
   padding:5px 6px;
   transition:border-color 0.15s,box-shadow 0.15s;
+  box-shadow:var(--input-shadow);
 }
-
 .chat-input-wrapper:focus-within{
   border-color:var(--main);
-  box-shadow:0 0 0 3px var(--main-light);
+  box-shadow:0 0 0 3px var(--main-light),var(--input-shadow);
 }
 
 .chat-input{
   flex:1;
-  min-height:22px;
+  min-height:24px;
   max-height:160px;
   background:none;
   border:none;
@@ -880,466 +729,333 @@
   font-size:14px;
   color:var(--text-primary);
   resize:none;
-  line-height:1.5;
+  line-height:1.55;
   overflow-y:auto;
   scrollbar-width:none;
   padding:4px 4px;
 }
+.chat-input::-webkit-scrollbar{display:none;}
+.chat-input::placeholder{color:var(--text-tertiary);}
 
-.chat-input::-webkit-scrollbar{
-  display:none;
+.action-btn{
+  width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:none;border-radius:8px;
+  color:var(--text-secondary);cursor:pointer;
+  transition:all 0.12s;flex-shrink:0;
 }
-
-.chat-input::placeholder{
-  color:var(--text-tertiary);
-}
+.action-btn:hover{background:var(--bg-primary);color:var(--main);}
+.action-btn .material-symbols-outlined{font-size:20px;}
 
 .send-btn{
-  width:32px;
-  height:32px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:var(--main);
-  border:none;
-  border-radius:8px;
-  color:#ffffff;
-  cursor:pointer;
-  transition:all 0.15s;
-  flex-shrink:0;
+  width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--main);border:none;border-radius:10px;
+  color:#fff;cursor:pointer;transition:all 0.15s;flex-shrink:0;
 }
-
-.send-btn:hover{
-  background:var(--main-hover);
-  transform:scale(1.05);
-}
-
-.send-btn:active{
-  transform:scale(0.95);
-}
-
-.send-btn .material-symbols-outlined{
-  font-size:17px;
-}
+.send-btn:hover{background:var(--main-hover);transform:scale(1.06);}
+.send-btn:active{transform:scale(0.93);}
+.send-btn .material-symbols-outlined{font-size:17px;}
 
 .typing-indicator{
-  min-height:12px;
-  font-size:11px;
-  color:var(--text-tertiary);
-  padding-top:2px;
-  display:flex;
-  align-items:center;
-  gap:6px;
+  min-height:14px;font-size:11px;color:var(--text-tertiary);
+  padding-top:3px;display:flex;align-items:center;gap:6px;
 }
-
 .typing-dots span{
-  display:inline-block;
-  animation:typingBounce 1.2s infinite;
-  font-weight:700;
+  display:inline-block;animation:typingBounce 1.2s infinite;font-weight:700;
 }
-
 .typing-dots span:nth-child(2){animation-delay:0.2s;}
 .typing-dots span:nth-child(3){animation-delay:0.4s;}
-
 @keyframes typingBounce{
   0%,60%,100%{transform:translateY(0);}
   30%{transform:translateY(-3px);}
 }
 
-/* ----------------------------------------
+/* ========================================
    スクロールダウンボタン
-   ---------------------------------------- */
+   ======================================== */
 
 .scroll-down-btn{
   position:absolute;
-  bottom:72px;
-  right:14px;
-  width:36px;
-  height:36px;
+  bottom:80px;right:16px;
+  width:36px;height:36px;
   background:var(--bg-primary);
   border:1px solid var(--border);
   border-radius:50%;
-  display:none;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  box-shadow:0 2px 12px rgba(0,0,0,0.15);
-  transition:all 0.15s;
-  z-index:20;
-  color:var(--text-secondary);
+  display:none;align-items:center;justify-content:center;
+  cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.12);
+  transition:all 0.15s;z-index:20;color:var(--text-secondary);
 }
-
-.scroll-down-btn.visible{
-  display:flex;
-}
-
+.scroll-down-btn.visible{display:flex;}
 .scroll-down-btn:hover{
-  background:var(--bg-secondary);
-  border-color:var(--main);
-  color:var(--main);
+  background:var(--main);border-color:var(--main);color:#fff;
 }
+.scroll-down-btn .material-symbols-outlined{font-size:20px;}
 
-.scroll-down-btn .material-symbols-outlined{
-  font-size:20px;
-}
-
-/* ----------------------------------------
+/* ========================================
    もっと読み込む
-   ---------------------------------------- */
+   ======================================== */
 
-.load-more-indicator{
-  display:flex;
-  justify-content:center;
-  padding:12px;
-}
-
+.load-more-indicator{display:flex;justify-content:center;padding:12px;}
 .load-more-spinner{
-  width:24px;
-  height:24px;
-  border:2px solid var(--border);
-  border-top-color:var(--main);
-  border-radius:50%;
-  animation:spin 0.8s linear infinite;
+  width:24px;height:24px;
+  border:2px solid var(--border);border-top-color:var(--main);
+  border-radius:50%;animation:spin 0.8s linear infinite;
 }
 
-/* ----------------------------------------
+/* ========================================
    画像拡大モーダル
-   ---------------------------------------- */
+   ======================================== */
 
 .image-modal{
   display:none;
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.85);
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.86);
   z-index:9999;
-  align-items:center;
-  justify-content:center;
-  padding:16px;
+  align-items:center;justify-content:center;
+  padding:20px;
 }
-
-.image-modal.show{
-  display:flex;
-}
-
+.image-modal.show{display:flex;}
 .image-modal-close{
-  position:absolute;
-  top:12px;
-  right:12px;
-  width:40px;
-  height:40px;
-  background:rgba(255,255,255,0.1);
-  border:none;
-  border-radius:50%;
-  color:#fff;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  justify-content:center;
+  position:absolute;top:16px;right:16px;
+  width:40px;height:40px;
+  background:rgba(255,255,255,0.12);
+  border:none;border-radius:50%;
+  color:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background-color 0.15s;
 }
-
-.image-modal-close:hover{
-  background:rgba(255,255,255,0.2);
-}
-
+.image-modal-close:hover{background:rgba(255,255,255,0.22);}
+.image-modal-close .material-symbols-outlined{font-size:22px;}
 #image-modal-img{
-  max-width:100%;
-  max-height:90vh;
-  border-radius:12px;
-  object-fit:contain;
+  max-width:90vw;max-height:88vh;
+  border-radius:12px;object-fit:contain;
+  box-shadow:0 8px 40px rgba(0,0,0,0.5);
 }
 
-/* ----------------------------------------
-   編集・削除モーダル
-   ---------------------------------------- */
+/* ========================================
+   編集モーダル
+   ======================================== */
 
 .modal{
   display:none;
-  position:fixed;
-  inset:0;
+  position:fixed;inset:0;
   background:rgba(0,0,0,0.5);
   z-index:9000;
-  align-items:center;
-  justify-content:center;
-  padding:16px;
+  align-items:center;justify-content:center;
+  padding:20px;
 }
-
-.modal.show{
-  display:flex;
-}
-
+.modal.show{display:flex;}
 .modal-content{
+  width:100%;max-width:480px;
   background:var(--bg-primary);
   border:1px solid var(--border);
   border-radius:16px;
-  width:100%;
-  max-width:480px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.2);
+  box-shadow:0 16px 48px rgba(0,0,0,0.18);
   overflow:hidden;
+  animation:modalIn 0.18s ease;
 }
-
+@keyframes modalIn{
+  from{opacity:0;transform:scale(0.96) translateY(4px);}
+  to{opacity:1;transform:scale(1) translateY(0);}
+}
 .modal-header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  padding:16px 20px;
-  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid var(--border);
 }
-
-.modal-header h3{
-  font-size:15px;
-  font-weight:600;
-  margin:0;
-}
-
+.modal-header h3{font-size:15px;font-weight:700;color:var(--text-primary);}
 .modal-close{
-  width:28px;
-  height:28px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:none;
-  border:none;
-  border-radius:6px;
-  color:var(--text-secondary);
-  cursor:pointer;
+  width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+  background:none;border:none;border-radius:7px;
+  color:var(--text-secondary);cursor:pointer;transition:all 0.12s;
 }
-
-.modal-close:hover{
-  background:var(--bg-secondary);
+.modal-close:hover{background:var(--bg-secondary);color:var(--text-primary);}
+.modal-close .material-symbols-outlined{font-size:18px;}
+.modal-body{padding:16px 20px;}
+.modal-footer{
+  padding:12px 20px 16px;
+  display:flex;gap:8px;justify-content:flex-end;
+  border-top:1px solid var(--border);
 }
-
-.modal-close .material-symbols-outlined{
-  font-size:18px;
-}
-
-.modal-body{
-  padding:16px 20px;
-}
-
 #edit-textarea{
-  width:100%;
-  min-height:80px;
-  max-height:240px;
-  background:var(--bg-secondary);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:10px 12px;
-  font-size:14px;
-  color:var(--text-primary);
-  resize:none;
-  outline:none;
-  line-height:1.5;
-  box-sizing:border-box;
+  width:100%;padding:10px 12px;font-size:14px;
+  border:1.5px solid var(--border);border-radius:10px;
+  background:var(--bg-secondary);color:var(--text-primary);
+  resize:vertical;min-height:80px;
 }
-
 #edit-textarea:focus{
   border-color:var(--main);
   box-shadow:0 0 0 3px var(--main-light);
+  outline:none;
 }
 
-.modal-footer{
-  display:flex;
-  justify-content:flex-end;
-  gap:8px;
-  padding:12px 20px 16px;
+/* ========================================
+   プロフィールポップアップ
+   ======================================== */
+
+.profile-popup-overlay{
+  position:fixed;inset:0;z-index:8000;
+}
+.profile-popup{
+  position:fixed;
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:16px;
+  box-shadow:var(--popup-shadow);
+  z-index:8001;
+  overflow:hidden;
+  width:276px;
+  animation:popupIn 0.15s ease;
+}
+@keyframes popupIn{
+  from{opacity:0;transform:scale(0.94) translateY(-4px);}
+  to{opacity:1;transform:scale(1) translateY(0);}
 }
 
-/* 戻るボタン（モバイル） */
-.back-btn{
-  display:none;
-  width:34px;
-  height:34px;
-  align-items:center;
-  justify-content:center;
-  background:none;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-  color:var(--text-secondary);
-  transition:all 0.12s;
+.pp-header{
+  padding:20px 20px 14px;
+  background:linear-gradient(160deg,var(--main-light),transparent 70%);
+  border-bottom:1px solid var(--border);
+}
+.pp-avatar{
+  width:56px;height:56px;border-radius:50%;
+  overflow:visible;margin-bottom:10px;position:relative;
   flex-shrink:0;
 }
-
-.back-btn:hover{
-  background:var(--bg-secondary);
-  color:var(--text-primary);
+.pp-avatar img{
+  width:56px;height:56px;object-fit:cover;
+  border-radius:50%;display:block;
+  border:2px solid var(--border);
 }
-
-.back-btn .material-symbols-outlined{
-  font-size:20px;
+.pp-avatar .online-indicator{
+  width:13px;height:13px;
+  border:2.5px solid var(--bg-primary);
 }
+.pp-name-row{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+  margin-bottom:4px;
+}
+.pp-name{
+  font-size:16px;font-weight:700;color:var(--text-primary);
+}
+.pp-status{font-size:12px;color:var(--text-tertiary);}
+.pp-online-text{
+  font-size:11px;font-weight:600;color:#22c55e;
+}
+.pp-body{padding:12px 20px;}
+.pp-field{margin-bottom:10px;}
+.pp-field:last-child{margin-bottom:0;}
+.pp-field-label{
+  font-size:10.5px;font-weight:700;color:var(--text-tertiary);
+  text-transform:uppercase;letter-spacing:0.8px;margin-bottom:3px;
+}
+.pp-field-value{
+  font-size:13px;color:var(--text-primary);
+  line-height:1.4;word-break:break-word;
+}
+.pp-actions{
+  padding:0 20px 16px;
+  display:flex;gap:8px;
+}
+.pp-btn{
+  flex:1;padding:8px;font-size:13px;font-weight:600;
+  border-radius:8px;border:1px solid var(--border);
+  cursor:pointer;background:var(--bg-secondary);color:var(--text-primary);
+  transition:all 0.12s;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+}
+.pp-btn:hover{background:var(--main);border-color:var(--main);color:#fff;}
+.pp-btn .material-symbols-outlined{font-size:16px;}
 
-/* ----------------------------------------
+/* ミニトースト */
+.mini-toast{
+  position:fixed;
+  bottom:84px;left:50%;
+  transform:translateX(-50%) translateY(10px);
+  background:var(--text-primary);color:var(--bg-primary);
+  padding:8px 18px;border-radius:20px;
+  font-size:13px;font-weight:500;
+  opacity:0;transition:all 0.25s;z-index:10000;
+  white-space:nowrap;
+  box-shadow:0 4px 16px rgba(0,0,0,0.2);
+  pointer-events:none;
+}
+.mini-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ========================================
    モバイル対応（768px以下）
-   ---------------------------------------- */
+   ======================================== */
 
 @media(max-width:768px){
-  .back-btn{
-    display:flex;
-  }
+  .back-btn{display:flex;}
 
-  .chat-container{
-    position:relative;
-    overflow:hidden;
-  }
+  .chat-container{position:relative;overflow:hidden;}
 
   .dm-sidebar{
-    width:82%;
-    max-width:300px;
-    position:absolute;
-    top:0;
-    left:0;
-    height:100%;
-    z-index:100;
+    width:82%;max-width:290px;
+    position:absolute;top:0;left:0;height:100%;z-index:100;
     transform:translateX(-100%);
     transition:transform 0.25s ease;
-    box-shadow:4px 0 20px rgba(0,0,0,0.15);
+    box-shadow:4px 0 24px rgba(0,0,0,0.16);
   }
-
-  .dm-sidebar.show{
-    transform:translateX(0);
-  }
+  .dm-sidebar.show{transform:translateX(0);}
 
   .dm-overlay{
-    display:none;
-    position:absolute;
-    inset:0;
-    background:rgba(0,0,0,0.45);
-    z-index:99;
+    display:none;position:absolute;inset:0;
+    background:rgba(0,0,0,0.45);z-index:99;
     -webkit-tap-highlight-color:transparent;
   }
+  .dm-overlay.show{display:block;}
 
-  .dm-overlay.show{
-    display:block;
-  }
+  .chat-header{height:52px;padding:0 8px;}
+  .chat-header-name{font-size:14px;}
+  .chat-header-status{font-size:11px;}
 
-  .chat-header{
-    height:52px;
-    padding:0 8px;
-  }
-
-  .chat-header-name{
-    font-size:14px;
-  }
-
-  .chat-header-status{
-    font-size:11px;
-  }
-
-  .chat-messages{
-    padding:6px 10px 4px;
-  }
+  .chat-messages{padding:6px 10px 8px;}
 
   .message{
-    padding:3px 8px 2px;
-    margin-top:4px;
+    padding:3px 8px 2px;margin-top:5px;
     -webkit-tap-highlight-color:transparent;
   }
-
-  .message.grouped{
-    margin-top:0;
-    padding-top:0;
-    padding-bottom:0;
-  }
-
-  .message-actions{
-    display:none;
-  }
-
-  .message.touch-active .message-actions{
-    display:flex;
-  }
-
-  .message-action-btn{
-    width:32px;
-    height:32px;
-  }
-
-  .message-image{
-    max-width:100%;
-    max-height:220px;
-  }
-
-  .message-avatar{
-    width:32px;
-    height:32px;
-  }
+  .message.grouped{margin-top:0;padding-top:0;padding-bottom:0;}
+  .message-actions{display:none;}
+  .message.touch-active .message-actions{display:flex;}
+  .message-action-btn{width:32px;height:32px;}
+  .message-image{max-width:100%;max-height:220px;}
+  .message-avatar{width:32px;height:32px;}
 
   .chat-input-container{
-    padding:4px 10px;
-    padding-bottom:max(4px,env(safe-area-inset-bottom));
+    padding:6px 10px;
+    padding-bottom:max(6px,env(safe-area-inset-bottom));
   }
+  .chat-input{font-size:16px;min-height:34px;}
+  #edit-textarea{font-size:16px;}
+  .send-btn{width:32px;height:32px;}
 
-  .chat-input{
-    font-size:16px;
-    min-height:34px;
-  }
+  .scroll-down-btn{bottom:66px;right:10px;width:34px;height:34px;}
 
-  #edit-textarea{
-    font-size:16px;
-  }
-
-  .send-btn{
-    width:34px;
-    height:34px;
-  }
-
-  .scroll-down-btn{
-    bottom:60px;
-    right:10px;
-    width:34px;
-    height:34px;
-  }
-
-  .dm-item{
-    padding:9px 8px;
-    min-height:52px;
-  }
-
-  .dm-item-avatar{
-    width:38px;
-    height:38px;
-  }
-
-  .channel-item{
-    min-height:48px;
-  }
+  .dm-item{padding:8px 8px;min-height:52px;}
+  .dm-item-avatar{width:40px;height:40px;}
+  .dm-item-avatar img{width:40px;height:40px;}
+  .channel-item{min-height:48px;}
 
   .modal-content{
-    width:calc(100% - 24px);
-    margin:12px;
-    border-radius:12px;
+    width:calc(100% - 20px);margin:10px;border-radius:14px;
   }
+  .image-preview{max-width:140px;max-height:140px;}
+  .date-separator span{font-size:10px;}
 
-  .image-preview{
-    max-width:150px;
-    max-height:150px;
-  }
-
-  .date-separator span{
-    font-size:10px;
-  }
+  .chat-empty-icon{width:60px;height:60px;}
+  .chat-empty-icon .material-symbols-outlined{font-size:30px;}
+  .chat-empty h3{font-size:16px;}
+  .chat-empty p{font-size:13px;}
 }
 
 @media(max-width:360px){
-  .dm-sidebar{
-    width:90%;
-  }
-
-  .chat-header-name{
-    font-size:13px;
-  }
-
-  .message-avatar{
-    width:28px;
-    height:28px;
-  }
-
-  .message-author{
-    font-size:12px;
-  }
-
-  .message-text{
-    font-size:13px;
-  }
+  .dm-sidebar{width:90%;}
+  .chat-header-name{font-size:13px;}
+  .message-avatar{width:28px;height:28px;}
+  .message-author{font-size:12px;}
+  .message-text{font-size:13px;}
 }

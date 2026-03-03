@@ -19,7 +19,10 @@
           <div class="dm-overlay" id="dm-overlay"></div>
           <aside class="dm-sidebar">
             <div class="dm-header">
-              <h2>ChatHub</h2>
+              <h2>
+                <span class="dm-header-dot"></span>
+                ChatHub
+              </h2>
             </div>
             <div class="dm-list" id="dm-list">
               <!-- チャンネル・ユーザー一覧はJSで生成される -->
@@ -59,33 +62,15 @@
           <textarea id="edit-textarea" rows="4"></textarea>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" id="edit-cancel">キャンセル</button>
-          <button class="btn-primary" id="edit-save">保存</button>
+          <button class="btn-secondary" id="edit-cancel-btn">キャンセル</button>
+          <button class="btn-primary" id="edit-save-btn">保存</button>
         </div>
       </div>
     </div>
 
-    <!-- 削除確認モーダル -->
-    <div class="modal" id="delete-modal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>メッセージを削除</h3>
-          <button class="modal-close" id="delete-modal-close">
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p>このメッセージを削除しますか？この操作は元に戻せません。</p>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" id="delete-cancel">キャンセル</button>
-          <button class="btn-danger" id="delete-confirm">削除</button>
-        </div>
-      </div>
-    </div>
     <script type="module" src="js/chat.js"></script>
-      <script src="common/stealth-mode.js"></script>
-  <script src="common/capture-handler.js"></script>
-<script src="common/eruda-init.js"></script> 
+    <script src="common/stealth-mode.js"></script>
+    <script src="common/capture-handler.js"></script>
+    <script src="common/eruda-init.js"></script>
   </body>
 </html>

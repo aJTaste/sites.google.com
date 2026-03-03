@@ -95,10 +95,11 @@ function renderSidebarItems(){
 
       const iconSrc=user.avatar_url||geoAvatarDataUrl(user.id,40);
       const isOnline=user.is_online||false;
-      const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
+      const onlineIndicator=isOnline
+        ?'<div class="online-indicator"></div>':'';
       const currentPage=user.current_page||'';
       const statusText=isOnline
-        ?(currentPage?` ${esc(currentPage)}`:' オンライン')
+        ?(currentPage?esc(currentPage):'オンライン')
         :`最終: ${formatLastOnline(user.last_online||user.created_at)}`;
 
       const unreadCount=state.unreadCounts[user.user_id]||0;
@@ -108,7 +109,7 @@ function renderSidebarItems(){
 
       dmItem.innerHTML=`
         <div class="dm-item-avatar" title="クリック: プロフィール / Ctrl+クリック: 呼び出し">
-          <img src="${esc(iconSrc)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+          <img src="${esc(iconSrc)}" alt="${esc(user.display_name)}">
           ${onlineIndicator}
         </div>
         <div class="dm-item-info">
@@ -180,63 +181,75 @@ export function showProfilePopup(profile,anchorEl){
   const isOnline=profile.is_online||false;
   const currentPage=profile.current_page||'';
   const statusText=isOnline
-    ?(currentPage?` ${esc(currentPage)}`:' オンライン')
+    ?(currentPage?esc(currentPage):'オンライン')
     :`最終: ${formatLastOnline(profile.last_online||profile.created_at)}`;
+
+  let roleBadge='';
+  if(profile.role==='admin'){
+    roleBadge='<span class="role-badge role-admin">Admin</span>';
+  }else if(profile.role==='moderator'){
+    roleBadge='<span class="role-badge role-moderator">Mod</span>';
+  }
+
+  const bioSection=profile.bio
+    ?`<div class="pp-body">
+        <div class="pp-field">
+          <div class="pp-field-label">自己紹介</div>
+          <div class="pp-field-value">${esc(profile.bio)}</div>
+        </div>
+      </div>`
+    :`<div style="height:2px;"></div>`;
 
   popup.innerHTML=`
     <div class="pp-header">
       <div class="pp-avatar">
         <img src="${esc(iconSrc)}" alt="${esc(profile.display_name)}">
-        ${isOnline?'<div class="pp-online-dot"></div>':''}
+        ${isOnline?'<div class="online-indicator"></div>':''}
       </div>
-      <div class="pp-info">
+      <div class="pp-name-row">
         <div class="pp-name">${esc(profile.display_name)}</div>
-        <div class="pp-status">${statusText}</div>
-        ${profile.bio?`<div class="pp-bio">${esc(profile.bio)}</div>`:''}
+        ${roleBadge}
+        ${isOnline?'<span class="pp-online-text">● オンライン</span>':''}
       </div>
+      <div class="pp-status">${statusText}</div>
     </div>
+    ${bioSection}
     <div class="pp-actions">
-      <button class="pp-btn primary" id="pp-dm-btn">
-        <span class="material-symbols-outlined">chat</span>
+      <button class="pp-btn" id="pp-dm-btn">
+        <span class="material-symbols-outlined">chat_bubble</span>
         メッセージ
-      </button>
-      <button class="pp-btn" id="pp-call-btn" ${!isOnline?'disabled':''}>
-        <span class="material-symbols-outlined">phone</span>
-        呼び出し
       </button>
     </div>
   `;
 
   document.body.appendChild(overlay);
   document.body.appendChild(popup);
-  _popup={overlay,popup};
+  _popup=popup;
 
   // 位置調整
   const rect=anchorEl.getBoundingClientRect();
-  const pw=220;
-  let left=rect.right+8;
-  let top=rect.top;
-  if(left+pw>window.innerWidth)left=rect.left-pw-8;
-  if(top+200>window.innerHeight)top=window.innerHeight-210;
-  popup.style.left=`${Math.max(8,left)}px`;
-  popup.style.top=`${Math.max(8,top)}px`;
+  const pw=276;
+  let left=rect.left;
+  let top=rect.bottom+8;
 
-  popup.querySelector('#pp-dm-btn')?.addEventListener('click',()=>{
-    closeProfilePopup();
-    window.selectUser?.(profile.user_id);
-  });
-  popup.querySelector('#pp-call-btn')?.addEventListener('click',()=>{
-    closeProfilePopup();
-    _handleCallUser(profile);
-  });
+  if(left+pw>window.innerWidth-12)left=window.innerWidth-pw-12;
+  if(top+popup.offsetHeight>window.innerHeight-12)top=rect.top-popup.offsetHeight-8;
+
+  popup.style.left=`${Math.max(12,left)}px`;
+  popup.style.top=`${Math.max(12,top)}px`;
+
+  const dmBtn=popup.querySelector('#pp-dm-btn');
+  if(dmBtn){
+    dmBtn.addEventListener('click',()=>{
+      closeProfilePopup();
+      window.selectUser?.(profile.user_id);
+    });
+  }
 }
 
-export function closeProfilePopup(){
-  if(_popup){
-    _popup.overlay.remove();
-    _popup.popup.remove();
-    _popup=null;
-  }
+function closeProfilePopup(){
+  if(_popup){_popup.remove();_popup=null;}
+  document.querySelector('.profile-popup-overlay')?.remove();
 }
 
 // ========================================
@@ -248,17 +261,19 @@ export function createChatHTML(selectedUser){
   const isOnline=selectedUser.is_online||false;
   const currentPage=selectedUser.current_page||'';
   const statusText=isOnline
-    ?(currentPage?` ${esc(currentPage)}`:' オンライン')
+    ?(currentPage?esc(currentPage):'オンライン')
     :`最終: ${formatLastOnline(selectedUser.last_online||selectedUser.created_at)}`;
+  const onlineIndicator=isOnline?'<div class="online-indicator"></div>':'';
 
   return`
     <div class="chat-header">
       <button class="back-btn" id="back-to-list">
         <span class="material-symbols-outlined">arrow_back</span>
       </button>
-      <div class="chat-header-user" style="cursor:pointer;" id="chat-header-user-area" title="プロフィールを表示">
+      <div class="chat-header-user" id="chat-header-user-area">
         <div class="chat-header-avatar">
-          <img src="${esc(iconSrc)}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+          <img src="${esc(iconSrc)}" alt="${esc(selectedUser.display_name)}">
+          ${onlineIndicator}
         </div>
         <div class="chat-header-info">
           <div class="chat-header-name">${esc(selectedUser.display_name)}</div>
@@ -268,7 +283,7 @@ export function createChatHTML(selectedUser){
     </div>
     <div class="chat-messages" id="chat-messages">
       <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-tertiary);font-size:14px;">
-        メッセージを読み込み中...
+        読み込み中...
       </div>
     </div>
     <div class="chat-input-container">
@@ -290,7 +305,7 @@ export function createChatHTML(selectedUser){
         <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-symbols-outlined">image</span>
         </button>
-        <textarea class="chat-input" id="chat-input" placeholder="${esc(selectedUser.display_name)} にメッセージを送信" rows="1"></textarea>
+        <textarea class="chat-input" id="chat-input" placeholder="${esc(selectedUser.display_name)} にメッセージ..." rows="1"></textarea>
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
         </button>
@@ -322,7 +337,7 @@ export function createChannelChatHTML(channel){
     </div>
     <div class="chat-messages" id="chat-messages">
       <div style="display:flex;align-items:center;justify-content:center;padding:40px;color:var(--text-tertiary);font-size:14px;">
-        メッセージを読み込み中...
+        読み込み中...
       </div>
     </div>
     <div class="chat-input-container">
@@ -344,7 +359,7 @@ export function createChannelChatHTML(channel){
         <button class="action-btn" id="attach-image-btn" title="画像を添付">
           <span class="material-symbols-outlined">image</span>
         </button>
-        <textarea class="chat-input" id="chat-input" placeholder="${esc(channel.name)} にメッセージを送信" rows="1"></textarea>
+        <textarea class="chat-input" id="chat-input" placeholder="${esc(channel.name)} にメッセージ..." rows="1"></textarea>
         <button class="send-btn" id="send-btn">
           <span class="material-symbols-outlined">send</span>
         </button>
