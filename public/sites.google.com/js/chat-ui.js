@@ -166,7 +166,7 @@ function _miniToast(msg){
 
 let _popup=null;
 
-function showProfilePopup(profile,anchorEl){
+export function showProfilePopup(profile,anchorEl){
   if(_popup){closeProfilePopup();}
 
   const overlay=document.createElement('div');
