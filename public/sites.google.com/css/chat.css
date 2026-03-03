@@ -482,8 +482,8 @@
   display:flex;
   gap:10px;
   /* グループ先頭: 上に余白を作り、グループ間を区別する */
-  padding:4px 10px 1px;
-  margin-top:6px;
+  padding:3px 10px 2px;
+  margin-top:4px;
   border-radius:10px;
   transition:background-color 0.12s;
   position:relative;
@@ -505,10 +505,10 @@
    ======================================== */
 
 .message.grouped{
-  /* グループ先頭との間を詰める */
+  /* グループ先頭との間を完全に詰める */
   margin-top:0;
-  padding-top:1px;
-  padding-bottom:1px;
+  padding-top:0;
+  padding-bottom:0;
 }
 
 .message.grouped .message-avatar{
@@ -745,8 +745,8 @@
 
 .chat-input-container{
   /* 上下パディングを削減し、入力欄がより画面端に近く見えるようにする */
-  padding:8px 14px;
-  padding-bottom:max(8px,env(safe-area-inset-bottom));
+  padding:6px 14px;
+  padding-bottom:max(6px,env(safe-area-inset-bottom));
   background:var(--bg-primary);
   border-top:1px solid var(--border);
   flex-shrink:0;
@@ -923,10 +923,10 @@
 }
 
 .typing-indicator{
-  min-height:14px;
+  min-height:12px;
   font-size:11px;
   color:var(--text-tertiary);
-  padding-top:3px;
+  padding-top:2px;
   display:flex;
   align-items:center;
   gap:6px;
@@ -1231,15 +1231,15 @@
   }
 
   .message{
-    padding:3px 8px 1px;
-    margin-top:5px;
+    padding:3px 8px 2px;
+    margin-top:4px;
     -webkit-tap-highlight-color:transparent;
   }
 
   .message.grouped{
     margin-top:0;
-    padding-top:1px;
-    padding-bottom:1px;
+    padding-top:0;
+    padding-bottom:0;
   }
 
   .message-actions{
@@ -1266,8 +1266,8 @@
   }
 
   .chat-input-container{
-    padding:6px 10px;
-    padding-bottom:max(6px,env(safe-area-inset-bottom));
+    padding:4px 10px;
+    padding-bottom:max(4px,env(safe-area-inset-bottom));
   }
 
   .chat-input{
