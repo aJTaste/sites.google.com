@@ -2,7 +2,7 @@
 
 import{supabase}from'../common/supabase-config.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
-import{displayUsers,createChatHTML,createChannelChatHTML,showProfilePopup}from'./chat-ui.js'
+import{displayUsers,createChatHTML,createChannelChatHTML,showProfilePopup}from'./chat-ui.js';
 import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
 import{handleImageFile}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';

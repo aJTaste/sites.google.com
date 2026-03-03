@@ -62,8 +62,27 @@
           <textarea id="edit-textarea" rows="4"></textarea>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" id="edit-cancel-btn">キャンセル</button>
-          <button class="btn-primary" id="edit-save-btn">保存</button>
+          <button class="btn-secondary" id="edit-cancel">キャンセル</button>
+          <button class="btn-primary" id="edit-save">保存</button>
+        </div>
+      </div>
+    </div>
+
+        <!-- 削除確認モーダル -->
+    <div class="modal" id="delete-modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>メッセージを削除</h3>
+          <button class="modal-close" id="delete-modal-close">
+            <span class="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>このメッセージを削除しますか？この操作は取り消せません。</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-secondary" id="delete-cancel">キャンセル</button>
+          <button class="btn-danger" id="delete-confirm">削除</button>
         </div>
       </div>
     </div>
