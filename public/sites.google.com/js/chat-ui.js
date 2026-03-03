@@ -5,6 +5,7 @@ import{formatLastOnline}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
 import{geoAvatarDataUrl}from'../common/geo-avatar.js';
 import{supabase}from'../common/supabase-config.js';
+import{startDmCall,joinVoiceChannel}from'./call-engine.js';
 
 function esc(text){
   const d=document.createElement('div');
@@ -69,6 +70,24 @@ function renderSidebarItems(){
       dmList.appendChild(item);
     });
   }
+
+  const VOICE_CHANNELS=[
+  {id:'voice-1',name:'ボイス 1'},
+  {id:'voice-2',name:'ボイス 2'},
+];
+const vcLabel=document.createElement('div');
+vcLabel.className='dm-section-label';
+vcLabel.innerHTML='<span class="material-symbols-outlined">volume_up</span> ボイスチャンネル';
+dmList.appendChild(vcLabel);
+VOICE_CHANNELS.forEach(vc=>{
+  const item=document.createElement('div');
+  item.className='vc-item';item.dataset.vcId=vc.id;
+  item.innerHTML='<div class="vc-icon"><span class="material-symbols-outlined">volume_up</span></div>'
+    +'<div class="vc-item-info"><div class="vc-item-name">'+esc(vc.name)+'</div></div>';
+  item.addEventListener('click',()=>joinVoiceChannel(vc.id));
+  dmList.appendChild(item);
+});
+
 
   // ---- ユーザー一覧セクション ----
   if(!state.allUsers?.length)return;
@@ -144,12 +163,10 @@ function renderSidebarItems(){
 
 async function _handleCallUser(user){
   if(!user.is_online){
-    _miniToast(`${esc(user.display_name)} はオフラインです`);
+    _miniToast(user.display_name+' はオフラインです');
     return;
   }
-  const ok=await window.sendCall?.(user.id,user.display_name);
-  if(ok)_miniToast(`${esc(user.display_name)} を呼び出しました`);
-  else _miniToast('呼び出しに失敗しました');
+  await startDmCall(user);
 }
 
 function _miniToast(msg){

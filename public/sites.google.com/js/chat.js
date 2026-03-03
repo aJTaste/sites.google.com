@@ -6,6 +6,7 @@ import{displayUsers}from'./chat-ui.js';
 import{requestNotificationPermission,showNotification}from'./chat-utils.js';
 import'./chat-handlers.js';
 import'./chat-modals.js';
+import{initCallEngine}from'./call-engine.js';
 
 function isStealthModeActive(){
   const saved=localStorage.getItem('stealthModeState');
@@ -31,6 +32,7 @@ await initPage('chat','ChatHub',{
     try{startOnlineHeartbeat();}catch(e){}
     try{setupVisibilityHandlers();}catch(e){}
     try{setupMobileTouchActions();}catch(e){}
+    try{initCallEngine();}catch(e){console.error('callEngine:',e);}
 
     if(isMobile()){
       setTimeout(()=>{
@@ -152,7 +154,6 @@ function getCurrentOpenDmId(){
 // ========================================
 
 let _callChannel=null;
-
 function subscribeToCallChannel(){
   _callChannel=supabase
     .channel('apphub-calls-v1')
@@ -161,16 +162,22 @@ function subscribeToCallChannel(){
         const payload=data.payload;
         if(!payload||payload.target_id!==state.currentProfile.id)return;
         if(isStealthModeActive())return;
-        showNotification(
-          payload.caller_name||'不明',
-          'あなたを呼び出しています！📞',
-          payload.caller_icon||null,
-          true
-        );
+        import('./call-ui.js').then(m=>m.showIncomingCallToast(payload));
       }catch(e){console.error('call受信エラー:',e);}
     })
+    .on('broadcast',{event:'call-answer'},(data)=>{window.callEngine?.onCallAnswer(data.payload);})
+    .on('broadcast',{event:'call-end'},(data)=>{window.callEngine?.onCallEnd(data.payload);})
+    .on('broadcast',{event:'vc-join'},(data)=>{window.callEngine?.onVcJoin(data.payload);})
+    .on('broadcast',{event:'vc-leave'},(data)=>{window.callEngine?.onVcLeave(data.payload);})
     .subscribe();
 }
+
+// sendCall関数の直下に追加
+window.sendCallBroadcast=async function(event,payload){
+  if(!_callChannel)return;
+  try{await _callChannel.send({type:'broadcast',event,payload});}
+  catch(e){console.error('broadcast送信エラー:',e);}
+};
 
 // window経由で公開（chat-ui.jsから呼ぶ）
 async function sendCall(targetProfileId,targetName){
