@@ -732,7 +732,7 @@
   line-height:1.55;
   overflow-y:auto;
   scrollbar-width:none;
-  padding:4px 4px;
+  padding:4px;
 }
 .chat-input::-webkit-scrollbar{display:none;}
 .chat-input::placeholder{color:var(--text-tertiary);}
