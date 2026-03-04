@@ -14,78 +14,53 @@
   <div class="app-container">
     <div class="main-container">
       <main class="main-content">
-        <div class="app-grid">
-          <a href="games/eag-js.html" target="_blank style="text-decoration:none;color:inherit;">
-            <div class="app-card">
-              <div class="app-icon">
+        <div class="games-wrapper">
+
+          <!-- ヘッダーエリア -->
+          <div class="games-header">
+            <div class="games-header-left">
+              <h1 class="games-title">
                 <span class="material-symbols-outlined">stadia_controller</span>
-              </div>
-              <h3>Eaglercraft JS</h3>
-              <p>JavaScript版（日本語）</p>
-              <p>AppHub特設サーバーをデフォルト表示</p>
+                Games
+              </h1>
+              <span class="games-count" id="games-count"></span>
             </div>
-          </a>
-          <a href="games/eag-wasm-gc.html" target="_blank style="text-decoration:none;color:inherit;">
-            <div class="app-card">
-              <div class="app-icon">
-                <span class="material-symbols-outlined">stadia_controller</span>
-              </div>
-              <h3>Eaglercraft WASM-GC</h3>
-              <p>WASM-GC版（軽量）</p>
+            <div class="games-search-wrap">
+              <span class="material-symbols-outlined search-icon">search</span>
+              <input
+                type="text"
+                id="games-search"
+                class="games-search"
+                placeholder="ゲームを検索..."
+                autocomplete="off"
+              >
             </div>
-          </a>
-          <a href="games/shobon.html" target="_blank style="text-decoration:none;color:inherit;">
-            <div class="app-card">
-              <div class="app-icon">
-                <span class="material-symbols-outlined">stadia_controller</span>
-              </div>
-              <h3>しょぼんのアクション</h3>
-              <p>鬼畜ゲーというより初見殺しゲー</p>
-            </div>
-          </a>
-          <a href="games/shobon-hub.html" target="_blank style="text-decoration:none;color:inherit;">
-            <div class="app-card">
-              <div class="app-icon">
-                <span class="material-symbols-outlined">stadia_controller</span>
-              </div>
-              <h3>しょぼんのアクション by AppHub</h3>
-              <p>AppHubのUI対応</p>
-            </div>
-          </a>
-          <a href="games/aquarium.html" target="_blank style="text-decoration:none;color:inherit;">
-            <div class="app-card">
-              <div class="app-icon">
-                <span class="material-symbols-outlined">stadia_controller</span>
-              </div>
-              <h3>アクアリウムは踊らない</h3>
-              <p>ホラゲーらしい</p>
-            </div>
-          </a>
-          <a href="games/rajiata.html" target="_blank style="text-decoration:none;color:inherit;">
-            <div class="app-card">
-              <div class="app-icon">
-                <span class="material-symbols-outlined">stadia_controller</span>
-              </div>
-              <h3>ラジアータの愛染罪</h3>
-              <p>ホラゲーらしい2</p>
-            </div>
-          </a>
-          <a href="games/r&d.html" target="_blank style="text-decoration:none;color:inherit;">
-            <div class="app-card">
-              <div class="app-icon">
-                <span class="material-symbols-outlined">stadia_controller</span>
-              </div>
-              <h3>Revenge ＆ Default 〜エリスの復讐劇〜</h3>
-              <p>大人気ゲーム</p>
-            </div>
-          </a>
+          </div>
+
+          <!-- カテゴリフィルター -->
+          <div class="games-filters" id="games-filters">
+            <!-- JS で生成 -->
+          </div>
+
+          <!-- ゲームグリッド -->
+          <div class="games-grid" id="games-grid">
+            <!-- JS で生成 -->
+          </div>
+
+          <!-- 空状態 -->
+          <div class="games-empty" id="games-empty" style="display:none;">
+            <span class="material-symbols-outlined">search_off</span>
+            <p>「<span id="empty-query"></span>」に一致するゲームが見つかりません</p>
+          </div>
+
         </div>
       </main>
     </div>
   </div>
+
   <script type="module" src="js/games.js"></script>
   <script src="common/stealth-mode.js"></script>
   <script src="common/capture-handler.js"></script>
-<script src="common/eruda-init.js"></script> 
+  <script src="common/eruda-init.js"></script>
 </body>
 </html>

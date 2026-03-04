@@ -1,74 +1,307 @@
-/* hub.html 固有のスタイル */
+/* ==========================================
+   Games Page — v2.0
+   ========================================== */
 
-.welcome-section{
-  max-width:1200px;
+.games-wrapper{
+  max-width:1100px;
   margin:0 auto;
 }
 
-.welcome-section h1{
-  font-size:32px;
-  font-weight:600;
-  margin-bottom:8px;
+/* ---- ヘッダー ---- */
+.games-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-bottom:20px;
+  flex-wrap:wrap;
+}
+
+.games-header-left{
+  display:flex;
+  align-items:center;
+  gap:12px;
+}
+
+.games-title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:24px;
+  font-weight:700;
   color:var(--text-primary);
 }
 
-.welcome-section>p{
-  font-size:16px;
-  color:var(--text-secondary);
-  margin-bottom:32px;
-}
-
-.app-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
-  gap:16px;
-}
-
-.app-card{
-  background:var(--bg-primary);
-  border:1px solid var(--border);
-  border-radius:8px;
-  padding:24px;
-  transition:transform 0.15s,box-shadow 0.15s;
-  cursor:pointer;
-}
-
-.app-card:hover{
-  transform:translateY(-2px);
-  box-shadow:0 4px 12px rgba(0,0,0,0.08);
-}
-
-.app-icon{
-  width:48px;
-  height:48px;
-  background:var(--main-light);
-  border-radius:8px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  margin-bottom:16px;
-}
-
-.app-icon .material-symbols-outlined{
+.games-title .material-symbols-outlined{
   font-size:28px;
   color:var(--main);
 }
 
-.app-card h3{
-  font-size:18px;
-  font-weight:600;
-  margin-bottom:8px;
-  color:var(--text-primary);
+.games-count{
+  font-size:13px;
+  color:var(--text-tertiary);
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:2px 10px;
 }
 
-.app-card p{
+/* ---- 検索 ---- */
+.games-search-wrap{
+  position:relative;
+  flex:1;
+  max-width:300px;
+}
+
+.search-icon{
+  position:absolute;
+  left:10px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:18px;
+  color:var(--text-tertiary);
+  pointer-events:none;
+}
+
+.games-search{
+  width:100%;
+  padding:8px 12px 8px 36px;
   font-size:14px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+
+.games-search:focus{
+  border-color:var(--main);
+  box-shadow:0 0 0 3px var(--main-light);
+}
+
+/* ---- フィルター ---- */
+.games-filters{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:20px;
+}
+
+.filter-chip{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  padding:5px 14px;
+  font-size:13px;
+  font-weight:500;
+  color:var(--text-secondary);
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:20px;
+  cursor:pointer;
+  transition:all .15s;
+  white-space:nowrap;
+}
+
+.filter-chip:hover{
+  border-color:var(--main);
+  color:var(--main);
+}
+
+.filter-chip.active{
+  background:var(--main);
+  border-color:var(--main);
+  color:#fff;
+}
+
+.filter-chip .material-symbols-outlined{
+  font-size:15px;
+}
+
+.filter-chip .chip-count{
+  font-size:11px;
+  opacity:.8;
+}
+
+/* ---- グリッド ---- */
+.games-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:14px;
+}
+
+/* ---- カード ---- */
+.game-card{
+  display:flex;
+  flex-direction:column;
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+  text-decoration:none;
+  color:inherit;
+  transition:transform .15s,box-shadow .15s,border-color .15s;
+  cursor:pointer;
+}
+
+.game-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 20px rgba(0,0,0,0.1);
+  border-color:var(--main);
+  text-decoration:none;
+  color:inherit;
+}
+
+/* カードカラーバー（カテゴリ別） */
+.game-card-bar{
+  height:4px;
+  width:100%;
+  flex-shrink:0;
+}
+
+.game-card-body{
+  padding:16px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+
+.game-card-top{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+}
+
+.game-card-icon{
+  width:44px;
+  height:44px;
+  border-radius:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+
+.game-card-icon .material-symbols-outlined{
+  font-size:24px;
+}
+
+.game-card-badge{
+  font-size:10px;
+  font-weight:700;
+  padding:2px 8px;
+  border-radius:4px;
+  letter-spacing:.03em;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+.game-card-title{
+  font-size:15px;
+  font-weight:600;
+  color:var(--text-primary);
+  line-height:1.3;
+}
+
+.game-card-desc{
+  font-size:13px;
   color:var(--text-secondary);
   line-height:1.5;
+  flex:1;
 }
 
-@media(max-width:768px){
-  .app-grid{
+.game-card-footer{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding-top:8px;
+  border-top:1px solid var(--border-light);
+}
+
+.game-card-tag{
+  font-size:11px;
+  color:var(--text-tertiary);
+  background:var(--bg-secondary);
+  padding:2px 8px;
+  border-radius:4px;
+}
+
+/* ---- カテゴリ別カラー設定 ---- */
+/* minecraft */
+.game-card[data-cat="minecraft"] .game-card-bar{background:#5d9e4e;}
+.game-card[data-cat="minecraft"] .game-card-icon{background:#edf7eb;color:#5d9e4e;}
+.game-card[data-cat="minecraft"] .game-card-badge{background:#edf7eb;color:#5d9e4e;}
+[data-theme="dark"] .game-card[data-cat="minecraft"] .game-card-icon{background:rgba(93,158,78,.15);}
+[data-theme="dark"] .game-card[data-cat="minecraft"] .game-card-badge{background:rgba(93,158,78,.15);}
+
+/* action */
+.game-card[data-cat="action"] .game-card-bar{background:#f59e0b;}
+.game-card[data-cat="action"] .game-card-icon{background:#fef3c7;color:#d97706;}
+.game-card[data-cat="action"] .game-card-badge{background:#fef3c7;color:#d97706;}
+[data-theme="dark"] .game-card[data-cat="action"] .game-card-icon{background:rgba(245,158,11,.15);}
+[data-theme="dark"] .game-card[data-cat="action"] .game-card-badge{background:rgba(245,158,11,.15);}
+
+/* horror */
+.game-card[data-cat="horror"] .game-card-bar{background:#7c3aed;}
+.game-card[data-cat="horror"] .game-card-icon{background:#ede9fe;color:#7c3aed;}
+.game-card[data-cat="horror"] .game-card-badge{background:#ede9fe;color:#7c3aed;}
+[data-theme="dark"] .game-card[data-cat="horror"] .game-card-icon{background:rgba(124,58,237,.15);}
+[data-theme="dark"] .game-card[data-cat="horror"] .game-card-badge{background:rgba(124,58,237,.15);}
+
+/* other */
+.game-card[data-cat="other"] .game-card-bar{background:var(--main);}
+.game-card[data-cat="other"] .game-card-icon{background:var(--main-light);color:var(--main);}
+.game-card[data-cat="other"] .game-card-badge{background:var(--main-light);color:var(--main);}
+
+/* ---- 空状態 ---- */
+.games-empty{
+  text-align:center;
+  padding:80px 24px;
+  color:var(--text-tertiary);
+}
+
+.games-empty .material-symbols-outlined{
+  font-size:64px;
+  opacity:.3;
+  margin-bottom:12px;
+  display:block;
+}
+
+.games-empty p{
+  font-size:15px;
+}
+
+/* ---- アニメーション ---- */
+@keyframes card-in{
+  from{opacity:0;transform:translateY(10px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+.game-card{
+  animation:card-in .2s ease both;
+}
+
+/* ---- レスポンシブ ---- */
+@media(max-width:640px){
+  .games-header{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+  .games-search-wrap{
+    max-width:100%;
+    width:100%;
+  }
+  .games-grid{
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+  }
+}
+
+@media(max-width:400px){
+  .games-grid{
     grid-template-columns:1fr;
   }
 }
