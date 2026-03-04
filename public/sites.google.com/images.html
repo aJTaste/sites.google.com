@@ -13,109 +13,151 @@
 <body class="page-loading">
   <div class="app-container">
     <div class="main-container">
-      <main class="main-content">
+      <main class="main-content" id="images-main">
         <div class="images-container">
-          <div class="images-header">
-            <p class="images-description">
-              全ページで Alt+S (スクショ) / Alt+R (録画) で撮影できます
-            </p>
-          </div>
 
-          <!-- クリップボード機能 -->
-          <div class="clipboard-section">
-            <h2>クリップボード画像</h2>
-            <div class="clipboard-actions">
-              <button class="btn-primary" id="clipboard-download-btn">
-                <span class="material-symbols-outlined">download</span>
-                <span>クリップボード画像をダウンロード</span>
+          <!-- ツールバー -->
+          <div class="images-toolbar">
+            <div class="toolbar-left">
+              <h1 class="images-title">
+                <span class="material-symbols-outlined">photo_library</span>
+                Images
+              </h1>
+              <div class="shortcut-badges">
+                <span class="shortcut-badge">Alt+S スクショ</span>
+                <span class="shortcut-badge">Alt+R 録画</span>
+              </div>
+            </div>
+            <div class="toolbar-right">
+              <button class="tool-btn" id="clipboard-btn" title="クリップボード画像を取り込む">
+                <span class="material-symbols-outlined">content_paste</span>
+                <span class="tool-btn-label">貼り付け</span>
               </button>
+              <button class="tool-btn" id="select-toggle-btn" title="選択モード">
+                <span class="material-symbols-outlined">checklist</span>
+                <span class="tool-btn-label">選択</span>
+              </button>
+              <div class="sort-wrap">
+                <select class="sort-select" id="sort-select" title="並べ替え">
+                  <option value="newest">新しい順</option>
+                  <option value="oldest">古い順</option>
+                  <option value="largest">サイズ大</option>
+                  <option value="smallest">サイズ小</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <!-- 統計情報 -->
-          <div class="stats-section">
-            <div class="stat-card">
+          <!-- 統計バー -->
+          <div class="stats-bar" id="stats-bar">
+            <div class="stat-item">
               <span class="material-symbols-outlined">image</span>
-              <div>
-                <div class="stat-value" id="stat-images">0</div>
-                <div class="stat-label">画像</div>
-              </div>
+              <span id="stat-images">0</span> 枚
             </div>
-            <div class="stat-card">
+            <div class="stat-item">
               <span class="material-symbols-outlined">videocam</span>
-              <div>
-                <div class="stat-value" id="stat-videos">0</div>
-                <div class="stat-label">動画</div>
-              </div>
+              <span id="stat-videos">0</span> 本
             </div>
-            <div class="stat-card">
+            <div class="stat-item stat-size">
               <span class="material-symbols-outlined">storage</span>
-              <div>
-                <div class="stat-value" id="stat-size">0 MB</div>
-                <div class="stat-label">合計サイズ</div>
+              <span id="stat-size">0 MB</span>
+              <div class="storage-bar-wrap">
+                <div class="storage-bar-fill" id="storage-bar-fill"></div>
               </div>
             </div>
-          </div>
-
-          <!-- フィルター -->
-          <div class="filter-section">
-            <button class="filter-btn active" data-filter="all">
-              <span class="material-symbols-outlined">apps</span>
-              <span>すべて</span>
-            </button>
-            <button class="filter-btn" data-filter="image">
-              <span class="material-symbols-outlined">image</span>
-              <span>画像のみ</span>
-            </button>
-            <button class="filter-btn" data-filter="video">
-              <span class="material-symbols-outlined">videocam</span>
-              <span>動画のみ</span>
-            </button>
-            <div style="flex:1;"></div>
-            <button class="btn-secondary" id="clear-all-btn">
+            <button class="clear-all-btn" id="clear-all-btn" title="すべて削除">
               <span class="material-symbols-outlined">delete_sweep</span>
-              <span>すべて削除</span>
             </button>
           </div>
 
-          <!-- グリッド表示 -->
-          <div class="media-grid" id="media-grid">
-            <!-- JSで生成 -->
+          <!-- フィルタータブ -->
+          <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">
+              <span class="material-symbols-outlined">apps</span> すべて
+              <span class="tab-count" id="tab-all-count"></span>
+            </button>
+            <button class="filter-tab" data-filter="image">
+              <span class="material-symbols-outlined">image</span> 画像
+              <span class="tab-count" id="tab-image-count"></span>
+            </button>
+            <button class="filter-tab" data-filter="video">
+              <span class="material-symbols-outlined">videocam</span> 動画
+              <span class="tab-count" id="tab-video-count"></span>
+            </button>
           </div>
 
+          <!-- ドロップゾーン -->
+          <div class="drop-zone" id="drop-zone">
+            <span class="material-symbols-outlined">file_upload</span>
+            ここにファイルをドロップして追加
+          </div>
+
+          <!-- グリッド -->
+          <div class="media-grid" id="media-grid"></div>
+
+          <!-- 空状態 -->
           <div class="empty-state" id="empty-state" style="display:none;">
             <span class="material-symbols-outlined">photo_library</span>
             <p>まだ画像・動画がありません</p>
-            <p class="empty-hint">Alt+S でスクショ、Alt+R で録画を開始できます</p>
+            <p class="empty-hint">
+              <kbd>Alt</kbd>+<kbd>S</kbd> でスクショ &nbsp;/&nbsp;
+              <kbd>Alt</kbd>+<kbd>R</kbd> で録画
+            </p>
           </div>
+
         </div>
       </main>
     </div>
   </div>
 
+  <!-- 選択バッチバー -->
+  <div class="batch-bar" id="batch-bar">
+    <span id="batch-count">0件選択中</span>
+    <div class="batch-actions">
+      <button class="batch-btn" id="batch-download-btn">
+        <span class="material-symbols-outlined">download</span> ダウンロード
+      </button>
+      <button class="batch-btn batch-btn-danger" id="batch-delete-btn">
+        <span class="material-symbols-outlined">delete</span> 削除
+      </button>
+      <button class="batch-btn" id="batch-cancel-btn">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+  </div>
+
   <!-- プレビューモーダル -->
-  <div class="preview-modal" id="preview-modal">
-    <button class="modal-close" id="modal-close">
+  <div class="preview-modal" id="preview-modal" role="dialog" aria-modal="true">
+    <div class="modal-overlay" id="modal-overlay"></div>
+    <button class="modal-close" id="modal-close" title="閉じる (Esc)">
       <span class="material-symbols-outlined">close</span>
     </button>
-    <div class="modal-content" id="modal-content">
-      <!-- JSで生成 -->
-    </div>
-    <div class="modal-actions">
-      <button class="btn-secondary" id="modal-download">
-        <span class="material-symbols-outlined">download</span>
-        <span>ダウンロード</span>
-      </button>
-      <button class="btn-secondary" id="modal-delete">
-        <span class="material-symbols-outlined">delete</span>
-        <span>削除</span>
-      </button>
+    <button class="modal-nav modal-prev" id="modal-prev" title="前へ (←)">
+      <span class="material-symbols-outlined">chevron_left</span>
+    </button>
+    <button class="modal-nav modal-next" id="modal-next" title="次へ (→)">
+      <span class="material-symbols-outlined">chevron_right</span>
+    </button>
+    <div class="modal-content" id="modal-content"></div>
+    <div class="modal-footer">
+      <div class="modal-info" id="modal-info"></div>
+      <div class="modal-actions">
+        <button class="modal-action-btn" id="modal-copy" title="クリップボードにコピー">
+          <span class="material-symbols-outlined">content_copy</span> コピー
+        </button>
+        <button class="modal-action-btn" id="modal-download" title="ダウンロード">
+          <span class="material-symbols-outlined">download</span> DL
+        </button>
+        <button class="modal-action-btn modal-action-danger" id="modal-delete" title="削除">
+          <span class="material-symbols-outlined">delete</span> 削除
+        </button>
+      </div>
     </div>
   </div>
 
   <script type="module" src="js/images.js"></script>
   <script src="common/stealth-mode.js"></script>
   <script src="common/capture-handler.js"></script>
-<script src="common/eruda-init.js"></script> 
+  <script src="common/eruda-init.js"></script>
 </body>
 </html>

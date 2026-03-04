@@ -1,342 +1,483 @@
 import{initPage}from'../common/core.js';
-
 await initPage('images','Images');
 
-// ========================================
-// IndexedDB 接続
-// ========================================
-
+// ==========================================
+// IndexedDB
+// ==========================================
 const CAPTURE_DB_NAME='AppHubCaptures';
 const CAPTURE_STORE_NAME='media';
+const MAX_STORAGE_MB=200;// ストレージバー満杯の基準
 
 let db=null;
-let currentFilter='all';
 let allMedia=[];
+let currentFilter='all';
+let currentSort='newest';
+let selectMode=false;
+let selectedIds=new Set();
+let previewIndex=-1;// 現在モーダルで表示中のインデックス（filtered配列上）
 
-// BroadcastChannel（リアルタイム反映用）
-const channel=new BroadcastChannel('apphub-media-updates');
-channel.onmessage=(e)=>{
-  if(e.data.type==='media-updated'){
-    displayMedia();
+// BroadcastChannel（他タブからの更新受信）
+const bc=new BroadcastChannel('apphub-media-updates');
+bc.onmessage=(e)=>{if(e.data.type==='media-updated')_load();};
+
+async function _initDB(){
+  if(db)return db;
+  return new Promise((resolve,reject)=>{
+    const req=indexedDB.open(CAPTURE_DB_NAME,1);
+    req.onerror=()=>reject(req.error);
+    req.onsuccess=()=>{db=req.result;resolve(db);};
+    req.onupgradeneeded=(e)=>{
+      const d=e.target.result;
+      if(!d.objectStoreNames.contains(CAPTURE_STORE_NAME)){
+        const s=d.createObjectStore(CAPTURE_STORE_NAME,{keyPath:'id',autoIncrement:true});
+        s.createIndex('timestamp','timestamp',{unique:false});
+        s.createIndex('type','type',{unique:false});
+      }
+    };
+  });
+}
+
+async function _load(){
+  await _initDB();
+  allMedia=await new Promise((resolve,reject)=>{
+    const tx=db.transaction([CAPTURE_STORE_NAME],'readonly');
+    const req=tx.objectStore(CAPTURE_STORE_NAME).getAll();
+    req.onsuccess=()=>resolve(req.result||[]);
+    req.onerror=()=>reject(req.error);
+  });
+  _renderAll();
+}
+
+async function _deleteById(id){
+  await _initDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction([CAPTURE_STORE_NAME],'readwrite');
+    const req=tx.objectStore(CAPTURE_STORE_NAME).delete(id);
+    req.onsuccess=resolve;req.onerror=()=>reject(req.error);
+  });
+}
+
+async function _saveToDB(blob,type){
+  await _initDB();
+  const now=new Date();
+  const pad=n=>String(n).padStart(2,'0');
+  const filename=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}.${type==='image'?'png':'webm'}`;
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction([CAPTURE_STORE_NAME],'readwrite');
+    const req=tx.objectStore(CAPTURE_STORE_NAME).add({blob,type,filename,timestamp:now.getTime(),size:blob.size});
+    req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+  });
+}
+
+// ==========================================
+// フィルタリング＆ソート
+// ==========================================
+function _getFiltered(){
+  let list=currentFilter==='all'?[...allMedia]:allMedia.filter(m=>m.type===currentFilter);
+  switch(currentSort){
+    case 'newest': list.sort((a,b)=>b.timestamp-a.timestamp); break;
+    case 'oldest': list.sort((a,b)=>a.timestamp-b.timestamp); break;
+    case 'largest': list.sort((a,b)=>b.size-a.size); break;
+    case 'smallest': list.sort((a,b)=>a.size-b.size); break;
   }
-};
-
-async function initDB(){
-  return new Promise((resolve,reject)=>{
-    const request=indexedDB.open(CAPTURE_DB_NAME,1);
-    request.onerror=()=>reject(request.error);
-    request.onsuccess=()=>{
-      db=request.result;
-      resolve(db);
-    };
-  });
+  return list;
 }
 
-// ========================================
-// メディア読み込み
-// ========================================
-
-async function loadMedia(){
-  if(!db)await initDB();
-  
-  return new Promise((resolve,reject)=>{
-    const transaction=db.transaction([CAPTURE_STORE_NAME],'readonly');
-    const store=transaction.objectStore(CAPTURE_STORE_NAME);
-    const request=store.getAll();
-    
-    request.onsuccess=()=>{
-      allMedia=request.result.sort((a,b)=>b.timestamp-a.timestamp);
-      resolve(allMedia);
-    };
-    request.onerror=()=>reject(request.error);
-  });
+// ==========================================
+// 描画
+// ==========================================
+function _renderAll(){
+  _renderStats();
+  _renderTabCounts();
+  _renderGrid();
+  _updateBatchBar();
 }
 
-// ========================================
-// メディア表示
-// ========================================
+function _renderStats(){
+  const imgs=allMedia.filter(m=>m.type==='image').length;
+  const vids=allMedia.filter(m=>m.type==='video').length;
+  const totalBytes=allMedia.reduce((s,m)=>s+m.size,0);
+  const totalMB=totalBytes/1024/1024;
 
-async function displayMedia(){
+  document.getElementById('stat-images').textContent=imgs;
+  document.getElementById('stat-videos').textContent=vids;
+  document.getElementById('stat-size').textContent=totalMB<1
+    ?`${(totalMB*1024).toFixed(0)} KB`
+    :`${totalMB.toFixed(1)} MB`;
+
+  const pct=Math.min(100,totalMB/MAX_STORAGE_MB*100);
+  const fill=document.getElementById('storage-bar-fill');
+  if(fill)fill.style.width=pct+'%';
+}
+
+function _renderTabCounts(){
+  const all=allMedia.length;
+  const imgs=allMedia.filter(m=>m.type==='image').length;
+  const vids=allMedia.filter(m=>m.type==='video').length;
+  const setCount=(id,n)=>{const el=document.getElementById(id);if(el)el.textContent=n>0?n:'';};
+  setCount('tab-all-count',all);
+  setCount('tab-image-count',imgs);
+  setCount('tab-video-count',vids);
+}
+
+function _renderGrid(){
   const grid=document.getElementById('media-grid');
-  const emptyState=document.getElementById('empty-state');
-  
-  await loadMedia();
-  
-  // フィルタリング
-  let filtered=allMedia;
-  if(currentFilter!=='all'){
-    filtered=allMedia.filter(m=>m.type===currentFilter);
-  }
-  
-  // 空の状態
-  if(filtered.length===0){
+  const empty=document.getElementById('empty-state');
+  if(!grid||!empty)return;
+
+  const list=_getFiltered();
+
+  if(!list.length){
     grid.style.display='none';
-    emptyState.style.display='flex';
+    empty.style.display='flex';
     return;
   }
-  
+  empty.style.display='none';
   grid.style.display='grid';
-  emptyState.style.display='none';
   grid.innerHTML='';
-  
-  // 統計更新
-  updateStats();
-  
-  // グリッド生成
-  filtered.forEach(media=>{
+
+  list.forEach((media,i)=>{
     const item=document.createElement('div');
-    item.className='media-item';
+    item.className='media-item'+(selectMode?' select-mode':'')+(selectedIds.has(media.id)?' selected':'');
     item.dataset.id=media.id;
-    
-    const typeIcon=media.type==='image'?'image':'videocam';
+    item.style.animationDelay=`${i*15}ms`;
+
     const url=URL.createObjectURL(media.blob);
-    
-    const thumbnailTag=media.type==='image'
-      ?`<img class="media-thumbnail" src="${url}" alt="${media.filename}">`
-      :`<video class="media-thumbnail" src="${url}" muted></video>`;
-    
-    const size=(media.size/1024).toFixed(1);
-    const date=new Date(media.timestamp).toLocaleString('ja-JP');
-    
+    const isImg=media.type==='image';
+    const thumb=isImg
+      ?`<img class="media-thumbnail" src="${url}" alt="${_esc(media.filename)}" loading="lazy">`
+      :`<video class="media-thumbnail" src="${url}" muted preload="metadata"></video>`;
+    const sizeStr=media.size<1024*100
+      ?`${(media.size/1024).toFixed(0)} KB`
+      :`${(media.size/1024/1024).toFixed(1)} MB`;
+    const dateStr=new Date(media.timestamp).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+
     item.innerHTML=`
-      ${thumbnailTag}
+      <div class="media-check"></div>
+      ${thumb}
       <div class="media-type-badge">
-        <span class="material-symbols-outlined">${typeIcon}</span>
-        <span>${media.type==='image'?'画像':'動画'}</span>
+        <span class="material-symbols-outlined">${isImg?'image':'videocam'}</span>
+        ${isImg?'画像':'動画'}
       </div>
-      <div class="media-actions">
-        <button class="media-action-btn" onclick="downloadMedia(${media.id})" title="ダウンロード">
+      <div class="media-hover-actions">
+        <button class="media-hover-btn" data-action="download" title="DL">
           <span class="material-symbols-outlined">download</span>
         </button>
-        <button class="media-action-btn" onclick="deleteMedia(${media.id})" title="削除">
+        <button class="media-hover-btn" data-action="delete" title="削除">
           <span class="material-symbols-outlined">delete</span>
         </button>
       </div>
       <div class="media-info">
-        <div class="media-name">${media.filename}</div>
-        <div class="media-meta">${size} KB • ${date}</div>
+        <div class="media-name">${_esc(media.filename)}</div>
+        <div class="media-meta">${sizeStr} · ${dateStr}</div>
       </div>
     `;
-    
-    // クリックでプレビュー
+
+    // クリック
     item.addEventListener('click',(e)=>{
-      if(!e.target.closest('.media-action-btn')){
-        openPreview(media.id);
+      if(e.target.closest('.media-hover-btn'))return;
+      if(selectMode){
+        _toggleSelect(media.id);
+        return;
       }
+      const filtered=_getFiltered();
+      const idx=filtered.findIndex(m=>m.id===media.id);
+      _openModal(idx);
     });
-    
+
+    // アクションボタン
+    item.addEventListener('click',(e)=>{
+      const btn=e.target.closest('.media-hover-btn');
+      if(!btn)return;
+      e.stopPropagation();
+      if(btn.dataset.action==='download')_downloadMedia(media);
+      else if(btn.dataset.action==='delete')_confirmDelete([media.id]);
+    });
+
     grid.appendChild(item);
   });
 }
 
-// ========================================
-// 統計更新
-// ========================================
-
-function updateStats(){
-  const images=allMedia.filter(m=>m.type==='image').length;
-  const videos=allMedia.filter(m=>m.type==='video').length;
-  const totalSize=allMedia.reduce((sum,m)=>sum+m.size,0);
-  
-  document.getElementById('stat-images').textContent=images;
-  document.getElementById('stat-videos').textContent=videos;
-  document.getElementById('stat-size').textContent=(totalSize/1024/1024).toFixed(2)+' MB';
+// ==========================================
+// 選択モード
+// ==========================================
+function _setSelectMode(on){
+  selectMode=on;
+  if(!on)selectedIds.clear();
+  document.getElementById('select-toggle-btn')?.classList.toggle('active',on);
+  _renderGrid();
+  _updateBatchBar();
 }
 
-// ========================================
-// プレビューモーダル
-// ========================================
+function _toggleSelect(id){
+  if(selectedIds.has(id))selectedIds.delete(id);
+  else selectedIds.add(id);
+  _renderGrid();
+  _updateBatchBar();
+}
 
-function openPreview(id){
-  const media=allMedia.find(m=>m.id===id);
-  if(!media)return;
-  
-  const modal=document.getElementById('preview-modal');
-  const content=document.getElementById('modal-content');
-  const url=URL.createObjectURL(media.blob);
-  
-  if(media.type==='image'){
-    content.innerHTML=`<img src="${url}" alt="${media.filename}">`;
+function _updateBatchBar(){
+  const bar=document.getElementById('batch-bar');
+  const countEl=document.getElementById('batch-count');
+  if(!bar)return;
+  if(selectMode&&selectedIds.size>0){
+    bar.classList.add('show');
+    if(countEl)countEl.textContent=`${selectedIds.size}件選択中`;
   }else{
-    content.innerHTML=`<video src="${url}" controls autoplay></video>`;
+    bar.classList.remove('show');
   }
-  
-  modal.classList.add('show');
-  
-  // ダウンロード・削除ボタン
-  document.getElementById('modal-download').onclick=()=>downloadMedia(id);
-  document.getElementById('modal-delete').onclick=()=>{
-    deleteMedia(id);
-    modal.classList.remove('show');
-  };
 }
 
-// ========================================
-// ダウンロード
-// ========================================
+// ==========================================
+// モーダル
+// ==========================================
+let _modalMedia=null;
 
-window.downloadMedia=async function(id){
-  const media=allMedia.find(m=>m.id===id);
+function _openModal(idx){
+  const list=_getFiltered();
+  if(idx<0||idx>=list.length)return;
+  previewIndex=idx;
+  _modalMedia=list[idx];
+  _renderModal();
+  document.getElementById('preview-modal').classList.add('show');
+}
+
+function _renderModal(){
+  const list=_getFiltered();
+  const media=_modalMedia;
   if(!media)return;
-  
-  try{
-    if('showSaveFilePicker' in window){
-      const opts={
-        suggestedName:media.filename,
-        types:[{
-          description:'Media File',
-          accept:{'image/png':['.png'],'video/webm':['.webm']}
-        }]
-      };
-      
-      const handle=await window.showSaveFilePicker(opts);
-      const writable=await handle.createWritable();
-      await writable.write(media.blob);
-      await writable.close();
-    }else{
-      const url=URL.createObjectURL(media.blob);
-      const a=document.createElement('a');
-      a.href=url;
-      a.download=media.filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  }catch(error){
-    if(error.name!=='AbortError'){
-      console.error('ダウンロードエラー:',error);
-      alert('ダウンロードに失敗しました');
-    }
+  const content=document.getElementById('modal-content');
+  const info=document.getElementById('modal-info');
+  if(!content)return;
+
+  // 既存のオブジェクトURLを解放
+  const old=content.querySelector('img,video');
+  if(old&&old.src&&old.src.startsWith('blob:'))URL.revokeObjectURL(old.src);
+  content.innerHTML='';
+
+  const url=URL.createObjectURL(media.blob);
+  if(media.type==='image'){
+    const img=document.createElement('img');
+    img.src=url;img.alt=media.filename;
+    content.appendChild(img);
+  }else{
+    const vid=document.createElement('video');
+    vid.src=url;vid.controls=true;vid.autoplay=true;
+    content.appendChild(vid);
   }
+
+  if(info){
+    const sizeStr=(media.size/1024/1024).toFixed(2)+' MB';
+    const dateStr=new Date(media.timestamp).toLocaleString('ja-JP');
+    info.textContent=`${media.filename}  |  ${sizeStr}  |  ${dateStr}`;
+  }
+
+  // ナビボタン状態
+  const prev=document.getElementById('modal-prev');
+  const next=document.getElementById('modal-next');
+  if(prev)prev.disabled=previewIndex<=0;
+  if(next)next.disabled=previewIndex>=list.length-1;
 }
 
-// ========================================
+function _closeModal(){
+  const modal=document.getElementById('preview-modal');
+  modal.classList.remove('show');
+  const content=document.getElementById('modal-content');
+  const old=content?.querySelector('img,video');
+  if(old?.src?.startsWith('blob:'))URL.revokeObjectURL(old.src);
+  if(content)content.innerHTML='';
+  _modalMedia=null;
+  previewIndex=-1;
+}
+
+function _modalNav(dir){
+  const list=_getFiltered();
+  const next=previewIndex+dir;
+  if(next<0||next>=list.length)return;
+  previewIndex=next;
+  _modalMedia=list[next];
+  _renderModal();
+}
+
+// ==========================================
+// ダウンロード
+// ==========================================
+async function _downloadMedia(media){
+  const url=URL.createObjectURL(media.blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=media.filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+async function _downloadBatch(){
+  const targets=allMedia.filter(m=>selectedIds.has(m.id));
+  for(const m of targets)await _downloadMedia(m);
+}
+
+// ==========================================
 // 削除
-// ========================================
-
-window.deleteMedia=async function(id){
-  if(!confirm('この項目を削除しますか？'))return;
-  
-  if(!db)await initDB();
-  
-  return new Promise((resolve,reject)=>{
-    const transaction=db.transaction([CAPTURE_STORE_NAME],'readwrite');
-    const store=transaction.objectStore(CAPTURE_STORE_NAME);
-    const request=store.delete(id);
-    
-    request.onsuccess=()=>{
-      displayMedia();
-      resolve();
-    };
-    request.onerror=()=>reject(request.error);
-  });
+// ==========================================
+async function _confirmDelete(ids){
+  const msg=ids.length===1?'この項目を削除しますか？':`${ids.length}件を削除しますか？`;
+  if(!confirm(msg))return;
+  for(const id of ids)await _deleteById(id);
+  selectedIds=new Set([...selectedIds].filter(id=>!ids.includes(id)));
+  if(ids.includes(_modalMedia?.id))_closeModal();
+  await _load();
 }
 
-// ========================================
-// すべて削除
-// ========================================
-
-document.getElementById('clear-all-btn').addEventListener('click',async()=>{
-  if(!confirm('すべての画像・動画を削除しますか？'))return;
-  
-  if(!db)await initDB();
-  
-  const transaction=db.transaction([CAPTURE_STORE_NAME],'readwrite');
-  const store=transaction.objectStore(CAPTURE_STORE_NAME);
-  await store.clear();
-  
-  displayMedia();
-});
-
-// ========================================
-// フィルター
-// ========================================
-
-document.querySelectorAll('.filter-btn').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    currentFilter=btn.dataset.filter;
-    displayMedia();
-  });
-});
-
-// ========================================
-// クリップボード機能（1ボタンで直接ダウンロード）
-// ========================================
-
-document.getElementById('clipboard-download-btn').addEventListener('click',async()=>{
+// ==========================================
+// クリップボードから貼り付け
+// ==========================================
+async function _pasteFromClipboard(){
   try{
     const items=await navigator.clipboard.read();
-    
     let blob=null;
     for(const item of items){
-      if(item.types.includes('image/png')){
-        blob=await item.getType('image/png');
-        break;
-      }
+      const type=item.types.find(t=>t.startsWith('image/'));
+      if(type){blob=await item.getType(type);break;}
     }
-    
-    if(!blob){
-      alert('クリップボードに画像がありません');
-      return;
-    }
-    
-    const now=new Date();
-    const y=now.getFullYear();
-    const m=String(now.getMonth()+1).padStart(2,'0');
-    const d=String(now.getDate()).padStart(2,'0');
-    const h=String(now.getHours()).padStart(2,'0');
-    const min=String(now.getMinutes()).padStart(2,'0');
-    const s=String(now.getSeconds()).padStart(2,'0');
-    const filename=`${y}-${m}-${d}_${h}${min}${s}.png`;
-    
-    if('showSaveFilePicker' in window){
-      const opts={
-        suggestedName:filename,
-        types:[{
-          description:'PNG Image',
-          accept:{'image/png':['.png']}
-        }]
-      };
-      
-      const handle=await window.showSaveFilePicker(opts);
-      const writable=await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-    }else{
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url;
-      a.download=filename;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-  }catch(error){
-    if(error.name==='AbortError'){
-      console.log('キャンセルされました');
-    }else{
-      console.error('クリップボード読み込みエラー:',error);
-      alert('クリップボードから画像を読み込めませんでした');
-    }
+    if(!blob){alert('クリップボードに画像がありません');return;}
+    await _saveToDB(blob,'image');
+    await _load();
+    _showToast('📋 クリップボードから追加しました');
+  }catch(e){
+    if(e.name==='NotAllowedError')alert('クリップボードへのアクセスを許可してください');
+    else{console.error(e);alert('貼り付けに失敗しました');}
   }
-});
+}
 
-// ========================================
-// モーダル閉じる
-// ========================================
-
-document.getElementById('modal-close').addEventListener('click',()=>{
-  document.getElementById('preview-modal').classList.remove('show');
-});
-
-document.getElementById('preview-modal').addEventListener('click',(e)=>{
-  if(e.target.id==='preview-modal'){
-    document.getElementById('preview-modal').classList.remove('show');
+// ==========================================
+// クリップボードへコピー（モーダル）
+// ==========================================
+async function _copyToClipboard(){
+  if(!_modalMedia||_modalMedia.type!=='image')return;
+  try{
+    await navigator.clipboard.write([new ClipboardItem({'image/png':_modalMedia.blob})]);
+    _showToast('📋 クリップボードにコピーしました');
+  }catch(e){
+    _showToast('コピーに失敗しました');
   }
-});
+}
 
-// ========================================
+// ==========================================
+// ドラッグ&ドロップ
+// ==========================================
+function _initDragDrop(){
+  const main=document.getElementById('images-main');
+  const zone=document.getElementById('drop-zone');
+  if(!main||!zone)return;
+
+  let dragCounter=0;
+  main.addEventListener('dragenter',(e)=>{e.preventDefault();dragCounter++;zone.classList.add('active-drag');});
+  main.addEventListener('dragleave',(e)=>{e.preventDefault();dragCounter--;if(dragCounter<=0){dragCounter=0;zone.classList.remove('active-drag');}});
+  main.addEventListener('dragover',(e)=>e.preventDefault());
+  main.addEventListener('drop',async(e)=>{
+    e.preventDefault();dragCounter=0;zone.classList.remove('active-drag');
+    const files=[...e.dataTransfer.files].filter(f=>f.type.startsWith('image/')||f.type.startsWith('video/'));
+    if(!files.length){alert('画像・動画ファイルのみ追加できます');return;}
+    for(const f of files){
+      const type=f.type.startsWith('image/')?'image':'video';
+      await _saveToDB(f,type);
+    }
+    await _load();
+    _showToast(`📁 ${files.length}件追加しました`);
+  });
+}
+
+// ==========================================
+// トースト
+// ==========================================
+function _showToast(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--text-primary);color:var(--bg-primary);padding:9px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;white-space:nowrap;pointer-events:none;transition:opacity .25s;';
+  document.body.appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),260);},2500);
+}
+
+function _esc(s){
+  const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;
+}
+
+// ==========================================
+// イベント登録
+// ==========================================
+function _initEvents(){
+  // フィルタータブ
+  document.querySelectorAll('.filter-tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.filter-tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter=btn.dataset.filter;
+      _renderAll();
+    });
+  });
+
+  // ソート
+  document.getElementById('sort-select')?.addEventListener('change',(e)=>{
+    currentSort=e.target.value;
+    _renderAll();
+  });
+
+  // 選択モードトグル
+  document.getElementById('select-toggle-btn')?.addEventListener('click',()=>{
+    _setSelectMode(!selectMode);
+  });
+
+  // すべて削除
+  document.getElementById('clear-all-btn')?.addEventListener('click',async()=>{
+    if(!allMedia.length)return;
+    if(!confirm(`すべての${allMedia.length}件を削除しますか？`))return;
+    await _initDB();
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction([CAPTURE_STORE_NAME],'readwrite');
+      const req=tx.objectStore(CAPTURE_STORE_NAME).clear();
+      req.onsuccess=resolve;req.onerror=()=>reject(req.error);
+    });
+    selectedIds.clear();
+    await _load();
+  });
+
+  // クリップボード貼り付け
+  document.getElementById('clipboard-btn')?.addEventListener('click',_pasteFromClipboard);
+
+  // バッチ操作
+  document.getElementById('batch-download-btn')?.addEventListener('click',()=>{
+    _downloadBatch();
+    _setSelectMode(false);
+  });
+  document.getElementById('batch-delete-btn')?.addEventListener('click',()=>{
+    _confirmDelete([...selectedIds]);
+  });
+  document.getElementById('batch-cancel-btn')?.addEventListener('click',()=>{
+    _setSelectMode(false);
+  });
+
+  // モーダル
+  document.getElementById('modal-close')?.addEventListener('click',_closeModal);
+  document.getElementById('modal-overlay')?.addEventListener('click',_closeModal);
+  document.getElementById('modal-prev')?.addEventListener('click',()=>_modalNav(-1));
+  document.getElementById('modal-next')?.addEventListener('click',()=>_modalNav(1));
+  document.getElementById('modal-download')?.addEventListener('click',()=>{if(_modalMedia)_downloadMedia(_modalMedia);});
+  document.getElementById('modal-copy')?.addEventListener('click',_copyToClipboard);
+  document.getElementById('modal-delete')?.addEventListener('click',()=>{if(_modalMedia)_confirmDelete([_modalMedia.id]);});
+
+  // キーボード
+  document.addEventListener('keydown',(e)=>{
+    const modal=document.getElementById('preview-modal');
+    if(!modal.classList.contains('show'))return;
+    if(e.key==='Escape')_closeModal();
+    else if(e.key==='ArrowLeft')_modalNav(-1);
+    else if(e.key==='ArrowRight')_modalNav(1);
+  });
+
+  // ドラッグ&ドロップ
+  _initDragDrop();
+}
+
+// ==========================================
 // 初期化
-// ========================================
-
-displayMedia();
+// ==========================================
+_initEvents();
+await _load();
