@@ -1,3 +1,5 @@
+import{initVcChat,cleanupVcChat,sendVcMessage}from'./vc-chat.js';
+import{addParticipant,removeParticipant,clearChannel,updateVcSidebar}from'./vc-state.js';
 // call-ui.js v1.8.0
 import{state}from'./chat-state.js';
 import{endCall,toggleMic,toggleScreenShare,answerDmCall,rejectDmCall,leaveVoiceChannel}from'./call-engine.js';
@@ -85,7 +87,16 @@ const _vcP={};
 export function showVoiceChannelUI(channelId){
   const myPeerId='apphub-'+state.currentProfile.id.substring(0,8);
   _vcP[myPeerId]={user_name:state.currentProfile.display_name,avatar_url:state.currentProfile.avatar_url||null};
+  // 自分をvc-stateにも登録
+import('./vc-state.js').then(({addParticipant})=>{
+addParticipant(channelId,myPeerId,{
+user_name:state.currentProfile.display_name,
+avatar_url:state.currentProfile.avatar_url||null,
+user_id:state.currentProfile.id
+});
+});
   _renderVcUI(channelId);
+  initVcChat(channelId);
 }
 
 export function hideVoiceChannelUI(){
@@ -94,18 +105,36 @@ export function hideVoiceChannelUI(){
     chatMain.innerHTML='<div class="chat-empty"><div class="chat-empty-icon"><span class="material-symbols-outlined">forum</span></div><h3>ChatHub</h3><p>チャンネルまたはユーザーを選択してください</p></div>';
     delete chatMain.dataset.vcMode;
   }
+  cleanupVcChat();
+  clearChannel(chatMain?.dataset.vcChannelId||'');
   Object.keys(_vcP).forEach(k=>delete _vcP[k]);
 }
 
 export function addVcParticipant(payload){
-  _vcP[payload.peer_id]={user_name:payload.user_name,avatar_url:payload.avatar_url||null};
-  _updateVcGrid();
+_vcP[payload.peer_id]={user_name:payload.user_name,avatar_url:payload.avatar_url||null};
+addParticipant(payload.channel_id,payload.peer_id,{
+user_name:payload.user_name,
+avatar_url:payload.avatar_url||null,
+user_id:payload.user_id
+});
+_updateVcGrid();
 }
+
 export function addVcParticipantAudio(peerId){
   if(!_vcP[peerId]){_vcP[peerId]={user_name:'参加者',avatar_url:null};_updateVcGrid();}
 }
-export function removeVcParticipant(peerId){delete _vcP[peerId];_updateVcGrid();}
-
+export function removeVcParticipant(peerId){
+// どのチャンネルか特定するため vcParticipants を検索
+import('./vc-state.js').then(({vcParticipants})=>{
+Object.keys(vcParticipants).forEach(chId=>{
+if(vcParticipants[chId][peerId]){
+removeParticipant(chId,peerId);
+}
+});
+});
+delete _vcP[peerId];
+_updateVcGrid();
+}
 export function onScreenShareEnded(){
   const btn=document.getElementById('call-btn-share');
   btn?.classList.remove('call-btn-active');
@@ -113,38 +142,14 @@ export function onScreenShareEnded(){
   if(icon)icon.textContent='screen_share';
 }
 
-function _renderVcUI(channelId){
-  const chatMain=document.getElementById('chat-main');
-  if(!chatMain)return;
-  chatMain.dataset.vcMode='1';
-  const chNum=esc(channelId.replace('voice-',''));
-  chatMain.innerHTML='<div class="vc-layout">'
-    +'<div class="vc-header">'
-    +'<div class="vc-header-title"><span class="material-symbols-outlined">volume_up</span> ボイス '+chNum+'</div>'
-    +'<button class="vc-leave-btn" id="vc-leave-btn"><span class="material-symbols-outlined">logout</span> 退室</button>'
-    +'</div>'
-    +'<div class="vc-main"><div class="vc-grid" id="vc-grid"></div></div>'
-    +'<div class="vc-controls">'
-    +'<button class="call-btn call-btn-mute" id="call-btn-mute"><span class="material-symbols-outlined">mic</span></button>'
-    +'<button class="call-btn call-btn-share" id="call-btn-share"><span class="material-symbols-outlined">screen_share</span></button>'
-    +'</div></div>';
-  document.getElementById('vc-leave-btn').addEventListener('click',()=>leaveVoiceChannel());
-  document.getElementById('call-btn-mute').addEventListener('click',()=>{
-    const muted=toggleMic();
-    const btn=document.getElementById('call-btn-mute');
-    const icon=btn?.querySelector('.material-symbols-outlined');
-    if(icon)icon.textContent=muted?'mic_off':'mic';
-    btn?.classList.toggle('call-btn-active',muted);
-  });
-  document.getElementById('call-btn-share').addEventListener('click',async()=>{
-    const sharing=await toggleScreenShare();
-    const btn=document.getElementById('call-btn-share');
-    const icon=btn?.querySelector('.material-symbols-outlined');
-    if(icon)icon.textContent=sharing?'stop_screen_share':'screen_share';
-    btn?.classList.toggle('call-btn-active',!!sharing);
-  });
-  _updateVcGrid();
-}
+// 自分をvc-stateにも登録
+import('./vc-state.js').then(({addParticipant})=>{
+addParticipant(channelId,myPeerId,{
+user_name:state.currentProfile.display_name,
+avatar_url:state.currentProfile.avatar_url||null,
+user_id:state.currentProfile.id
+});
+});
 
 function _updateVcGrid(){
   const grid=document.getElementById('vc-grid');

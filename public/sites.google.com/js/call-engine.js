@@ -143,6 +143,7 @@ export async function joinVoiceChannel(channelId){
     return;
   }
   currentVcId=channelId;
+  window.currentVcChannelId=channelId;
   window.sendCallBroadcast('vc-join',{
     channel_id:channelId,
     user_id:state.currentProfile.id,
@@ -187,6 +188,7 @@ export function leaveVoiceChannel(){
   _stopStream(vcStream);
   vcStream=null;
   currentVcId=null;
+  window.currentVcChannelId=null;
   document.querySelectorAll('.call-audio').forEach(el=>el.remove());
   window.sendCallBroadcast('vc-leave',{
     channel_id:chId,

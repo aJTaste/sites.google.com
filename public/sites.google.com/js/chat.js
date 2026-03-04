@@ -33,7 +33,7 @@ await initPage('chat','ChatHub',{
     try{setupVisibilityHandlers();}catch(e){}
     try{setupMobileTouchActions();}catch(e){}
     try{initCallEngine();}catch(e){console.error('callEngine:',e);}
-
+    window._appState=state;
     if(isMobile()){
       setTimeout(()=>{
         if(!state.selectedUserId&&!state.selectedChannelId){
@@ -41,6 +41,7 @@ await initPage('chat','ChatHub',{
         }
       },200);
     }
+
   }
 });
 
