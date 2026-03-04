@@ -178,6 +178,7 @@ function subscribeToCallChannel(){
     .on('broadcast',{event:'call-end'},(data)=>{window.callEngine?.onCallEnd(data.payload);})
     .on('broadcast',{event:'vc-join'},(data)=>{window.callEngine?.onVcJoin(data.payload);})
     .on('broadcast',{event:'vc-leave'},(data)=>{window.callEngine?.onVcLeave(data.payload);})
+    .on('broadcast',{event:'vc-sync'},(data)=>{window.callEngine?.onVcSync(data.payload);})
     .subscribe();
 }
 

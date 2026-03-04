@@ -1,8 +1,8 @@
-import{initVcChat,cleanupVcChat,sendVcMessage}from'./vc-chat.js';
-import{addParticipant,removeParticipant,clearChannel,updateVcSidebar}from'./vc-state.js';
-// call-ui.js v1.8.0
+// call-ui.js v1.8.1
 import{state}from'./chat-state.js';
 import{endCall,toggleMic,toggleScreenShare,answerDmCall,rejectDmCall,leaveVoiceChannel}from'./call-engine.js';
+import{initVcChat,cleanupVcChat,sendVcMessage}from'./vc-chat.js';
+import{addParticipant,removeParticipant,clearChannel,updateVcSidebar}from'./vc-state.js';
 
 function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 
@@ -16,7 +16,7 @@ export function showCallModal(user,mode){
   modal.innerHTML='<div class="call-modal-inner">'
     +'<div class="call-modal-avatar">'+(av)+'</div>'
     +'<div class="call-modal-name">'+esc(user.display_name||'不明')+'</div>'
-    +'<div class="call-modal-status" id="call-modal-status">'+( mode==='outgoing'?'呼び出し中...':'通話中')+'</div>'
+    +'<div class="call-modal-status" id="call-modal-status">'+(mode==='outgoing'?'呼び出し中...':'通話中')+'</div>'
     +'<div class="call-modal-actions">'
     +'<button class="call-btn call-btn-mute" id="call-btn-mute"><span class="material-symbols-outlined">mic</span></button>'
     +'<button class="call-btn call-btn-share" id="call-btn-share"><span class="material-symbols-outlined">screen_share</span></button>'
@@ -108,30 +108,43 @@ export function hideVoiceChannelUI(){
 }
 
 export function addVcParticipant(payload){
-_vcP[payload.peer_id]={user_name:payload.user_name,avatar_url:payload.avatar_url||null};
-addParticipant(payload.channel_id,payload.peer_id,{
-user_name:payload.user_name,
-avatar_url:payload.avatar_url||null,
-user_id:payload.user_id
-});
-_updateVcGrid();
+  _vcP[payload.peer_id]={user_name:payload.user_name,avatar_url:payload.avatar_url||null};
+  addParticipant(payload.channel_id,payload.peer_id,{
+    user_name:payload.user_name,
+    avatar_url:payload.avatar_url||null,
+    user_id:payload.user_id
+  });
+  _updateVcGrid();
 }
 
+// [fix④] サイドバー参加者数も更新するよう addParticipant を呼ぶ
 export function addVcParticipantAudio(peerId){
-  if(!_vcP[peerId]){_vcP[peerId]={user_name:'参加者',avatar_url:null};_updateVcGrid();}
+  if(!_vcP[peerId]){
+    _vcP[peerId]={user_name:'参加者',avatar_url:null};
+    const chId=window.currentVcChannelId||'';
+    if(chId)addParticipant(chId,peerId,{user_name:'参加者',avatar_url:null,user_id:''});
+    _updateVcGrid();
+  }
 }
+
 export function removeVcParticipant(peerId){
-// どのチャンネルか特定するため vcParticipants を検索
-import('./vc-state.js').then(({vcParticipants})=>{
-Object.keys(vcParticipants).forEach(chId=>{
-if(vcParticipants[chId][peerId]){
-removeParticipant(chId,peerId);
+  // vc-state を参照して正しいchannelIdで削除
+  Object.keys(window._vcParticipants||{}).forEach(chId=>{
+    if((window._vcParticipants[chId]||{})[peerId]){
+      removeParticipant(chId,peerId);
+    }
+  });
+  // staticインポート済みのremoveParticipantで処理する代替として
+  // vcParticipantsオブジェクトを直接参照できないためvc-stateに任せる
+  import('./vc-state.js').then(({vcParticipants})=>{
+    Object.keys(vcParticipants).forEach(chId=>{
+      if(vcParticipants[chId][peerId])removeParticipant(chId,peerId);
+    });
+  });
+  delete _vcP[peerId];
+  _updateVcGrid();
 }
-});
-});
-delete _vcP[peerId];
-_updateVcGrid();
-}
+
 export function onScreenShareEnded(){
   const btn=document.getElementById('call-btn-share');
   btn?.classList.remove('call-btn-active');
@@ -202,9 +215,10 @@ function _updateVcGrid(){
     const card=document.createElement('div');
     card.className='vc-participant-card';
     const av2=info.avatar_url
-      ?('<img src="'+esc(info.avatar_url)+'" alt="'+esc(info.user_name)+'">') 
+      ?('<img src="'+esc(info.avatar_url)+'" alt="'+esc(info.user_name)+'">')
       :('<div class="vc-avatar-fallback">'+esc((info.user_name||'?')[0])+'</div>');
-    card.innerHTML='<div class="vc-participant-avatar">'+av2+'</div><div class="vc-participant-name">'+esc(info.user_name)+'</div>';
+    card.innerHTML='<div class="vc-participant-avatar">'+av2+'</div>'
+      +'<div class="vc-participant-name">'+esc(info.user_name||'参加者')+'</div>';
     grid.appendChild(card);
   });
 }

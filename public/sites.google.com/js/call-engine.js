@@ -1,4 +1,4 @@
-// call-engine.js — WebRTC/PeerJS コア (v1.8.0)
+// call-engine.js — WebRTC/PeerJS コア (v1.8.1)
 import{state}from'./chat-state.js';
 
 export function getPeerId(userId){
@@ -12,6 +12,8 @@ let currentCall=null;
 let vcConnections={};
 let vcStream=null;
 let currentVcId=null;
+// [fix①] 通話相手のIDを保持する変数を追加
+let _dmTargetId=null;
 
 export function initCallEngine(){
   if(typeof Peer==='undefined'){console.error('[callEngine] PeerJS未ロード');return;}
@@ -59,19 +61,24 @@ export function initCallEngine(){
     });
     call.on('error',(e)=>console.error('[callEngine] incoming call err:',e));
   });
-  window.callEngine={onCallAnswer,onCallEnd,onVcJoin,onVcLeave};
+  // [fix④] onVcSync を公開
+  window.callEngine={onCallAnswer,onCallEnd,onVcJoin,onVcLeave,onVcSync};
   console.log('[callEngine] 初期化完了');
 }
 
 export async function startDmCall(targetUser){
   if(!peer){_miniToast('通話エンジン未初期化');return;}
   if(currentVcId){_miniToast('ボイスチャンネル参加中は通話できません');return;}
+  // [fix②] 通話中チェックを追加
+  if(currentCall){_miniToast('すでに通話中です');return;}
   try{
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
   }catch(e){
     _miniToast('マイクへのアクセスを許可してください');
     return;
   }
+  // [fix①] 通話相手IDを保存
+  _dmTargetId=targetUser.id;
   const{showCallModal}=await import('./call-ui.js');
   showCallModal(targetUser,'outgoing');
   window.sendCallBroadcast('call',{
@@ -92,6 +99,8 @@ export async function answerDmCall(payload){
     window.sendCallBroadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
     return;
   }
+  // [fix①] 着信側も相手IDを保存
+  _dmTargetId=payload.caller_id;
   window.sendCallBroadcast('call-answer',{
     caller_id:payload.caller_id,
     accepted:true,
@@ -118,7 +127,11 @@ export function rejectDmCall(payload){
 }
 
 export function endCall(){
-  window.sendCallBroadcast('call-end',{caller_id:state.currentProfile.id,target_id:''});
+  // [fix①] target_id に実際の相手IDを渡す（空文字だと相手側UIが消えないバグを修正）
+  window.sendCallBroadcast('call-end',{
+    caller_id:state.currentProfile.id,
+    target_id:_dmTargetId||''
+  });
   _cleanupDmCall();
   import('./call-ui.js').then(m=>m.hideCallModal());
 }
@@ -136,6 +149,7 @@ function onCallAnswer(payload){
 
 function onCallEnd(payload){
   const myId=state.currentProfile.id;
+  // [fix①] caller_id または target_id が自分ならUIをクリーンアップ
   if(payload.caller_id===myId||payload.target_id===myId){
     _cleanupDmCall();
     import('./call-ui.js').then(m=>m.hideCallModal());
@@ -168,6 +182,14 @@ function onVcJoin(payload){
   if(payload.channel_id!==currentVcId)return;
   if(payload.user_id===state.currentProfile.id)return;
   if(!peer||!vcStream)return;
+  // [fix④] 新規参加者に自分の情報を返信してグリッドに表示させる
+  window.sendCallBroadcast('vc-sync',{
+    channel_id:currentVcId,
+    user_id:state.currentProfile.id,
+    peer_id:getPeerId(state.currentProfile.id),
+    user_name:state.currentProfile.display_name,
+    avatar_url:state.currentProfile.avatar_url||null
+  });
   const call=peer.call(payload.peer_id,vcStream);
   call.on('stream',(remote)=>{
     _addAudio(payload.peer_id,remote);
@@ -180,6 +202,13 @@ function onVcJoin(payload){
     import('./call-ui.js').then(m=>m.removeVcParticipant(payload.peer_id));
   });
   call.on('error',(e)=>console.error('[callEngine] vc call err:',e));
+}
+
+// [fix④] 既存メンバーのsyncを受け取ってグリッド・サイドバーに追加
+function onVcSync(payload){
+  if(payload.channel_id!==currentVcId)return;
+  if(payload.user_id===state.currentProfile.id)return;
+  import('./call-ui.js').then(m=>m.addVcParticipant(payload));
 }
 
 function onVcLeave(payload){
@@ -244,6 +273,8 @@ function _cleanupDmCall(){
   _stopStream(localStream);localStream=null;
   _stopStream(screenStream);screenStream=null;
   _removeAudio('dm-remote');
+  // [fix①] クリーンアップ時にターゲットIDもリセット
+  _dmTargetId=null;
 }
 function _miniToast(msg){
   const t=document.createElement('div');

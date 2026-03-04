@@ -1,4 +1,4 @@
-// vc-chat.js — ボイスチャンネル内チャット (Phase 4)
+// vc-chat.js — ボイスチャンネル内チャット (Phase 4 v1.0.1)
 import{supabase}from'../common/supabase-config.js';
 import{state}from'./chat-state.js';
 import{escapeHtml,formatMessageTime}from'./chat-utils.js';
@@ -83,8 +83,8 @@ function _appendMessage(msg,scroll){
 }
 
 function _getSenderName(userId){
-  // chat-state.js の allUsers を参照
-  const users=window._appState?.allUsers||[];
+  // [fix③] window._appState ではなく state.allUsers を使う
+  const users=state.allUsers||[];
   const u=users.find(u=>u.id===userId||u.user_id===userId);
   return u?.display_name||'不明';
 }
