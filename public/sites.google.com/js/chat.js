@@ -92,6 +92,14 @@ function setupVisibilityHandlers(){
   });
 
   window.addEventListener('beforeunload',()=>{
+    // 通話・VC退室処理
+    try{
+      import('./call-engine.js').then(m=>{
+        m.endCall?.();
+        m.leaveVoiceChannel?.();
+      });
+    }catch(e){}
+
     if(!state.currentProfile?.id)return;
     try{
       const data=JSON.stringify({
@@ -180,27 +188,6 @@ window.sendCallBroadcast=async function(event,payload){
   catch(e){console.error('broadcast送信エラー:',e);}
 };
 
-// window経由で公開（chat-ui.jsから呼ぶ）
-async function sendCall(targetProfileId,targetName){
-  if(!_callChannel)return false;
-  try{
-    await _callChannel.send({
-      type:'broadcast',
-      event:'call',
-      payload:{
-        caller_id:state.currentProfile.id,
-        caller_name:state.currentProfile.display_name,
-        caller_icon:state.currentProfile.avatar_url||null,
-        target_id:targetProfileId
-      }
-    });
-    return true;
-  }catch(e){
-    console.error('呼び出し送信エラー:',e);
-    return false;
-  }
-}
-window.sendCall=sendCall;
 
 // ========================================
 // ユーザー一覧を読み込む

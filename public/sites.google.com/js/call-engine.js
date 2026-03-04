@@ -26,8 +26,16 @@ export function initCallEngine(){
   peer.on('open',(id)=>console.log('[callEngine] PeerJS ready:',id));
   peer.on('error',(err)=>{
     console.error('[callEngine] PeerJS err:',err.type,err);
-    if(err.type==='unavailable-id'){
-      setTimeout(()=>{peer.destroy();initCallEngine();},3000);
+    if(err.type==='unavailable-id'||err.type==='network'||err.type==='server-error'){
+      setTimeout(()=>{
+        try{peer.destroy();}catch(e){}
+        initCallEngine();
+      },3000);
+    }
+    if(err.type==='peer-unavailable'){
+      _cleanupDmCall();
+      import('./call-ui.js').then(m=>m.hideCallModal());
+      _miniToast('相手に接続できませんでした');
     }
   });
   peer.on('call',(call)=>{
@@ -57,6 +65,7 @@ export function initCallEngine(){
 
 export async function startDmCall(targetUser){
   if(!peer){_miniToast('通話エンジン未初期化');return;}
+  if(currentVcId){_miniToast('ボイスチャンネル参加中は通話できません');return;}
   try{
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
   }catch(e){
@@ -135,6 +144,7 @@ function onCallEnd(payload){
 
 export async function joinVoiceChannel(channelId){
   if(!peer){_miniToast('通話エンジン未初期化');return;}
+  if(currentCall){_miniToast('通話中はボイスチャンネルに入れません');return;}
   if(currentVcId)leaveVoiceChannel();
   try{
     vcStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
