@@ -67,20 +67,15 @@ function formatFilename(date,type){
 
 async function downloadBlob(blob,filename){
   try{
-    if('showSaveFilePicker' in window){
-      const handle=await window.showSaveFilePicker({
-        suggestedName:filename,
-        types:[{description:'Media File',accept:{'image/png':['.png'],'video/webm':['.webm']}}]
-      });
-      const writable=await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-    }else{
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');
-      a.href=url;a.download=filename;a.click();
-      URL.revokeObjectURL(url);
-    }
+    const ext=filename.endsWith('.png')?'.png':'.webm';
+    const mimeType=ext==='.png'?'image/png':'video/webm';
+    const handle=await window.showSaveFilePicker({
+      suggestedName:filename,
+      types:[{description:'Media File',accept:{[mimeType]:[ext]}}]
+    });
+    const writable=await handle.createWritable();
+    await writable.write(blob);
+    await writable.close();
   }catch(e){
     if(e.name!=='AbortError')console.error('DLエラー:',e);
   }

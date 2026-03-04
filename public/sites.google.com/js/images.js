@@ -303,10 +303,20 @@ function _modalNav(dir){
 // ダウンロード
 // ==========================================
 async function _downloadMedia(media){
-  const url=URL.createObjectURL(media.blob);
-  const a=document.createElement('a');
-  a.href=url;a.download=media.filename;a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  try{
+    const isImg=media.type==='image';
+    const ext=isImg?'.png':'.webm';
+    const mimeType=isImg?'image/png':'video/webm';
+    const handle=await window.showSaveFilePicker({
+      suggestedName:media.filename,
+      types:[{description:'Media File',accept:{[mimeType]:[ext]}}]
+    });
+    const writable=await handle.createWritable();
+    await writable.write(media.blob);
+    await writable.close();
+  }catch(e){
+    if(e.name!=='AbortError')console.error('DLエラー:',e);
+  }
 }
 
 async function _downloadBatch(){
