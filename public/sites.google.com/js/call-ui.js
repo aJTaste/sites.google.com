@@ -87,14 +87,11 @@ const _vcP={};
 export function showVoiceChannelUI(channelId){
   const myPeerId='apphub-'+state.currentProfile.id.substring(0,8);
   _vcP[myPeerId]={user_name:state.currentProfile.display_name,avatar_url:state.currentProfile.avatar_url||null};
-  // 自分をvc-stateにも登録
-import('./vc-state.js').then(({addParticipant})=>{
-addParticipant(channelId,myPeerId,{
-user_name:state.currentProfile.display_name,
-avatar_url:state.currentProfile.avatar_url||null,
-user_id:state.currentProfile.id
-});
-});
+  addParticipant(channelId,myPeerId,{
+    user_name:state.currentProfile.display_name,
+    avatar_url:state.currentProfile.avatar_url||null,
+    user_id:state.currentProfile.id
+  });
   _renderVcUI(channelId);
   initVcChat(channelId);
 }
@@ -142,14 +139,60 @@ export function onScreenShareEnded(){
   if(icon)icon.textContent='screen_share';
 }
 
-// 自分をvc-stateにも登録
-import('./vc-state.js').then(({addParticipant})=>{
-addParticipant(channelId,myPeerId,{
-user_name:state.currentProfile.display_name,
-avatar_url:state.currentProfile.avatar_url||null,
-user_id:state.currentProfile.id
-});
-});
+function _renderVcUI(channelId){
+  const chatMain=document.getElementById('chat-main');
+  if(!chatMain)return;
+  chatMain.dataset.vcMode='1';
+  chatMain.dataset.vcChannelId=channelId;
+  const chNum=esc(channelId.replace('voice-',''));
+  chatMain.innerHTML='<div class="vc-layout">'
+    +'<div class="vc-header">'
+    +'<div class="vc-header-title"><span class="material-symbols-outlined">volume_up</span> ボイス '+chNum+'</div>'
+    +'<button class="vc-leave-btn" id="vc-leave-btn"><span class="material-symbols-outlined">logout</span> 退室</button>'
+    +'</div>'
+    +'<div class="vc-body">'
+    +'<div class="vc-main"><div class="vc-grid" id="vc-grid"></div></div>'
+    +'<div class="vc-chat-panel">'
+    +'<div class="vc-chat-messages" id="vc-chat-messages"></div>'
+    +'<div class="vc-chat-input-area">'
+    +'<textarea class="vc-chat-input" id="vc-chat-input" placeholder="メッセージ..." rows="1"></textarea>'
+    +'<button class="vc-chat-send" id="vc-chat-send"><span class="material-symbols-outlined">send</span></button>'
+    +'</div>'
+    +'</div>'
+    +'</div>'
+    +'<div class="vc-controls">'
+    +'<button class="call-btn call-btn-mute" id="call-btn-mute"><span class="material-symbols-outlined">mic</span></button>'
+    +'<button class="call-btn call-btn-share" id="call-btn-share"><span class="material-symbols-outlined">screen_share</span></button>'
+    +'</div>'
+    +'</div>';
+  document.getElementById('vc-leave-btn').addEventListener('click',()=>leaveVoiceChannel());
+  document.getElementById('call-btn-mute').addEventListener('click',()=>{
+    const muted=toggleMic();
+    const btn=document.getElementById('call-btn-mute');
+    const icon=btn?.querySelector('.material-symbols-outlined');
+    if(icon)icon.textContent=muted?'mic_off':'mic';
+    btn?.classList.toggle('call-btn-active',muted);
+  });
+  document.getElementById('call-btn-share').addEventListener('click',async()=>{
+    const sharing=await toggleScreenShare();
+    const btn=document.getElementById('call-btn-share');
+    const icon=btn?.querySelector('.material-symbols-outlined');
+    if(icon)icon.textContent=sharing?'stop_screen_share':'screen_share';
+    btn?.classList.toggle('call-btn-active',!!sharing);
+  });
+  const doSend=()=>{
+    const input=document.getElementById('vc-chat-input');
+    const txt=input?.value?.trim();
+    if(!txt)return;
+    sendVcMessage(channelId,txt);
+    if(input)input.value='';
+  };
+  document.getElementById('vc-chat-send')?.addEventListener('click',doSend);
+  document.getElementById('vc-chat-input')?.addEventListener('keydown',(e)=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();doSend();}
+  });
+  _updateVcGrid();
+}
 
 function _updateVcGrid(){
   const grid=document.getElementById('vc-grid');
