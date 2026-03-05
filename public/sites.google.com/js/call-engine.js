@@ -1,4 +1,4 @@
-// call-engine.js — WebRTC/PeerJS コア (v1.8.1)
+// call-engine.js — WebRTC/PeerJS コア (v1.8.2)
 import{state}from'./chat-state.js';
 
 export function getPeerId(userId){
@@ -12,7 +12,6 @@ let currentCall=null;
 let vcConnections={};
 let vcStream=null;
 let currentVcId=null;
-// [fix①] 通話相手のIDを保持する変数を追加
 let _dmTargetId=null;
 
 export function initCallEngine(){
@@ -31,6 +30,7 @@ export function initCallEngine(){
     if(err.type==='unavailable-id'||err.type==='network'||err.type==='server-error'){
       setTimeout(()=>{
         try{peer.destroy();}catch(e){}
+        peer=null;
         initCallEngine();
       },3000);
     }
@@ -54,22 +54,28 @@ export function initCallEngine(){
         import('./call-ui.js').then(m=>m.updateCallStatus('通話中'));
       }
     });
+    // [fix⑤] VC/DM を正しく分岐してクリーンアップ
+    // 旧: _removeAudio(call.peer) → DM通話では 'dm-remote' が消えない致命的バグ
+    // 旧: _cleanupDmCall() を呼ばない → currentCall が残り次回「通話中です」になるバグ
     call.on('close',()=>{
-      _removeAudio(call.peer);
-      delete vcConnections[call.peer];
-      if(!currentVcId)import('./call-ui.js').then(m=>m.hideCallModal());
+      if(vcConnections[call.peer]){
+        _removeAudio(call.peer);
+        delete vcConnections[call.peer];
+      }else{
+        _cleanupDmCall();
+        import('./call-ui.js').then(m=>m.hideCallModal());
+      }
     });
     call.on('error',(e)=>console.error('[callEngine] incoming call err:',e));
   });
-  // [fix④] onVcSync を公開
   window.callEngine={onCallAnswer,onCallEnd,onVcJoin,onVcLeave,onVcSync};
   console.log('[callEngine] 初期化完了');
 }
 
 export async function startDmCall(targetUser){
-  if(!peer){_miniToast('通話エンジン未初期化');return;}
+  // [fix⑥] peer.open チェック追加（PeerJSサーバー未接続でも peer!=null になるため）
+  if(!peer||!peer.open){_miniToast('通話エンジン接続中です。少し待ってから再試行してください');return;}
   if(currentVcId){_miniToast('ボイスチャンネル参加中は通話できません');return;}
-  // [fix②] 通話中チェックを追加
   if(currentCall){_miniToast('すでに通話中です');return;}
   try{
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
@@ -77,7 +83,6 @@ export async function startDmCall(targetUser){
     _miniToast('マイクへのアクセスを許可してください');
     return;
   }
-  // [fix①] 通話相手IDを保存
   _dmTargetId=targetUser.id;
   const{showCallModal}=await import('./call-ui.js');
   showCallModal(targetUser,'outgoing');
@@ -91,7 +96,8 @@ export async function startDmCall(targetUser){
 }
 
 export async function answerDmCall(payload){
-  if(!peer){_miniToast('通話エンジン未初期化');return;}
+  // [fix⑥] peer.open チェック追加
+  if(!peer||!peer.open){_miniToast('通話エンジン接続中です。少し待ってから再試行してください');return;}
   try{
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
   }catch(e){
@@ -99,7 +105,6 @@ export async function answerDmCall(payload){
     window.sendCallBroadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
     return;
   }
-  // [fix①] 着信側も相手IDを保存
   _dmTargetId=payload.caller_id;
   window.sendCallBroadcast('call-answer',{
     caller_id:payload.caller_id,
@@ -115,11 +120,12 @@ export async function answerDmCall(payload){
   currentCall.on('close',()=>_cleanupDmCall());
   currentCall.on('error',(e)=>console.error('[callEngine] dm call err:',e));
   const{showCallModal}=await import('./call-ui.js');
+  // [fix③] 'active' → 'incoming' に修正
   showCallModal({
     id:payload.caller_id,
     display_name:payload.caller_name,
     avatar_url:payload.caller_icon||null
-  },'active');
+  },'incoming');
 }
 
 export function rejectDmCall(payload){
@@ -127,7 +133,6 @@ export function rejectDmCall(payload){
 }
 
 export function endCall(){
-  // [fix①] target_id に実際の相手IDを渡す（空文字だと相手側UIが消えないバグを修正）
   window.sendCallBroadcast('call-end',{
     caller_id:state.currentProfile.id,
     target_id:_dmTargetId||''
@@ -149,7 +154,6 @@ function onCallAnswer(payload){
 
 function onCallEnd(payload){
   const myId=state.currentProfile.id;
-  // [fix①] caller_id または target_id が自分ならUIをクリーンアップ
   if(payload.caller_id===myId||payload.target_id===myId){
     _cleanupDmCall();
     import('./call-ui.js').then(m=>m.hideCallModal());
@@ -157,7 +161,7 @@ function onCallEnd(payload){
 }
 
 export async function joinVoiceChannel(channelId){
-  if(!peer){_miniToast('通話エンジン未初期化');return;}
+  if(!peer||!peer.open){_miniToast('通話エンジン接続中です。少し待ってから再試行してください');return;}
   if(currentCall){_miniToast('通話中はボイスチャンネルに入れません');return;}
   if(currentVcId)leaveVoiceChannel();
   try{
@@ -182,7 +186,6 @@ function onVcJoin(payload){
   if(payload.channel_id!==currentVcId)return;
   if(payload.user_id===state.currentProfile.id)return;
   if(!peer||!vcStream)return;
-  // [fix④] 新規参加者に自分の情報を返信してグリッドに表示させる
   window.sendCallBroadcast('vc-sync',{
     channel_id:currentVcId,
     user_id:state.currentProfile.id,
@@ -204,7 +207,6 @@ function onVcJoin(payload){
   call.on('error',(e)=>console.error('[callEngine] vc call err:',e));
 }
 
-// [fix④] 既存メンバーのsyncを受け取ってグリッド・サイドバーに追加
 function onVcSync(payload){
   if(payload.channel_id!==currentVcId)return;
   if(payload.user_id===state.currentProfile.id)return;
@@ -273,7 +275,6 @@ function _cleanupDmCall(){
   _stopStream(localStream);localStream=null;
   _stopStream(screenStream);screenStream=null;
   _removeAudio('dm-remote');
-  // [fix①] クリーンアップ時にターゲットIDもリセット
   _dmTargetId=null;
 }
 function _miniToast(msg){
