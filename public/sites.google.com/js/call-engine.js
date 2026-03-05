@@ -1,4 +1,4 @@
-// call-engine.js — WebRTC/PeerJS コア (v1.8.2)
+// call-engine.js — WebRTC/PeerJS コア (v1.8.3)
 import{state}from'./chat-state.js';
 
 export function getPeerId(userId){
@@ -41,39 +41,31 @@ export function initCallEngine(){
     }
   });
   peer.on('call',(call)=>{
-    const stream=vcStream||localStream||undefined;
-    call.answer(stream);
-    call.on('stream',(remote)=>{
-      if(currentVcId){
+    // VCのみここで answer する（DM通話は answerDmCall 側で処理）
+    if(currentVcId){
+      call.answer(vcStream||undefined);
+      call.on('stream',(remote)=>{
         _addAudio(call.peer,remote);
         vcConnections[call.peer]=call;
         import('./call-ui.js').then(m=>m.addVcParticipantAudio(call.peer));
-      }else{
-        _addAudio('dm-remote',remote);
-        currentCall=call;
-        import('./call-ui.js').then(m=>m.updateCallStatus('通話中'));
-      }
-    });
-    // [fix⑤] VC/DM を正しく分岐してクリーンアップ
-    // 旧: _removeAudio(call.peer) → DM通話では 'dm-remote' が消えない致命的バグ
-    // 旧: _cleanupDmCall() を呼ばない → currentCall が残り次回「通話中です」になるバグ
-    call.on('close',()=>{
-      if(vcConnections[call.peer]){
+      });
+      call.on('close',()=>{
         _removeAudio(call.peer);
         delete vcConnections[call.peer];
-      }else{
-        _cleanupDmCall();
-        import('./call-ui.js').then(m=>m.hideCallModal());
-      }
-    });
-    call.on('error',(e)=>console.error('[callEngine] incoming call err:',e));
+      });
+      call.on('error',(e)=>console.error('[callEngine] vc incoming err:',e));
+    }else{
+      // DM着信：localStreamがまだない場合は保留
+      _pendingIncomingCall=call;
+    }
   });
   window.callEngine={onCallAnswer,onCallEnd,onVcJoin,onVcLeave,onVcSync};
   console.log('[callEngine] 初期化完了');
 }
 
+let _pendingIncomingCall=null;
+
 export async function startDmCall(targetUser){
-  // [fix⑥] peer.open チェック追加（PeerJSサーバー未接続でも peer!=null になるため）
   if(!peer||!peer.open){_miniToast('通話エンジン接続中です。少し待ってから再試行してください');return;}
   if(currentVcId){_miniToast('ボイスチャンネル参加中は通話できません');return;}
   if(currentCall){_miniToast('すでに通話中です');return;}
@@ -96,7 +88,6 @@ export async function startDmCall(targetUser){
 }
 
 export async function answerDmCall(payload){
-  // [fix⑥] peer.open チェック追加
   if(!peer||!peer.open){_miniToast('通話エンジン接続中です。少し待ってから再試行してください');return;}
   try{
     localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
@@ -106,29 +97,39 @@ export async function answerDmCall(payload){
     return;
   }
   _dmTargetId=payload.caller_id;
+  // 受信側は「応答OK」を発信側に送るだけ
+  // 実際のWebRTC接続は発信側の onCallAnswer で peer.call() する
   window.sendCallBroadcast('call-answer',{
     caller_id:payload.caller_id,
     accepted:true,
-    peer_id:getPeerId(state.currentProfile.id)
+    peer_id:getPeerId(state.currentProfile.id)  // 受信側のpeerIdを送る
   });
-  const callerPeerId=payload.peer_id||getPeerId(payload.caller_id);
-  currentCall=peer.call(callerPeerId,localStream);
-  currentCall.on('stream',(remote)=>{
-    _addAudio('dm-remote',remote);
-    import('./call-ui.js').then(m=>m.updateCallStatus('通話中'));
-  });
-  currentCall.on('close',()=>_cleanupDmCall());
-  currentCall.on('error',(e)=>console.error('[callEngine] dm call err:',e));
+  // [fix] 着信モーダルを表示（接続待ち）
   const{showCallModal}=await import('./call-ui.js');
-  // [fix③] 'active' → 'incoming' に修正
   showCallModal({
     id:payload.caller_id,
     display_name:payload.caller_name,
     avatar_url:payload.caller_icon||null
   },'incoming');
+  // peer.on('call') で受け取った保留中のcallにanswer
+  if(_pendingIncomingCall){
+    currentCall=_pendingIncomingCall;
+    _pendingIncomingCall=null;
+    currentCall.answer(localStream);
+    currentCall.on('stream',(remote)=>{
+      _addAudio('dm-remote',remote);
+      import('./call-ui.js').then(m=>m.updateCallStatus('通話中'));
+    });
+    currentCall.on('close',()=>{
+      _cleanupDmCall();
+      import('./call-ui.js').then(m=>m.hideCallModal());
+    });
+    currentCall.on('error',(e)=>console.error('[callEngine] dm answer err:',e));
+  }
 }
 
 export function rejectDmCall(payload){
+  _pendingIncomingCall=null;
   window.sendCallBroadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
 }
 
@@ -144,7 +145,20 @@ export function endCall(){
 function onCallAnswer(payload){
   if(payload.caller_id!==state.currentProfile.id)return;
   if(payload.accepted){
+    // [fix] 発信側がここで実際に peer.call() する
     import('./call-ui.js').then(m=>m.updateCallStatus('接続中...'));
+    const targetPeerId=payload.peer_id||getPeerId(_dmTargetId||'');
+    if(!localStream){_miniToast('マイク未取得');return;}
+    currentCall=peer.call(targetPeerId,localStream);
+    currentCall.on('stream',(remote)=>{
+      _addAudio('dm-remote',remote);
+      import('./call-ui.js').then(m=>m.updateCallStatus('通話中'));
+    });
+    currentCall.on('close',()=>{
+      _cleanupDmCall();
+      import('./call-ui.js').then(m=>m.hideCallModal());
+    });
+    currentCall.on('error',(e)=>console.error('[callEngine] dm call err:',e));
   }else{
     _cleanupDmCall();
     import('./call-ui.js').then(m=>m.hideCallModal());
@@ -272,6 +286,7 @@ function _removeAudio(id){
 function _stopStream(s){s?.getTracks().forEach(t=>{try{t.stop();}catch(e){}});}
 function _cleanupDmCall(){
   currentCall?.close();currentCall=null;
+  _pendingIncomingCall=null;
   _stopStream(localStream);localStream=null;
   _stopStream(screenStream);screenStream=null;
   _removeAudio('dm-remote');
