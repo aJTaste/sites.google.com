@@ -1,22 +1,26 @@
-// call-ui.js v1.8.1
+// call-ui.js v2.1
 import{state}from'./chat-state.js';
 import{endCall,toggleMic,toggleScreenShare,answerDmCall,rejectDmCall,leaveVoiceChannel}from'./call-engine.js';
 import{initVcChat,cleanupVcChat,sendVcMessage}from'./vc-chat.js';
-import{addParticipant,removeParticipant,clearChannel,updateVcSidebar}from'./vc-state.js';
+// ④ updateVcSidebar の未使用importを削除
+import{addParticipant,removeParticipant,clearChannel,vcParticipants}from'./vc-state.js';
 
 function esc(s){const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
 
-// DM通話モーダル
 export function showCallModal(user,mode){
   const modal=document.getElementById('call-modal');
   if(!modal)return;
   const av=user.avatar_url
     ?('<img src="'+esc(user.avatar_url)+'" alt="'+esc(user.display_name||'')+'">')
     :('<div class="call-modal-avatar-fallback">'+esc((user.display_name||'?')[0])+'</div>');
+  // ② モードに応じたステータス文字列
+  const statusText=mode==='outgoing'?'呼び出し中...'
+    :mode==='incoming'?'接続中...'
+    :'通話中';
   modal.innerHTML='<div class="call-modal-inner">'
-    +'<div class="call-modal-avatar">'+(av)+'</div>'
+    +'<div class="call-modal-avatar">'+av+'</div>'
     +'<div class="call-modal-name">'+esc(user.display_name||'不明')+'</div>'
-    +'<div class="call-modal-status" id="call-modal-status">'+(mode==='outgoing'?'呼び出し中...':'通話中')+'</div>'
+    +'<div class="call-modal-status" id="call-modal-status">'+statusText+'</div>'
     +'<div class="call-modal-actions">'
     +'<button class="call-btn call-btn-mute" id="call-btn-mute"><span class="material-symbols-outlined">mic</span></button>'
     +'<button class="call-btn call-btn-share" id="call-btn-share"><span class="material-symbols-outlined">screen_share</span></button>'
@@ -53,7 +57,6 @@ export function updateCallStatus(text){
   if(el)el.textContent=text;
 }
 
-// 着信トースト
 export function showIncomingCallToast(payload){
   let wrap=document.getElementById('ch-toast-wrap');
   if(!wrap){wrap=document.createElement('div');wrap.id='ch-toast-wrap';document.body.appendChild(wrap);}
@@ -81,7 +84,6 @@ export function showIncomingCallToast(payload){
   setTimeout(()=>{if(!dismissed){rejectDmCall(payload);dismiss();}},30000);
 }
 
-// ボイスチャンネルUI
 const _vcP={};
 
 export function showVoiceChannelUI(channelId){
@@ -117,7 +119,6 @@ export function addVcParticipant(payload){
   _updateVcGrid();
 }
 
-// [fix④] サイドバー参加者数も更新するよう addParticipant を呼ぶ
 export function addVcParticipantAudio(peerId){
   if(!_vcP[peerId]){
     _vcP[peerId]={user_name:'参加者',avatar_url:null};
@@ -128,18 +129,9 @@ export function addVcParticipantAudio(peerId){
 }
 
 export function removeVcParticipant(peerId){
-  // vc-state を参照して正しいchannelIdで削除
-  Object.keys(window._vcParticipants||{}).forEach(chId=>{
-    if((window._vcParticipants[chId]||{})[peerId]){
-      removeParticipant(chId,peerId);
-    }
-  });
-  // staticインポート済みのremoveParticipantで処理する代替として
-  // vcParticipantsオブジェクトを直接参照できないためvc-stateに任せる
-  import('./vc-state.js').then(({vcParticipants})=>{
-    Object.keys(vcParticipants).forEach(chId=>{
-      if(vcParticipants[chId][peerId])removeParticipant(chId,peerId);
-    });
+  // ① window._vcParticipants → static importした vcParticipants を直接使う
+  Object.keys(vcParticipants).forEach(chId=>{
+    if(vcParticipants[chId]?.[peerId])removeParticipant(chId,peerId);
   });
   delete _vcP[peerId];
   _updateVcGrid();
@@ -214,10 +206,10 @@ function _updateVcGrid(){
   Object.entries(_vcP).forEach(([,info])=>{
     const card=document.createElement('div');
     card.className='vc-participant-card';
-    const av2=info.avatar_url
+    const av=info.avatar_url
       ?('<img src="'+esc(info.avatar_url)+'" alt="'+esc(info.user_name)+'">')
       :('<div class="vc-avatar-fallback">'+esc((info.user_name||'?')[0])+'</div>');
-    card.innerHTML='<div class="vc-participant-avatar">'+av2+'</div>'
+    card.innerHTML='<div class="vc-participant-avatar">'+av+'</div>'
       +'<div class="vc-participant-name">'+esc(info.user_name||'参加者')+'</div>';
     grid.appendChild(card);
   });
