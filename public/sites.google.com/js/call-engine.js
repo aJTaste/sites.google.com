@@ -1,26 +1,21 @@
-// call-engine.js v2.0 — 完全再設計
+// call-engine.js v2.1
 import{state}from'./chat-state.js';
 
 export function getPeerId(u){return 'apphub-'+u.substring(0,8);}
 function _myId(){return state.currentProfile.id;}
 function _myPeerId(){return getPeerId(_myId());}
 
-// ==========================================
-// 状態変数
-// ==========================================
 let peer=null;
-let localStream=null;   // DM通話用マイクストリーム
-let screenStream=null;  // 画面共有ストリーム
-let dmCall=null;        // アクティブなDM通話オブジェクト
-let pendingCall=null;   // 着信保留中のPeerJS callオブジェクト
-let _dmOtherId=null;    // DM相手のuserId
-let vcStream=null;      // VC用マイクストリーム
-let vcId=null;          // 参加中VCチャンネルID
-let vcCalls={};         // {peerId: MediaConnection}
+let localStream=null;
+let screenStream=null;
+let dmCall=null;
+let pendingCall=null;
+let _dmOtherId=null;
+let vcStream=null;
+let vcId=null;
+let vcCalls={};
+let _peerGeneration=0; // ③ 再接続時の古いpeerを識別するフラグ
 
-// ==========================================
-// 初期化
-// ==========================================
 export function initCallEngine(){
   if(typeof Peer==='undefined'){console.error('[call] PeerJS未ロード');return;}
   _createPeer();
@@ -29,6 +24,7 @@ export function initCallEngine(){
 function _createPeer(){
   if(peer){try{peer.destroy();}catch(e){}}
   peer=null;
+  const gen=++_peerGeneration; // この世代番号を閉じ込める
 
   const p=new Peer(_myPeerId(),{
     debug:0,
@@ -39,11 +35,13 @@ function _createPeer(){
   });
 
   p.on('open',(id)=>{
+    if(gen!==_peerGeneration)return; // 古い世代なら無視
     peer=p;
     console.log('[call] PeerJS ready:',id);
   });
 
   p.on('error',(err)=>{
+    if(gen!==_peerGeneration)return;
     console.error('[call] peer error:',err.type,err);
     if(['unavailable-id','network','server-error'].includes(err.type)){
       setTimeout(_createPeer,3000);
@@ -56,27 +54,23 @@ function _createPeer(){
   });
 
   p.on('disconnected',()=>{
+    if(gen!==_peerGeneration)return;
     console.warn('[call] disconnected, reconnecting...');
     try{p.reconnect();}catch(e){setTimeout(_createPeer,3000);}
   });
 
-  // ★ 着信ハンドラ（DM/VC共通）
-  // DM: ユーザーが応答操作をするまで call オブジェクトを pendingCall に保留
-  // VC: 即座に answer
   p.on('call',(call)=>{
+    if(gen!==_peerGeneration)return; // 古い世代なら無視
     if(vcId){
-      // VC参加中 → 即答
       call.answer(vcStream||undefined);
       _setupVcCall(call,null);
     }else{
-      // DM着信 → 保留（answerDmCall で answer する）
       console.log('[call] DM pending from peer:',call.peer);
       if(pendingCall){
         clearTimeout(pendingCall._autoClose);
         try{pendingCall.close();}catch(e){}
       }
       pendingCall=call;
-      // 30秒でタイムアウト自動クローズ
       pendingCall._autoClose=setTimeout(()=>{
         if(pendingCall===call){
           pendingCall=null;
@@ -96,10 +90,6 @@ function _createPeer(){
   console.log('[call] 初期化完了');
 }
 
-// ==========================================
-// DM通話 — 発信
-// ==========================================
-// ★ 正しい流れ: 発信側が peer.call() → 受信側が call.answer()
 export async function startDmCall(targetUser){
   if(!peer||!peer.open){_toast('通話エンジン準備中です。少し待ってから再試行してください');return;}
   if(vcId){_toast('ボイスチャンネル参加中は通話できません');return;}
@@ -110,7 +100,6 @@ export async function startDmCall(targetUser){
 
   _dmOtherId=targetUser.id;
 
-  // ★ 発信側が peer.call() する
   const call=peer.call(getPeerId(targetUser.id),localStream);
   if(!call){
     _toast('接続に失敗しました');
@@ -134,7 +123,6 @@ export async function startDmCall(targetUser){
     _toast('通話エラーが発生しました');
   });
 
-  // Supabaseで着信通知ブロードキャスト
   _broadcast('call',{
     caller_id:_myId(),
     caller_name:state.currentProfile.display_name,
@@ -149,10 +137,6 @@ export async function startDmCall(targetUser){
   },'outgoing');
 }
 
-// ==========================================
-// DM通話 — 着信応答
-// ==========================================
-// ★ 受信側は pendingCall.answer() するだけ（peer.call() は呼ばない）
 export async function answerDmCall(payload){
   if(!peer||!peer.open){_toast('通話エンジン準備中です');return;}
   if(dmCall){_toast('すでに通話中です');return;}
@@ -165,16 +149,11 @@ export async function answerDmCall(payload){
 
   _dmOtherId=payload.caller_id;
 
-  // pendingCall がまだ届いていない場合は最大3秒待つ
-  // （Supabase broadcastとPeerJSシグナリングの到達順が逆になることがある）
   if(!pendingCall){
     await new Promise(resolve=>{
       const deadline=Date.now()+3000;
-      const timer=setInterval(()=>{
-        if(pendingCall||Date.now()>=deadline){
-          clearInterval(timer);
-          resolve();
-        }
+      const t=setInterval(()=>{
+        if(pendingCall||Date.now()>=deadline){clearInterval(t);resolve();}
       },100);
     });
   }
@@ -187,13 +166,11 @@ export async function answerDmCall(payload){
     return;
   }
 
-  // pendingCall に answer する
   clearTimeout(pendingCall._autoClose);
   const call=pendingCall;
   pendingCall=null;
   dmCall=call;
 
-  // ★ 受信側は answer() のみ
   call.answer(localStream);
 
   call.on('stream',(remote)=>{
@@ -210,20 +187,15 @@ export async function answerDmCall(payload){
     _toast('通話エラーが発生しました');
   });
 
-  // 発信側に応答OKを通知
   _broadcast('call-answer',{caller_id:payload.caller_id,accepted:true});
 
-  // 通話モーダル表示
   _ui('showCallModal',{
     id:payload.caller_id,
     display_name:payload.caller_name,
     avatar_url:payload.caller_icon||null,
-  },'active');
+  },'incoming'); // ② 'active' → 'incoming' に修正
 }
 
-// ==========================================
-// DM通話 — 拒否
-// ==========================================
 export function rejectDmCall(payload){
   if(pendingCall){
     clearTimeout(pendingCall._autoClose);
@@ -233,9 +205,6 @@ export function rejectDmCall(payload){
   _broadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
 }
 
-// ==========================================
-// DM通話 — 終了
-// ==========================================
 export function endCall(){
   _broadcast('call-end',{
     caller_id:_myId(),
@@ -245,11 +214,6 @@ export function endCall(){
   _ui('hideCallModal');
 }
 
-// ==========================================
-// ブロードキャスト受信ハンドラ
-// ==========================================
-// 発信側: call-answer を受け取って UI を更新するだけ
-// WebRTC接続は startDmCall の peer.call() で既に開始済み
 function _onCallAnswer(payload){
   if(payload.caller_id!==_myId())return;
   if(payload.accepted){
@@ -268,9 +232,6 @@ function _onCallEnd(payload){
   }
 }
 
-// ==========================================
-// ボイスチャンネル
-// ==========================================
 export async function joinVoiceChannel(channelId){
   if(!peer||!peer.open){_toast('通話エンジン準備中です');return;}
   if(dmCall){_toast('通話中はボイスチャンネルに入れません');return;}
@@ -293,7 +254,6 @@ export async function joinVoiceChannel(channelId){
   _ui('showVoiceChannelUI',channelId);
 }
 
-// 既存参加者が新規参加者に call する
 function _onVcJoin(payload){
   if(payload.channel_id!==vcId)return;
   if(payload.user_id===_myId())return;
@@ -302,7 +262,6 @@ function _onVcJoin(payload){
   const call=peer.call(payload.peer_id,vcStream);
   _setupVcCall(call,payload);
 
-  // 自分の情報を新参加者に同期
   _broadcast('vc-sync',{
     channel_id:vcId,
     user_id:_myId(),
@@ -312,7 +271,6 @@ function _onVcJoin(payload){
   });
 }
 
-// UI同期のみ（WebRTC接続は peer.on('call') 側で処理済み）
 function _onVcSync(payload){
   if(payload.channel_id!==vcId)return;
   if(payload.user_id===_myId())return;
@@ -359,15 +317,12 @@ export function leaveVoiceChannel(){
   _ui('hideVoiceChannelUI');
 }
 
-// ==========================================
-// マイク・画面共有トグル
-// ==========================================
 export function toggleMic(){
   const s=vcStream||localStream;
   const t=s?.getAudioTracks()[0];
   if(!t)return false;
   t.enabled=!t.enabled;
-  return !t.enabled; // true = ミュート中
+  return !t.enabled;
 }
 
 export async function toggleScreenShare(){
@@ -382,9 +337,6 @@ export async function toggleScreenShare(){
   }catch(e){return false;}
 }
 
-// ==========================================
-// プライベートユーティリティ
-// ==========================================
 async function _getMic(){
   try{
     return await navigator.mediaDevices.getUserMedia({audio:true,video:false});
@@ -401,15 +353,8 @@ function _playAudio(id,stream){
   a.className='call-audio';a.dataset.audioId=id;
   document.body.appendChild(a);
 }
-
-function _removeAudio(id){
-  document.querySelector('.call-audio[data-audio-id="'+id+'"]')?.remove();
-}
-
-function _stopStream(s){
-  s?.getTracks().forEach(t=>{try{t.stop();}catch(e){}});
-}
-
+function _removeAudio(id){document.querySelector('.call-audio[data-audio-id="'+id+'"]')?.remove();}
+function _stopStream(s){s?.getTracks().forEach(t=>{try{t.stop();}catch(e){}});}
 function _cleanupDm(){
   try{dmCall?.close();}catch(e){}
   dmCall=null;
@@ -423,17 +368,12 @@ function _cleanupDm(){
   _removeAudio('dm-remote');
   _dmOtherId=null;
 }
-
-function _broadcast(event,payload){
-  window.sendCallBroadcast?.(event,payload);
-}
-
+function _broadcast(event,payload){window.sendCallBroadcast?.(event,payload);}
 function _ui(fn,...args){
   import('./call-ui.js').then(m=>{
     if(typeof m[fn]==='function')m[fn](...args);
   }).catch(e=>console.error('[call] ui error:',fn,e));
 }
-
 function _toast(msg){
   const t=document.createElement('div');
   t.textContent=msg;
