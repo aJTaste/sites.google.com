@@ -38,6 +38,15 @@ export function createHeader(pageTitle){
         </a>
         <span class="header-divider">|</span>
         <span class="page-title">${pageTitle}</span>
+        
+        <a href="https://github.com/aJTaste/sites.google.com"
+           target="_blank"
+           id="gh-commit-badge"
+           class="gh-commit-badge"
+           title="GitHubコミット数">
+          <svg class="gh-commit-badge-icon" viewBox="0 0 98 96" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M48.854 0C21.839 0 0 22 0 49.217c0 21.756 13.993 40.172 33.405 46.69 2.427.49 3.316-1.059 3.316-2.362 0-1.141-.08-5.052-.08-9.127-13.59 2.934-16.42-5.867-16.42-5.867-2.184-5.704-5.42-7.17-5.42-7.17-4.448-3.015.324-3.015.324-3.015 4.934.326 7.523 5.052 7.523 5.052 4.367 7.496 11.404 5.378 14.235 4.074.404-3.178 1.699-5.378 3.074-6.6-10.839-1.141-22.243-5.378-22.243-24.283 0-5.378 1.94-9.778 5.014-13.2-.485-1.222-2.184-6.275.486-13.038 0 0 4.125-1.304 13.426 5.052a46.97 46.97 0 0 1 12.214-1.63c4.125 0 8.33.571 12.213 1.63 9.302-6.356 13.427-5.052 13.427-5.052 2.67 6.763.97 11.816.485 13.038 3.155 3.422 5.015 7.822 5.015 13.2 0 18.905-11.404 23.06-22.324 24.283 1.78 1.548 3.316 4.481 3.316 9.126 0 6.6-.08 11.897-.08 13.526 0 1.304.89 2.853 3.316 2.364 19.412-6.52 33.405-24.935 33.405-46.691C97.707 22 75.788 0 48.854 0z"/></svg>
+          <span id="gh-commit-count">…</span>
+        </a>
 
         <!-- 更新情報 -->
         <div class="update-info">
@@ -215,6 +224,8 @@ export async function initPage(pageId,pageTitle,options={}){
     
     // イベントリスナー設定
     setupHeaderEvents();
+
+    fetchGitHubCommits();
 
     // ダークモード初期化
     initDarkMode();
@@ -420,6 +431,48 @@ function initDarkMode(){
   if(savedTheme==='true'){
     document.documentElement.setAttribute('data-theme','dark');
   }
+}
+
+async function fetchGitHubCommits(){
+  const CACHE_KEY='gh_commit_count';
+  const CACHE_TTL=60*60*1000;// 1時間
+
+  // セッションキャッシュ確認
+  try{
+    const raw=sessionStorage.getItem(CACHE_KEY);
+    if(raw){
+      const{count,ts}=JSON.parse(raw);
+      if(Date.now()-ts<CACHE_TTL){_applyCommitCount(count);return;}
+    }
+  }catch(e){}
+
+  try{
+    // per_page=1 にすることでLinkヘッダーのlastページ番号=総コミット数になる
+    const res=await fetch(
+      'https://api.github.com/repos/aJTaste/sites.google.com/commits?per_page=1',
+      {headers:{Accept:'application/vnd.github.v3+json'}}
+    );
+    if(!res.ok)throw new Error('HTTP '+res.status);
+
+    const link=res.headers.get('Link')||'';
+    const m=link.match(/[?&]page=(\d+)>;\s*rel="last"/);
+    // Linkヘッダーがなければコミットは1件のみ
+    const count=m?parseInt(m[1],10):1;
+
+    _applyCommitCount(count);
+    try{
+      sessionStorage.setItem(CACHE_KEY,JSON.stringify({count,ts:Date.now()}));
+    }catch(e){}
+  }catch(e){
+    // 失敗時はバッジ自体を非表示
+    document.getElementById('gh-commit-badge')?.style.setProperty('display','none');
+    console.warn('[gh-commits]',e.message);
+  }
+}
+
+function _applyCommitCount(count){
+  const el=document.getElementById('gh-commit-count');
+  if(el)el.textContent=count.toLocaleString('ja-JP');
 }
 
 // ========================================
