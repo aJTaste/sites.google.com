@@ -1,264 +1,373 @@
-// call-engine.js — WebRTC/PeerJS コア (v1.8.3)
+// call-engine.js v2.0 — 完全再設計
 import{state}from'./chat-state.js';
 
-export function getPeerId(userId){
-  return 'apphub-'+userId.substring(0,8);
+export function getPeerId(u){return 'apphub-'+u.substring(0,8);}
+function _myId(){return state.currentProfile.id;}
+function _myPeerId(){return getPeerId(_myId());}
+
+// ==========================================
+// 状態変数
+// ==========================================
+let peer=null;
+let localStream=null;   // DM通話用マイクストリーム
+let screenStream=null;  // 画面共有ストリーム
+let dmCall=null;        // アクティブなDM通話オブジェクト
+let pendingCall=null;   // 着信保留中のPeerJS callオブジェクト
+let _dmOtherId=null;    // DM相手のuserId
+let vcStream=null;      // VC用マイクストリーム
+let vcId=null;          // 参加中VCチャンネルID
+let vcCalls={};         // {peerId: MediaConnection}
+
+// ==========================================
+// 初期化
+// ==========================================
+export function initCallEngine(){
+  if(typeof Peer==='undefined'){console.error('[call] PeerJS未ロード');return;}
+  _createPeer();
 }
 
-let peer=null;
-let localStream=null;
-let screenStream=null;
-let currentCall=null;
-let vcConnections={};
-let vcStream=null;
-let currentVcId=null;
-let _dmTargetId=null;
+function _createPeer(){
+  if(peer){try{peer.destroy();}catch(e){}}
+  peer=null;
 
-export function initCallEngine(){
-  if(typeof Peer==='undefined'){console.error('[callEngine] PeerJS未ロード');return;}
-  const peerId=getPeerId(state.currentProfile.id);
-  peer=new Peer(peerId,{
+  const p=new Peer(_myPeerId(),{
     debug:0,
     config:{iceServers:[
       {urls:'stun:stun.l.google.com:19302'},
       {urls:'stun:stun1.l.google.com:19302'}
     ]}
   });
-  peer.on('open',(id)=>console.log('[callEngine] PeerJS ready:',id));
-  peer.on('error',(err)=>{
-    console.error('[callEngine] PeerJS err:',err.type,err);
-    if(err.type==='unavailable-id'||err.type==='network'||err.type==='server-error'){
-      setTimeout(()=>{
-        try{peer.destroy();}catch(e){}
-        peer=null;
-        initCallEngine();
-      },3000);
+
+  p.on('open',(id)=>{
+    peer=p;
+    console.log('[call] PeerJS ready:',id);
+  });
+
+  p.on('error',(err)=>{
+    console.error('[call] peer error:',err.type,err);
+    if(['unavailable-id','network','server-error'].includes(err.type)){
+      setTimeout(_createPeer,3000);
     }
     if(err.type==='peer-unavailable'){
-      _cleanupDmCall();
-      import('./call-ui.js').then(m=>m.hideCallModal());
-      _miniToast('相手に接続できませんでした');
+      _toast('相手に接続できませんでした');
+      _cleanupDm();
+      _ui('hideCallModal');
     }
   });
-  peer.on('call',(call)=>{
-    // VCのみここで answer する（DM通話は answerDmCall 側で処理）
-    if(currentVcId){
+
+  p.on('disconnected',()=>{
+    console.warn('[call] disconnected, reconnecting...');
+    try{p.reconnect();}catch(e){setTimeout(_createPeer,3000);}
+  });
+
+  // ★ 着信ハンドラ（DM/VC共通）
+  // DM: ユーザーが応答操作をするまで call オブジェクトを pendingCall に保留
+  // VC: 即座に answer
+  p.on('call',(call)=>{
+    if(vcId){
+      // VC参加中 → 即答
       call.answer(vcStream||undefined);
-      call.on('stream',(remote)=>{
-        _addAudio(call.peer,remote);
-        vcConnections[call.peer]=call;
-        import('./call-ui.js').then(m=>m.addVcParticipantAudio(call.peer));
-      });
-      call.on('close',()=>{
-        _removeAudio(call.peer);
-        delete vcConnections[call.peer];
-      });
-      call.on('error',(e)=>console.error('[callEngine] vc incoming err:',e));
+      _setupVcCall(call,null);
     }else{
-      // DM着信：localStreamがまだない場合は保留
-      _pendingIncomingCall=call;
+      // DM着信 → 保留（answerDmCall で answer する）
+      console.log('[call] DM pending from peer:',call.peer);
+      if(pendingCall){
+        clearTimeout(pendingCall._autoClose);
+        try{pendingCall.close();}catch(e){}
+      }
+      pendingCall=call;
+      // 30秒でタイムアウト自動クローズ
+      pendingCall._autoClose=setTimeout(()=>{
+        if(pendingCall===call){
+          pendingCall=null;
+          try{call.close();}catch(e){}
+        }
+      },30000);
     }
   });
-  window.callEngine={onCallAnswer,onCallEnd,onVcJoin,onVcLeave,onVcSync};
-  console.log('[callEngine] 初期化完了');
+
+  window.callEngine={
+    onCallAnswer:_onCallAnswer,
+    onCallEnd:_onCallEnd,
+    onVcJoin:_onVcJoin,
+    onVcLeave:_onVcLeave,
+    onVcSync:_onVcSync,
+  };
+  console.log('[call] 初期化完了');
 }
 
-let _pendingIncomingCall=null;
-
+// ==========================================
+// DM通話 — 発信
+// ==========================================
+// ★ 正しい流れ: 発信側が peer.call() → 受信側が call.answer()
 export async function startDmCall(targetUser){
-  if(!peer||!peer.open){_miniToast('通話エンジン接続中です。少し待ってから再試行してください');return;}
-  if(currentVcId){_miniToast('ボイスチャンネル参加中は通話できません');return;}
-  if(currentCall){_miniToast('すでに通話中です');return;}
-  try{
-    localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-  }catch(e){
-    _miniToast('マイクへのアクセスを許可してください');
+  if(!peer||!peer.open){_toast('通話エンジン準備中です。少し待ってから再試行してください');return;}
+  if(vcId){_toast('ボイスチャンネル参加中は通話できません');return;}
+  if(dmCall||pendingCall){_toast('すでに通話中です');return;}
+
+  localStream=await _getMic();
+  if(!localStream)return;
+
+  _dmOtherId=targetUser.id;
+
+  // ★ 発信側が peer.call() する
+  const call=peer.call(getPeerId(targetUser.id),localStream);
+  if(!call){
+    _toast('接続に失敗しました');
+    _stopStream(localStream);localStream=null;
+    _dmOtherId=null;
     return;
   }
-  _dmTargetId=targetUser.id;
-  const{showCallModal}=await import('./call-ui.js');
-  showCallModal(targetUser,'outgoing');
-  window.sendCallBroadcast('call',{
-    caller_id:state.currentProfile.id,
+  dmCall=call;
+
+  call.on('stream',(remote)=>{
+    _playAudio('dm-remote',remote);
+    _ui('updateCallStatus','通話中');
+  });
+  call.on('close',()=>{
+    if(dmCall===call){_cleanupDm();_ui('hideCallModal');}
+  });
+  call.on('error',(e)=>{
+    console.error('[call] dm outgoing err:',e);
+    _cleanupDm();
+    _ui('hideCallModal');
+    _toast('通話エラーが発生しました');
+  });
+
+  // Supabaseで着信通知ブロードキャスト
+  _broadcast('call',{
+    caller_id:_myId(),
     caller_name:state.currentProfile.display_name,
     caller_icon:state.currentProfile.avatar_url||null,
     target_id:targetUser.id,
-    peer_id:getPeerId(state.currentProfile.id)
   });
+
+  _ui('showCallModal',{
+    id:targetUser.id,
+    display_name:targetUser.display_name,
+    avatar_url:targetUser.avatar_url||null,
+  },'outgoing');
 }
 
+// ==========================================
+// DM通話 — 着信応答
+// ==========================================
+// ★ 受信側は pendingCall.answer() するだけ（peer.call() は呼ばない）
 export async function answerDmCall(payload){
-  if(!peer||!peer.open){_miniToast('通話エンジン接続中です。少し待ってから再試行してください');return;}
-  try{
-    localStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-  }catch(e){
-    _miniToast('マイクへのアクセスを許可してください');
-    window.sendCallBroadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
+  if(!peer||!peer.open){_toast('通話エンジン準備中です');return;}
+  if(dmCall){_toast('すでに通話中です');return;}
+
+  localStream=await _getMic();
+  if(!localStream){
+    _broadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
     return;
   }
-  _dmTargetId=payload.caller_id;
-  // 受信側は「応答OK」を発信側に送るだけ
-  // 実際のWebRTC接続は発信側の onCallAnswer で peer.call() する
-  window.sendCallBroadcast('call-answer',{
-    caller_id:payload.caller_id,
-    accepted:true,
-    peer_id:getPeerId(state.currentProfile.id)  // 受信側のpeerIdを送る
-  });
-  // [fix] 着信モーダルを表示（接続待ち）
-  const{showCallModal}=await import('./call-ui.js');
-  showCallModal({
-    id:payload.caller_id,
-    display_name:payload.caller_name,
-    avatar_url:payload.caller_icon||null
-  },'incoming');
-  // peer.on('call') で受け取った保留中のcallにanswer
-  if(_pendingIncomingCall){
-    currentCall=_pendingIncomingCall;
-    _pendingIncomingCall=null;
-    currentCall.answer(localStream);
-    currentCall.on('stream',(remote)=>{
-      _addAudio('dm-remote',remote);
-      import('./call-ui.js').then(m=>m.updateCallStatus('通話中'));
+
+  _dmOtherId=payload.caller_id;
+
+  // pendingCall がまだ届いていない場合は最大3秒待つ
+  // （Supabase broadcastとPeerJSシグナリングの到達順が逆になることがある）
+  if(!pendingCall){
+    await new Promise(resolve=>{
+      const deadline=Date.now()+3000;
+      const timer=setInterval(()=>{
+        if(pendingCall||Date.now()>=deadline){
+          clearInterval(timer);
+          resolve();
+        }
+      },100);
     });
-    currentCall.on('close',()=>{
-      _cleanupDmCall();
-      import('./call-ui.js').then(m=>m.hideCallModal());
-    });
-    currentCall.on('error',(e)=>console.error('[callEngine] dm answer err:',e));
   }
-}
 
-export function rejectDmCall(payload){
-  _pendingIncomingCall=null;
-  window.sendCallBroadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
-}
-
-export function endCall(){
-  window.sendCallBroadcast('call-end',{
-    caller_id:state.currentProfile.id,
-    target_id:_dmTargetId||''
-  });
-  _cleanupDmCall();
-  import('./call-ui.js').then(m=>m.hideCallModal());
-}
-
-function onCallAnswer(payload){
-  if(payload.caller_id!==state.currentProfile.id)return;
-  if(payload.accepted){
-    // [fix] 発信側がここで実際に peer.call() する
-    import('./call-ui.js').then(m=>m.updateCallStatus('接続中...'));
-    const targetPeerId=payload.peer_id||getPeerId(_dmTargetId||'');
-    if(!localStream){_miniToast('マイク未取得');return;}
-    currentCall=peer.call(targetPeerId,localStream);
-    currentCall.on('stream',(remote)=>{
-      _addAudio('dm-remote',remote);
-      import('./call-ui.js').then(m=>m.updateCallStatus('通話中'));
-    });
-    currentCall.on('close',()=>{
-      _cleanupDmCall();
-      import('./call-ui.js').then(m=>m.hideCallModal());
-    });
-    currentCall.on('error',(e)=>console.error('[callEngine] dm call err:',e));
-  }else{
-    _cleanupDmCall();
-    import('./call-ui.js').then(m=>m.hideCallModal());
-    _miniToast('通話が拒否されました');
-  }
-}
-
-function onCallEnd(payload){
-  const myId=state.currentProfile.id;
-  if(payload.caller_id===myId||payload.target_id===myId){
-    _cleanupDmCall();
-    import('./call-ui.js').then(m=>m.hideCallModal());
-  }
-}
-
-export async function joinVoiceChannel(channelId){
-  if(!peer||!peer.open){_miniToast('通話エンジン接続中です。少し待ってから再試行してください');return;}
-  if(currentCall){_miniToast('通話中はボイスチャンネルに入れません');return;}
-  if(currentVcId)leaveVoiceChannel();
-  try{
-    vcStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
-  }catch(e){
-    _miniToast('マイクへのアクセスを許可してください');
+  if(!pendingCall){
+    _toast('接続データを受信できませんでした（再度お試しください）');
+    _stopStream(localStream);localStream=null;
+    _dmOtherId=null;
+    _broadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
     return;
   }
-  currentVcId=channelId;
-  window.currentVcChannelId=channelId;
-  window.sendCallBroadcast('vc-join',{
-    channel_id:channelId,
-    user_id:state.currentProfile.id,
-    peer_id:getPeerId(state.currentProfile.id),
-    user_name:state.currentProfile.display_name,
-    avatar_url:state.currentProfile.avatar_url||null
-  });
-  import('./call-ui.js').then(m=>m.showVoiceChannelUI(channelId));
-}
 
-function onVcJoin(payload){
-  if(payload.channel_id!==currentVcId)return;
-  if(payload.user_id===state.currentProfile.id)return;
-  if(!peer||!vcStream)return;
-  window.sendCallBroadcast('vc-sync',{
-    channel_id:currentVcId,
-    user_id:state.currentProfile.id,
-    peer_id:getPeerId(state.currentProfile.id),
-    user_name:state.currentProfile.display_name,
-    avatar_url:state.currentProfile.avatar_url||null
-  });
-  const call=peer.call(payload.peer_id,vcStream);
+  // pendingCall に answer する
+  clearTimeout(pendingCall._autoClose);
+  const call=pendingCall;
+  pendingCall=null;
+  dmCall=call;
+
+  // ★ 受信側は answer() のみ
+  call.answer(localStream);
+
   call.on('stream',(remote)=>{
-    _addAudio(payload.peer_id,remote);
-    vcConnections[payload.peer_id]=call;
-    import('./call-ui.js').then(m=>m.addVcParticipant(payload));
+    _playAudio('dm-remote',remote);
+    _ui('updateCallStatus','通話中');
   });
   call.on('close',()=>{
-    _removeAudio(payload.peer_id);
-    delete vcConnections[payload.peer_id];
-    import('./call-ui.js').then(m=>m.removeVcParticipant(payload.peer_id));
+    if(dmCall===call){_cleanupDm();_ui('hideCallModal');}
   });
-  call.on('error',(e)=>console.error('[callEngine] vc call err:',e));
+  call.on('error',(e)=>{
+    console.error('[call] dm answer err:',e);
+    _cleanupDm();
+    _ui('hideCallModal');
+    _toast('通話エラーが発生しました');
+  });
+
+  // 発信側に応答OKを通知
+  _broadcast('call-answer',{caller_id:payload.caller_id,accepted:true});
+
+  // 通話モーダル表示
+  _ui('showCallModal',{
+    id:payload.caller_id,
+    display_name:payload.caller_name,
+    avatar_url:payload.caller_icon||null,
+  },'active');
 }
 
-function onVcSync(payload){
-  if(payload.channel_id!==currentVcId)return;
-  if(payload.user_id===state.currentProfile.id)return;
-  import('./call-ui.js').then(m=>m.addVcParticipant(payload));
+// ==========================================
+// DM通話 — 拒否
+// ==========================================
+export function rejectDmCall(payload){
+  if(pendingCall){
+    clearTimeout(pendingCall._autoClose);
+    try{pendingCall.close();}catch(e){}
+    pendingCall=null;
+  }
+  _broadcast('call-answer',{caller_id:payload.caller_id,accepted:false});
 }
 
-function onVcLeave(payload){
-  if(payload.channel_id!==currentVcId)return;
-  try{vcConnections[payload.peer_id]?.close();}catch(e){}
-  delete vcConnections[payload.peer_id];
+// ==========================================
+// DM通話 — 終了
+// ==========================================
+export function endCall(){
+  _broadcast('call-end',{
+    caller_id:_myId(),
+    target_id:_dmOtherId||'',
+  });
+  _cleanupDm();
+  _ui('hideCallModal');
+}
+
+// ==========================================
+// ブロードキャスト受信ハンドラ
+// ==========================================
+// 発信側: call-answer を受け取って UI を更新するだけ
+// WebRTC接続は startDmCall の peer.call() で既に開始済み
+function _onCallAnswer(payload){
+  if(payload.caller_id!==_myId())return;
+  if(payload.accepted){
+    _ui('updateCallStatus','接続中...');
+  }else{
+    _cleanupDm();
+    _ui('hideCallModal');
+    _toast('通話が拒否されました');
+  }
+}
+
+function _onCallEnd(payload){
+  if(payload.caller_id===_myId()||payload.target_id===_myId()){
+    _cleanupDm();
+    _ui('hideCallModal');
+  }
+}
+
+// ==========================================
+// ボイスチャンネル
+// ==========================================
+export async function joinVoiceChannel(channelId){
+  if(!peer||!peer.open){_toast('通話エンジン準備中です');return;}
+  if(dmCall){_toast('通話中はボイスチャンネルに入れません');return;}
+  if(vcId)leaveVoiceChannel();
+
+  vcStream=await _getMic();
+  if(!vcStream)return;
+
+  vcId=channelId;
+  window.currentVcChannelId=channelId;
+
+  _broadcast('vc-join',{
+    channel_id:channelId,
+    user_id:_myId(),
+    peer_id:_myPeerId(),
+    user_name:state.currentProfile.display_name,
+    avatar_url:state.currentProfile.avatar_url||null,
+  });
+
+  _ui('showVoiceChannelUI',channelId);
+}
+
+// 既存参加者が新規参加者に call する
+function _onVcJoin(payload){
+  if(payload.channel_id!==vcId)return;
+  if(payload.user_id===_myId())return;
+  if(!peer||!peer.open||!vcStream)return;
+
+  const call=peer.call(payload.peer_id,vcStream);
+  _setupVcCall(call,payload);
+
+  // 自分の情報を新参加者に同期
+  _broadcast('vc-sync',{
+    channel_id:vcId,
+    user_id:_myId(),
+    peer_id:_myPeerId(),
+    user_name:state.currentProfile.display_name,
+    avatar_url:state.currentProfile.avatar_url||null,
+  });
+}
+
+// UI同期のみ（WebRTC接続は peer.on('call') 側で処理済み）
+function _onVcSync(payload){
+  if(payload.channel_id!==vcId)return;
+  if(payload.user_id===_myId())return;
+  _ui('addVcParticipant',payload);
+}
+
+function _onVcLeave(payload){
+  if(payload.channel_id!==vcId)return;
+  try{vcCalls[payload.peer_id]?.close();}catch(e){}
+  delete vcCalls[payload.peer_id];
   _removeAudio(payload.peer_id);
-  import('./call-ui.js').then(m=>m.removeVcParticipant(payload.peer_id));
+  _ui('removeVcParticipant',payload.peer_id);
+}
+
+function _setupVcCall(call,payload){
+  vcCalls[call.peer]=call;
+  call.on('stream',(remote)=>{
+    _playAudio(call.peer,remote);
+    if(payload)_ui('addVcParticipant',payload);
+    else _ui('addVcParticipantAudio',call.peer);
+  });
+  call.on('close',()=>{
+    _removeAudio(call.peer);
+    delete vcCalls[call.peer];
+    _ui('removeVcParticipant',call.peer);
+  });
+  call.on('error',(e)=>console.error('[call] vc call err:',e));
 }
 
 export function leaveVoiceChannel(){
-  if(!currentVcId)return;
-  const chId=currentVcId;
-  Object.values(vcConnections).forEach(c=>{try{c.close();}catch(e){}});
-  vcConnections={};
-  _stopStream(vcStream);
-  vcStream=null;
-  currentVcId=null;
+  if(!vcId)return;
+  const ch=vcId;
+  Object.values(vcCalls).forEach(c=>{try{c.close();}catch(e){}});
+  vcCalls={};
+  _stopStream(vcStream);vcStream=null;
+  vcId=null;
   window.currentVcChannelId=null;
-  document.querySelectorAll('.call-audio').forEach(el=>el.remove());
-  window.sendCallBroadcast('vc-leave',{
-    channel_id:chId,
-    user_id:state.currentProfile.id,
-    peer_id:getPeerId(state.currentProfile.id)
+  document.querySelectorAll('.call-audio').forEach(a=>a.remove());
+  _broadcast('vc-leave',{
+    channel_id:ch,
+    user_id:_myId(),
+    peer_id:_myPeerId(),
   });
-  import('./call-ui.js').then(m=>m.hideVoiceChannelUI());
+  _ui('hideVoiceChannelUI');
 }
 
+// ==========================================
+// マイク・画面共有トグル
+// ==========================================
 export function toggleMic(){
-  const stream=vcStream||localStream;
-  const track=stream?.getAudioTracks()[0];
-  if(!track)return false;
-  track.enabled=!track.enabled;
-  return !track.enabled;
+  const s=vcStream||localStream;
+  const t=s?.getAudioTracks()[0];
+  if(!t)return false;
+  t.enabled=!t.enabled;
+  return !t.enabled; // true = ミュート中
 }
 
 export async function toggleScreenShare(){
@@ -267,32 +376,65 @@ export async function toggleScreenShare(){
     screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
     screenStream.getVideoTracks()[0].addEventListener('ended',()=>{
       screenStream=null;
-      import('./call-ui.js').then(m=>m.onScreenShareEnded());
+      _ui('onScreenShareEnded');
     });
     return true;
   }catch(e){return false;}
 }
 
-function _addAudio(id,stream){
+// ==========================================
+// プライベートユーティリティ
+// ==========================================
+async function _getMic(){
+  try{
+    return await navigator.mediaDevices.getUserMedia({audio:true,video:false});
+  }catch(e){
+    _toast('マイクへのアクセスを許可してください');
+    return null;
+  }
+}
+
+function _playAudio(id,stream){
   _removeAudio(id);
   const a=document.createElement('audio');
   a.srcObject=stream;a.autoplay=true;
   a.className='call-audio';a.dataset.audioId=id;
   document.body.appendChild(a);
 }
+
 function _removeAudio(id){
   document.querySelector('.call-audio[data-audio-id="'+id+'"]')?.remove();
 }
-function _stopStream(s){s?.getTracks().forEach(t=>{try{t.stop();}catch(e){}});}
-function _cleanupDmCall(){
-  currentCall?.close();currentCall=null;
-  _pendingIncomingCall=null;
+
+function _stopStream(s){
+  s?.getTracks().forEach(t=>{try{t.stop();}catch(e){}});
+}
+
+function _cleanupDm(){
+  try{dmCall?.close();}catch(e){}
+  dmCall=null;
+  if(pendingCall){
+    clearTimeout(pendingCall._autoClose);
+    try{pendingCall.close();}catch(e){}
+    pendingCall=null;
+  }
   _stopStream(localStream);localStream=null;
   _stopStream(screenStream);screenStream=null;
   _removeAudio('dm-remote');
-  _dmTargetId=null;
+  _dmOtherId=null;
 }
-function _miniToast(msg){
+
+function _broadcast(event,payload){
+  window.sendCallBroadcast?.(event,payload);
+}
+
+function _ui(fn,...args){
+  import('./call-ui.js').then(m=>{
+    if(typeof m[fn]==='function')m[fn](...args);
+  }).catch(e=>console.error('[call] ui error:',fn,e));
+}
+
+function _toast(msg){
   const t=document.createElement('div');
   t.textContent=msg;
   t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--text-primary,#111);color:var(--bg-primary,#fff);padding:8px 18px;border-radius:20px;font-size:13px;z-index:99999;white-space:nowrap;pointer-events:none;';
