@@ -437,7 +437,7 @@ async function fetchGitHubCommits(){
   try {
     // 1. 初回読み込み時にSupabaseから現在のコミット数を取得
     const { data, error } = await supabase
-      .from('app_metadata') // コミット数を保存するテーブル（仮）
+      .from('app_metadata')
       .select('commit_count')
       .single();
 
@@ -464,14 +464,12 @@ async function fetchGitHubCommits(){
 }
 
 function _applyCommitCount(count){
+  // エラー防止：数字以外のデータが来た場合は何もしない
+  if (typeof count !== 'number') return;
   const el=document.getElementById('gh-commit-count');
   if(el) el.textContent = count.toLocaleString('ja-JP');
 }
 
-function _applyCommitCount(count){
-  const el=document.getElementById('gh-commit-count');
-  if(el)el.textContent=count.toLocaleString('ja-JP');
-}
 
 // ========================================
 // ユーティリティ関数
