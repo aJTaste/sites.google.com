@@ -434,40 +434,38 @@ function initDarkMode(){
 }
 
 async function fetchGitHubCommits(){
-  const CACHE_KEY='gh_commit_count';
-  const CACHE_TTL=60*60*1000;// 1時間
+  try {
+    // 1. 初回読み込み時にSupabaseから現在のコミット数を取得
+    const { data, error } = await supabase
+      .from('app_metadata') // コミット数を保存するテーブル（仮）
+      .select('commit_count')
+      .single();
 
-  // セッションキャッシュ確認
-  try{
-    const raw=sessionStorage.getItem(CACHE_KEY);
-    if(raw){
-      const{count,ts}=JSON.parse(raw);
-      if(Date.now()-ts<CACHE_TTL){_applyCommitCount(count);return;}
-    }
-  }catch(e){}
+    if (error) throw error;
+    if (data) _applyCommitCount(data.commit_count);
 
-  try{
-    // per_page=1 にすることでLinkヘッダーのlastページ番号=総コミット数になる
-    const res=await fetch(
-      'https://api.github.com/repos/aJTaste/sites.google.com/commits?per_page=1',
-      {headers:{Accept:'application/vnd.github.v3+json'}}
-    );
-    if(!res.ok)throw new Error('HTTP '+res.status);
+    // 2. Supabase Realtimeで変更をリアルタイム監視（制限なし！）
+    supabase
+      .channel('commit-count-channel')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'app_metadata' },
+        (payload) => {
+          // DBの値が更新されたら、画面の数字も即座に書き換える
+          _applyCommitCount(payload.new.commit_count);
+        }
+      )
+      .subscribe();
 
-    const link=res.headers.get('Link')||'';
-    const m=link.match(/[?&]page=(\d+)>;\s*rel="last"/);
-    // Linkヘッダーがなければコミットは1件のみ
-    const count=m?parseInt(m[1],10):1;
-
-    _applyCommitCount(count);
-    try{
-      sessionStorage.setItem(CACHE_KEY,JSON.stringify({count,ts:Date.now()}));
-    }catch(e){}
-  }catch(e){
-    // 失敗時はバッジ自体を非表示
+  } catch(e) {
     document.getElementById('gh-commit-badge')?.style.setProperty('display','none');
-    console.warn('[gh-commits]',e.message);
+    console.warn('[gh-commits]', e.message);
   }
+}
+
+function _applyCommitCount(count){
+  const el=document.getElementById('gh-commit-count');
+  if(el) el.textContent = count.toLocaleString('ja-JP');
 }
 
 function _applyCommitCount(count){
