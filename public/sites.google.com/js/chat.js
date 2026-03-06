@@ -1,4 +1,5 @@
-// チャットアプリのメインファイル（Supabase版）
+// チャットアプリのメインファイル（Supabase版）【DEBUG版】
+console.log('[DEBUG] chat.js: ファイル読み込み開始');
 
 import{initPage,supabase}from'../common/core.js';
 import{state,updateState,CHANNELS}from'./chat-state.js';
@@ -8,8 +9,13 @@ import'./chat-handlers.js';
 import'./chat-modals.js';
 import{initCallEngine}from'./call-engine.js';
 
+console.log('[DEBUG] chat.js: import完了');
+console.log('[DEBUG] supabase:', typeof supabase, supabase ? '✅' : '❌NULL');
+console.log('[DEBUG] state:', typeof state, state ? '✅' : '❌NULL');
 
+// ★ TDZ確認のため宣言を最上位に移動
 let _callChannel=null;
+console.log('[DEBUG] _callChannel宣言完了:', _callChannel);
 
 function isStealthModeActive(){
   const saved=localStorage.getItem('stealthModeState');
@@ -17,26 +23,77 @@ function isStealthModeActive(){
   return false;
 }
 
+console.log('[DEBUG] chat.js: initPage呼び出し前');
+
 // ページ初期化
 await initPage('chat','ChatHub',{
   onUserLoaded:async(profile)=>{
+    console.log('[DEBUG] onUserLoaded開始 profile:', profile?.id, profile?.display_name);
     updateState('currentProfile',profile);
 
-    // ★ 各初期化を個別try-catchで包む
-    // → 一つの失敗がinitPage全体のcatchに伝播してlogin.htmlへリダイレクトするのを防ぐ
-    try{await updateOnlineStatus(true);}catch(e){console.error('online:',e);}
-    try{await requestNotificationPermission();}catch(e){}
-    try{await loadUsers();}catch(e){console.error('loadUsers:',e);}
-    try{autoRestoreLastChat();}catch(e){}
-    try{subscribeToProfiles();}catch(e){}
-    try{subscribeToGlobalDmNotifications();}catch(e){console.error('globalDm:',e);}
-    try{subscribeToCallChannel();}catch(e){console.error('callCh:',e);}
-    try{startLastOnlineUpdateTimer();}catch(e){}
-    try{startOnlineHeartbeat();}catch(e){}
-    try{setupVisibilityHandlers();}catch(e){}
-    try{setupMobileTouchActions();}catch(e){}
-    try{initCallEngine();}catch(e){console.error('callEngine:',e);}
+    console.log('[DEBUG] 1: updateOnlineStatus開始');
+    try{await updateOnlineStatus(true);console.log('[DEBUG] 1: updateOnlineStatus ✅');}
+    catch(e){console.error('[DEBUG] 1: updateOnlineStatus ❌', e);}
+
+    console.log('[DEBUG] 2: requestNotificationPermission開始');
+    try{await requestNotificationPermission();console.log('[DEBUG] 2: requestNotificationPermission ✅');}
+    catch(e){console.warn('[DEBUG] 2: requestNotificationPermission ❌', e);}
+
+    console.log('[DEBUG] 3: loadUsers開始');
+    try{await loadUsers();console.log('[DEBUG] 3: loadUsers ✅ ユーザー数:', state.allUsers?.length);}
+    catch(e){console.error('[DEBUG] 3: loadUsers ❌', e);}
+
+    console.log('[DEBUG] 4: autoRestoreLastChat開始');
+    try{autoRestoreLastChat();console.log('[DEBUG] 4: autoRestoreLastChat ✅');}
+    catch(e){console.error('[DEBUG] 4: autoRestoreLastChat ❌', e);}
+
+    console.log('[DEBUG] 5: subscribeToProfiles開始');
+    try{subscribeToProfiles();console.log('[DEBUG] 5: subscribeToProfiles ✅');}
+    catch(e){console.error('[DEBUG] 5: subscribeToProfiles ❌', e);}
+
+    console.log('[DEBUG] 6: subscribeToGlobalDmNotifications開始');
+    try{subscribeToGlobalDmNotifications();console.log('[DEBUG] 6: subscribeToGlobalDmNotifications ✅');}
+    catch(e){console.error('[DEBUG] 6: subscribeToGlobalDmNotifications ❌', e);}
+
+    console.log('[DEBUG] 7: subscribeToCallChannel開始');
+    console.log('[DEBUG] 7: _callChannelの現在値:', _callChannel);
+    console.log('[DEBUG] 7: supabaseの型:', typeof supabase);
+    try{
+      subscribeToCallChannel();
+      console.log('[DEBUG] 7: subscribeToCallChannel ✅ _callChannel:', _callChannel ? '設定済み✅' : '❌NULL');
+    }
+    catch(e){console.error('[DEBUG] 7: subscribeToCallChannel ❌', e.message, e);}
+
+    console.log('[DEBUG] 8: startLastOnlineUpdateTimer開始');
+    try{startLastOnlineUpdateTimer();console.log('[DEBUG] 8: startLastOnlineUpdateTimer ✅');}
+    catch(e){console.error('[DEBUG] 8: startLastOnlineUpdateTimer ❌', e);}
+
+    console.log('[DEBUG] 9: startOnlineHeartbeat開始');
+    try{startOnlineHeartbeat();console.log('[DEBUG] 9: startOnlineHeartbeat ✅');}
+    catch(e){console.error('[DEBUG] 9: startOnlineHeartbeat ❌', e);}
+
+    console.log('[DEBUG] 10: setupVisibilityHandlers開始');
+    try{setupVisibilityHandlers();console.log('[DEBUG] 10: setupVisibilityHandlers ✅');}
+    catch(e){console.error('[DEBUG] 10: setupVisibilityHandlers ❌', e);}
+
+    console.log('[DEBUG] 11: setupMobileTouchActions開始');
+    try{setupMobileTouchActions();console.log('[DEBUG] 11: setupMobileTouchActions ✅');}
+    catch(e){console.error('[DEBUG] 11: setupMobileTouchActions ❌', e);}
+
+    console.log('[DEBUG] 12: initCallEngine開始');
+    console.log('[DEBUG] 12: window.callEngine before:', window.callEngine);
+    try{
+      initCallEngine();
+      console.log('[DEBUG] 12: initCallEngine ✅');
+      setTimeout(()=>{
+        console.log('[DEBUG] 12: initCallEngine 500ms後 window.callEngine:', window.callEngine ? '設定済み✅' : '❌未設定');
+      },500);
+    }
+    catch(e){console.error('[DEBUG] 12: initCallEngine ❌', e);}
+
     window._appState=state;
+    console.log('[DEBUG] onUserLoaded完了 ✅');
+
     if(isMobile()){
       setTimeout(()=>{
         if(!state.selectedUserId&&!state.selectedChannelId){
@@ -44,9 +101,10 @@ await initPage('chat','ChatHub',{
         }
       },200);
     }
-
   }
 });
+
+console.log('[DEBUG] chat.js: initPage呼び出し完了（await）');
 
 function isMobile(){
   return window.innerWidth<=768;
@@ -57,18 +115,18 @@ function isMobile(){
 // ========================================
 
 async function updateOnlineStatus(isOnline){
-  if(!state.currentProfile?.id)return;
+  if(!state.currentProfile?.id){
+    console.warn('[DEBUG] updateOnlineStatus: currentProfile.idなし');
+    return;
+  }
   const updates={
     is_online:isOnline,
     last_online:new Date().toISOString()
   };
-  // current_page カラムも更新（列がない場合はSupabaseがエラーを返すだけで例外は出ない）
   const{error}=await supabase
     .from('profiles')
     .update({...updates,current_page:isOnline?'ChatHub':''})
     .eq('id',state.currentProfile.id);
-
-  // current_page が存在しない場合はフォールバック
   if(error&&error.message?.includes('current_page')){
     await supabase.from('profiles').update(updates).eq('id',state.currentProfile.id);
   }
@@ -95,7 +153,6 @@ function setupVisibilityHandlers(){
   });
 
   window.addEventListener('beforeunload',()=>{
-    // 通話・VC退室処理
     try{
       import('./call-engine.js').then(m=>{
         m.endCall?.();
@@ -123,6 +180,7 @@ function setupVisibilityHandlers(){
 // ========================================
 
 function subscribeToGlobalDmNotifications(){
+  console.log('[DEBUG] subscribeToGlobalDmNotifications: 購読開始 userId:', state.currentProfile?.id);
   supabase
     .channel('global-dm-notif-'+state.currentProfile.id)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'dm_messages'},
@@ -132,7 +190,6 @@ function subscribeToGlobalDmNotifications(){
           if(!msg||msg.sender_id===state.currentProfile.id)return;
           if(isStealthModeActive())return;
 
-          // 現在開いているDMは通知しない（chat-messages.jsで既に処理）
           const currentDmId=getCurrentOpenDmId();
           if(currentDmId&&msg.dm_id===currentDmId)return;
 
@@ -141,14 +198,14 @@ function subscribeToGlobalDmNotifications(){
 
           showNotification(sender.display_name,msg.text||'画像を送信しました',sender.avatar_url||null);
 
-          // 未読カウント更新
           state.unreadCounts[sender.user_id]=(state.unreadCounts[sender.user_id]||0)+1;
           displayUsers();
         }catch(e){console.error('dm通知エラー:',e);}
       })
     .subscribe((status)=>{
+      console.log('[DEBUG] globalDmNotif購読ステータス:', status);
       if(status==='CHANNEL_ERROR'){
-        console.warn('グローバルDM購読エラー。3秒後に再接続...');
+        console.warn('[DEBUG] グローバルDM購読エラー。3秒後に再接続...');
         setTimeout(()=>{try{subscribeToGlobalDmNotifications();}catch(e){}},3000);
       }
     });
@@ -165,11 +222,15 @@ function getCurrentOpenDmId(){
 // 呼び出し機能（Supabase Broadcast）
 // ========================================
 
-
 function subscribeToCallChannel(){
+  console.log('[DEBUG] subscribeToCallChannel: 開始');
+  console.log('[DEBUG] subscribeToCallChannel: supabase型:', typeof supabase);
+  console.log('[DEBUG] subscribeToCallChannel: _callChannel現在値:', _callChannel);
+
   _callChannel=supabase
     .channel('apphub-calls-v1')
     .on('broadcast',{event:'call'},(data)=>{
+      console.log('[DEBUG] broadcast受信: call', data.payload);
       try{
         const payload=data.payload;
         if(!payload||payload.target_id!==state.currentProfile.id)return;
@@ -177,38 +238,73 @@ function subscribeToCallChannel(){
         import('./call-ui.js').then(m=>m.showIncomingCallToast(payload));
       }catch(e){console.error('call受信エラー:',e);}
     })
-    .on('broadcast',{event:'call-answer'},(data)=>{window.callEngine?.onCallAnswer(data.payload);})
-    .on('broadcast',{event:'call-end'},(data)=>{window.callEngine?.onCallEnd(data.payload);})
-    .on('broadcast',{event:'vc-join'},(data)=>{window.callEngine?.onVcJoin(data.payload);})
-    .on('broadcast',{event:'vc-leave'},(data)=>{window.callEngine?.onVcLeave(data.payload);})
-    .on('broadcast',{event:'vc-sync'},(data)=>{window.callEngine?.onVcSync(data.payload);})
-    .subscribe();
+    .on('broadcast',{event:'call-answer'},(data)=>{
+      console.log('[DEBUG] broadcast受信: call-answer', data.payload);
+      window.callEngine?.onCallAnswer(data.payload);
+    })
+    .on('broadcast',{event:'call-end'},(data)=>{
+      console.log('[DEBUG] broadcast受信: call-end', data.payload);
+      window.callEngine?.onCallEnd(data.payload);
+    })
+    .on('broadcast',{event:'vc-join'},(data)=>{
+      console.log('[DEBUG] broadcast受信: vc-join', data.payload);
+      window.callEngine?.onVcJoin(data.payload);
+    })
+    .on('broadcast',{event:'vc-leave'},(data)=>{
+      console.log('[DEBUG] broadcast受信: vc-leave', data.payload);
+      window.callEngine?.onVcLeave(data.payload);
+    })
+    .on('broadcast',{event:'vc-sync'},(data)=>{
+      console.log('[DEBUG] broadcast受信: vc-sync', data.payload);
+      window.callEngine?.onVcSync(data.payload);
+    })
+    .subscribe((status)=>{
+      console.log('[DEBUG] callChannel購読ステータス:', status);
+      if(status==='SUBSCRIBED'){
+        console.log('[DEBUG] callChannel ✅ 購読成功！');
+      }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+        console.error('[DEBUG] callChannel ❌ 購読失敗:', status);
+      }
+    });
+
+  console.log('[DEBUG] subscribeToCallChannel: _callChannel設定後:', _callChannel ? '✅' : '❌NULL');
 }
 
-// sendCall関数の直下に追加
 window.sendCallBroadcast=async function(event,payload){
-  if(!_callChannel)return;
-  try{await _callChannel.send({type:'broadcast',event,payload});}
-  catch(e){console.error('broadcast送信エラー:',e);}
+  console.log('[DEBUG] sendCallBroadcast:', event, payload);
+  if(!_callChannel){
+    console.error('[DEBUG] sendCallBroadcast: _callChannelがNULL！送信できません');
+    return;
+  }
+  try{
+    await _callChannel.send({type:'broadcast',event,payload});
+    console.log('[DEBUG] sendCallBroadcast: 送信成功 ✅');
+  }
+  catch(e){console.error('[DEBUG] broadcast送信エラー:',e);}
 };
-
 
 // ========================================
 // ユーザー一覧を読み込む
 // ========================================
 
 async function loadUsers(){
+  console.log('[DEBUG] loadUsers: 開始');
   const{data:profiles,error}=await supabase
     .from('profiles')
     .select('*')
     .neq('id',state.currentProfile.id)
     .order('last_online',{ascending:false,nullsFirst:false});
 
-  if(error)throw error;
+  if(error){
+    console.error('[DEBUG] loadUsers: ❌ クエリエラー', error);
+    throw error;
+  }
 
+  console.log('[DEBUG] loadUsers: 取得プロフィール数:', profiles?.length);
   updateState('allUsers',profiles||[]);
   await loadUnreadCounts();
   displayUsers();
+  console.log('[DEBUG] loadUsers: 完了');
 }
 
 async function loadUnreadCounts(){
@@ -246,21 +342,26 @@ async function loadUnreadCounts(){
       state.unreadCounts[channel.id]=count||0;
     }
   }catch(e){
-    console.error('未読数取得エラー:',e);
+    console.error('[DEBUG] loadUnreadCounts: ❌', e);
   }
 }
 
 function autoRestoreLastChat(){
+  console.log('[DEBUG] autoRestoreLastChat: 開始');
   try{
     const last=localStorage.getItem('chathub_last');
-    if(!last)return;
+    if(!last){console.log('[DEBUG] autoRestoreLastChat: 保存データなし');return;}
     const{type,id}=JSON.parse(last);
+    console.log('[DEBUG] autoRestoreLastChat: 復元 type:', type, 'id:', id);
     if(type==='user'&&id)window.selectUser?.(id);
     else if(type==='channel'&&id)window.selectChannel?.(id);
-  }catch(e){}
+  }catch(e){
+    console.error('[DEBUG] autoRestoreLastChat: ❌', e);
+  }
 }
 
 function subscribeToProfiles(){
+  console.log('[DEBUG] subscribeToProfiles: 購読開始');
   supabase
     .channel('profiles-chat-changes')
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'profiles'},
@@ -272,7 +373,9 @@ function subscribeToProfiles(){
           displayUsers();
         }
       })
-    .subscribe();
+    .subscribe((status)=>{
+      console.log('[DEBUG] profiles購読ステータス:', status);
+    });
 }
 
 function startLastOnlineUpdateTimer(){
