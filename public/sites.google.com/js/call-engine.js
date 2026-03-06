@@ -1,4 +1,4 @@
-// call-engine.js v3.0
+// call-engine.js v3.1
 import{state}from'./chat-state.js';
 
 export function getPeerId(u){return 'apphub-'+u.substring(0,8);}
@@ -17,7 +17,8 @@ let vcId=null;
 let vcCalls={};
 let _peerGeneration=0;
 
-// TURNサーバーを追加（UDP不可ネットワーク対応・TCP/TLS 443でも動作）
+// [Fix①] a.relay.metered.ca の認証情報が無効なため削除
+// openrelay.metered.ca のみ使用（学校ネットワークでTCP/TLS443でも動作）
 const ICE_SERVERS=[
   {urls:'stun:stun.l.google.com:19302'},
   {urls:'stun:stun1.l.google.com:19302'},
@@ -30,19 +31,9 @@ const ICE_SERVERS=[
     ],
     username:'openrelayproject',
     credential:'openrelayproject'
-  },
-  {
-    urls:[
-      'turn:a.relay.metered.ca:80',
-      'turn:a.relay.metered.ca:443',
-      'turns:a.relay.metered.ca:443'
-    ],
-    username:'e5a2cf6d3b5e8f1a3b4c5d6e',
-    credential:'openrelayproject'
   }
 ];
 
-// 画面共有用ビデオ送信スロット確保のためのブランク黒トラック
 function _createBlankVideoTrack(){
   try{
     const canvas=document.createElement('canvas');
@@ -105,7 +96,15 @@ function _createPeer(){
   p.on('call',(call)=>{
     if(gen!==_peerGeneration)return;
     if(vcId){
-      call.answer(vcStream||undefined);
+      // [Fix②] vcStreamがnullの場合は無音で応答せず、マイク再取得を試みる
+      if(vcStream){
+        call.answer(vcStream);
+      }else{
+        _getMic().then(s=>{
+          if(s){vcStream=s;}
+          call.answer(vcStream||new MediaStream());
+        });
+      }
       _setupVcCall(call,null);
     }else{
       console.log('[call] DM pending from peer:',call.peer);
@@ -133,7 +132,6 @@ function _createPeer(){
   console.log('[call] 初期化完了');
 }
 
-// マイク取得 + 画面共有スロット用ブランクビデオトラックを追加
 async function _getMicWithVideo(){
   try{
     const stream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
@@ -324,7 +322,15 @@ function _onVcJoin(payload){
   if(payload.user_id===_myId())return;
   if(!peer||!peer.open||!vcStream)return;
 
+  // [Fix③] WebRTC接続完了（stream到着）を待たず即座にUIへ表示
+  // → ICE失敗時でも参加者アイコンが表示される
+  _ui('addVcParticipant',payload);
+
   const call=peer.call(payload.peer_id,vcStream);
+  if(!call){
+    console.error('[call] peer.call失敗: peer_id=',payload.peer_id);
+    return;
+  }
   _setupVcCall(call,payload);
 
   _broadcast('vc-sync',{
@@ -354,6 +360,7 @@ function _setupVcCall(call,payload){
   vcCalls[call.peer]=call;
   call.on('stream',(remote)=>{
     _playMedia(call.peer,remote);
+    // payloadがある（発信側）はstream到着時に再描画、ない（着信側）はaddVcParticipantAudio
     if(payload)_ui('addVcParticipant',payload);
     else _ui('addVcParticipantAudio',call.peer);
   });
@@ -391,18 +398,15 @@ export function toggleMic(){
 }
 
 export async function toggleScreenShare(){
-  // 画面共有停止
   if(screenStream){
     _stopStream(screenStream);
     screenStream=null;
-    // ブランクトラックに戻す
     if(_blankVideoTrack){
       _replaceVideoSender(_blankVideoTrack);
     }
     _ui('onScreenShareEnded');
     return false;
   }
-  // 画面共有開始
   try{
     screenStream=await navigator.mediaDevices.getDisplayMedia({video:true,audio:false});
     const videoTrack=screenStream.getVideoTracks()[0];
@@ -410,13 +414,11 @@ export async function toggleScreenShare(){
       _stopStream(screenStream);screenStream=null;
       return false;
     }
-    // ユーザーが共有停止ボタンを押したとき
     videoTrack.addEventListener('ended',()=>{
       screenStream=null;
       if(_blankVideoTrack)_replaceVideoSender(_blankVideoTrack);
       _ui('onScreenShareEnded');
     });
-    // 相手のPeer接続のビデオトラックを差し替え
     await _replaceVideoSender(videoTrack);
     return true;
   }catch(e){
@@ -425,7 +427,7 @@ export async function toggleScreenShare(){
   }
 }
 
-// 全アクティブ通話のビデオ送信トラックを差し替え
+// [Fix④] ビデオ送信スロットがない場合はaddTrackで追加（ブランクトラック作成失敗時の対策）
 async function _replaceVideoSender(newTrack){
   const calls=[dmCall,...Object.values(vcCalls)].filter(Boolean);
   for(const c of calls){
@@ -436,6 +438,10 @@ async function _replaceVideoSender(newTrack){
       const videoSender=senders.find(s=>s.track&&s.track.kind==='video');
       if(videoSender){
         await videoSender.replaceTrack(newTrack);
+      }else{
+        // 送信スロットがない場合はaddTrackで追加
+        const baseStream=localStream||vcStream||new MediaStream([newTrack]);
+        pc.addTrack(newTrack,baseStream);
       }
     }catch(e){
       console.error('[call] replaceVideoSender err:',e);
@@ -443,11 +449,9 @@ async function _replaceVideoSender(newTrack){
   }
 }
 
-// ストリームを音声・映像それぞれ適切な要素で再生
 function _playMedia(id,stream){
   _removeMedia(id);
 
-  // 音声トラックがあれば audio 要素で再生（映像ありでも音声は audio で）
   if(stream.getAudioTracks().length>0){
     const audioStream=new MediaStream(stream.getAudioTracks());
     const a=document.createElement('audio');
@@ -462,31 +466,26 @@ function _playMedia(id,stream){
     });
   }
 
-  // 映像トラックがあれば video 要素を生成してUIに渡す
   const videoTracks=stream.getVideoTracks();
   if(videoTracks.length>0){
-    // ブランクトラックのみの場合はUI表示しない（画面共有時だけ表示）
-    // ← 相手がreplaceTrackしたとき自動的にこのstreamも更新される
     const videoStream=new MediaStream(videoTracks);
     const v=document.createElement('video');
     v.srcObject=videoStream;
     v.autoplay=true;
     v.playsInline=true;
-    v.muted=true; // videoは音声をaudioタグ側に任せるのでmuted
+    v.muted=true;
     v.className='call-video';
     v.dataset.audioId=id;
     v.style.cssText='display:none;width:100%;height:100%;object-fit:contain;background:#000;border-radius:8px;';
     document.body.appendChild(v);
     v.play().catch(()=>{});
 
-    // トラックが実際に映像を流し始めたらUIに表示
     v.addEventListener('loadedmetadata',()=>{
-      if(v.videoWidth>2){// ブランク(2x2)より大きければ画面共有とみなす
+      if(v.videoWidth>2){
         _ui('showRemoteVideo',id,v);
       }
     });
 
-    // replaceTrackにより映像が変わったときも検知
     videoTracks[0].addEventListener('unmute',()=>{
       if(v.videoWidth>2)_ui('showRemoteVideo',id,v);
     });
