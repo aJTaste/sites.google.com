@@ -227,14 +227,14 @@ function _renderVcUI(channelId){
   });
   document.getElementById('vc-chat-send').addEventListener('click',()=>{
     const inp=document.getElementById('vc-chat-input');
-    if(inp?.value.trim())sendVcMessage(inp.value.trim());
+    if(inp?.value.trim())sendVcMessage(channelId,inp.value.trim()); // channelId を追加
     if(inp)inp.value='';
   });
   document.getElementById('vc-chat-input').addEventListener('keydown',(e)=>{
     if(e.key==='Enter'&&!e.shiftKey){
       e.preventDefault();
       const inp=document.getElementById('vc-chat-input');
-      if(inp?.value.trim())sendVcMessage(inp.value.trim());
+      if(inp?.value.trim())sendVcMessage(channelId,inp.value.trim()); // channelId を追加
       if(inp)inp.value='';
     }
   });
