@@ -8,6 +8,9 @@ import'./chat-handlers.js';
 import'./chat-modals.js';
 import{initCallEngine}from'./call-engine.js';
 
+
+let _callChannel=null;
+
 function isStealthModeActive(){
   const saved=localStorage.getItem('stealthModeState');
   if(saved){try{return JSON.parse(saved).stealthMode;}catch(e){return false;}}
@@ -162,7 +165,7 @@ function getCurrentOpenDmId(){
 // 呼び出し機能（Supabase Broadcast）
 // ========================================
 
-let _callChannel=null;
+
 function subscribeToCallChannel(){
   _callChannel=supabase
     .channel('apphub-calls-v1')
