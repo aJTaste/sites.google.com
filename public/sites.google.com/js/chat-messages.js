@@ -763,7 +763,7 @@ export async function sendMessage(){
   const sendBtn=document.getElementById('send-btn');
   if(!chatInput)return; // ← この行を追加
   const text=(chatInput.value??'').trim(); // ← ??'' を追加
-  const text=chatInput.value.trim();
+
 
   if(!text&&!state.selectedImage)return;
   if(!state.selectedUserId&&!state.selectedChannelId)return;
