@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Proxy</title>
+  <link rel="stylesheet" href="/sites.google.com/css/proxy.css">
+</head>
+<body>
+  <div id="bar">
+    <button id="back" onclick="goBack()">←</button>
+    <input id="inp" type="text" placeholder="URLまたは検索ワード...">
+    <button id="go" onclick="go()">Go</button>
+  </div>
+  <iframe id="frame" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
+  <script src="/sites.google.com/js/proxy.js"></script>
+</body>
+</html>
