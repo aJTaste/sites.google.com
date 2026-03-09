@@ -1,0 +1,9 @@
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{display:flex;flex-direction:column;background:#1a1a2e;color:#fff;font-family:sans-serif;}
+#bar{display:flex;gap:8px;padding:8px;background:#16213e;align-items:center;}
+#inp{flex:1;padding:8px 12px;border-radius:6px;border:none;font-size:1rem;background:#0f3460;color:#fff;outline:none;}
+#inp:focus{outline:2px solid #e94560;}
+button{padding:8px 14px;border-radius:6px;border:none;background:#e94560;color:#fff;cursor:pointer;font-size:1rem;}
+button:hover{background:#c73652;}
+#frame{flex:1;border:none;background:#fff;}
