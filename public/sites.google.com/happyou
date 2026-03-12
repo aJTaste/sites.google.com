@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ウイグル問題</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Noto+Sans+JP:wght@300;400;700&display=swap');
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+
+  :root{
+    --bg:#0a0a0a;
+    --fg:#f0ece4;
+    --red:#c0392b;
+    --red-light:#e74c3c;
+    --gold:#c9a84c;
+    --gray:#888;
+  }
+
+  body{
+    background:var(--bg);
+    color:var(--fg);
+    font-family:'Noto Sans JP',sans-serif;
+    overflow:hidden;
+    height:100vh;
+    width:100vw;
+  }
+
+  .slides{
+    width:100%;
+    height:100%;
+    position:relative;
+  }
+
+  .slide{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    padding:60px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.7s ease;
+  }
+
+  .slide.active{
+    opacity:1;
+    pointer-events:all;
+  }
+
+  /* ノイズテクスチャ背景 */
+  .slide::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    opacity:0.3;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .slide>*{position:relative;z-index:1;}
+
+  /* スライド1: タイトル */
+  .s1{background:linear-gradient(135deg,#0a0a0a 60%,#1a0505);}
+  .s1 .tag{
+    font-size:11px;
+    letter-spacing:6px;
+    text-transform:uppercase;
+    color:var(--red);
+    margin-bottom:24px;
+    font-family:'Noto Sans JP',sans-serif;
+    font-weight:300;
+  }
+  .s1 h1{
+    font-family:'Noto Serif JP',serif;
+    font-size:clamp(42px,6vw,80px);
+    font-weight:900;
+    line-height:1.1;
+    text-align:center;
+    letter-spacing:-1px;
+  }
+  .s1 h1 span{color:var(--red);}
+  .s1 .sub{
+    margin-top:28px;
+    font-size:16px;
+    color:var(--gray);
+    letter-spacing:3px;
+    font-weight:300;
+  }
+  .s1 .line{
+    width:60px;
+    height:2px;
+    background:var(--red);
+    margin:32px auto 0;
+  }
+
+  /* 赤い縦ライン装飾 */
+  .redline{
+    position:absolute;
+    left:52px;
+    top:15%;
+    bottom:15%;
+    width:3px;
+    background:linear-gradient(to bottom,transparent,var(--red),transparent);
+  }
+
+  /* 一般スライド */
+  .s-general{
+    align-items:flex-start;
+    padding-left:100px;
+  }
+
+  .slide-num{
+    font-size:11px;
+    letter-spacing:4px;
+    color:var(--red);
+    margin-bottom:16px;
+    font-weight:300;
+  }
+
+  .slide-title{
+    font-family:'Noto Serif JP',serif;
+    font-size:clamp(28px,3.5vw,48px);
+    font-weight:700;
+    line-height:1.3;
+    margin-bottom:32px;
+    border-left:4px solid var(--red);
+    padding-left:20px;
+  }
+
+  .slide-body{
+    font-size:clamp(14px,1.6vw,20px);
+    line-height:1.9;
+    color:#ccc8c0;
+    max-width:720px;
+    font-weight:300;
+  }
+
+  .slide-body strong{
+    color:var(--fg);
+    font-weight:700;
+  }
+
+  .slide-body .highlight{
+    color:var(--red-light);
+    font-weight:700;
+  }
+
+  /* 統計表示 */
+  .stat-row{
+    display:flex;
+    gap:48px;
+    margin-top:36px;
+    flex-wrap:wrap;
+  }
+
+  .stat{text-align:center;}
+  .stat .num{
+    font-family:'Noto Serif JP',serif;
+    font-size:clamp(32px,4vw,56px);
+    font-weight:900;
+    color:var(--red-light);
+    display:block;
+  }
+  .stat .label{
+    font-size:12px;
+    color:var(--gray);
+    letter-spacing:2px;
+    margin-top:4px;
+  }
+
+  /* 最終スライド */
+  .s-last{
+    background:linear-gradient(135deg,#0a0505 0%,#0a0a0a 100%);
+    text-align:center;
+  }
+  .s-last .cta{
+    font-family:'Noto Serif JP',serif;
+    font-size:clamp(24px,3vw,42px);
+    font-weight:700;
+    line-height:1.5;
+    margin-bottom:28px;
+  }
+  .s-last .cta span{color:var(--red-light);}
+  .s-last .action{
+    background:var(--red);
+    color:#fff;
+    padding:16px 40px;
+    font-size:16px;
+    letter-spacing:3px;
+    font-weight:700;
+    display:inline-block;
+    margin-top:16px;
+  }
+  .s-last .org{
+    margin-top:24px;
+    font-size:13px;
+    color:var(--gray);
+    letter-spacing:2px;
+  }
+
+  /* ナビゲーション */
+  .nav{
+    position:fixed;
+    bottom:32px;
+    left:0;
+    right:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:16px;
+    z-index:100;
+  }
+
+  .nav-dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:var(--gray);
+    cursor:pointer;
+    transition:all 0.3s;
+  }
+  .nav-dot.active{
+    background:var(--red);
+    transform:scale(1.4);
+  }
+
+  .btn{
+    position:fixed;
+    top:50%;
+    transform:translateY(-50%);
+    background:transparent;
+    border:1px solid #333;
+    color:var(--gray);
+    width:44px;
+    height:44px;
+    cursor:pointer;
+    font-size:18px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:all 0.2s;
+    z-index:100;
+  }
+  .btn:hover{border-color:var(--red);color:var(--red);}
+  .btn-prev{left:24px;}
+  .btn-next{right:24px;}
+
+  /* プログレスバー */
+  .progress{
+    position:fixed;
+    top:0;
+    left:0;
+    height:2px;
+    background:var(--red);
+    transition:width 0.5s ease;
+    z-index:200;
+  }
+
+  /* アニメーション */
+  .slide.active .slide-title,
+  .slide.active .s1 h1,
+  .slide.active .slide-body,
+  .slide.active .stat-row,
+  .slide.active .cta,
+  .slide.active .action,
+  .slide.active .s1 .tag,
+  .slide.active .s1 .sub{
+    animation:fadeUp 0.7s ease forwards;
+  }
+  .slide.active .slide-body{animation-delay:0.15s;opacity:0;}
+  .slide.active .stat-row{animation-delay:0.25s;opacity:0;}
+  .slide.active .action{animation-delay:0.3s;opacity:0;}
+  .slide.active .s1 .sub{animation-delay:0.2s;opacity:0;}
+
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(20px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<div class="slides" id="slides">
+
+  <!-- スライド1: タイトル -->
+  <div class="slide s1 active">
+    <div class="tag">知られざる現実 · 2024</div>
+    <h1>ウイグル問題<br><span>今、隣国で</span><br>起きていること</h1>
+    <div class="sub">— 私たちに何ができるか</div>
+    <div class="line"></div>
+  </div>
+
+  <!-- スライド2: ウイグルとは -->
+  <div class="slide s-general">
+    <div class="redline"></div>
+    <div class="slide-num">01 / 06</div>
+    <div class="slide-title">ウイグルとは何か</div>
+    <div class="slide-body">
+      中国西北部の<strong>新疆ウイグル自治区</strong>。<br>
+      かつては<strong>東トルキスタン共和国</strong>という独立国だった。<br><br>
+      豊富な天然資源を狙い、中国人民解放軍が突如侵攻。<br>
+      広大な土地は完全に<span class="highlight">中国の支配下</span>へと置かれた。
+    </div>
+    <div class="stat-row">
+      <div class="stat">
+        <span class="num">46回</span>
+        <div class="label">核実験（1964〜1996年）</div>
+      </div>
+      <div class="stat">
+        <span class="num">20万人</span>
+        <div class="label">死亡者数（推定）</div>
+      </div>
+      <div class="stat">
+        <span class="num">130万人</span>
+        <div class="label">重度健康被害（推定）</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- スライド3: 強制収容 -->
+  <div class="slide s-general">
+    <div class="redline"></div>
+    <div class="slide-num">02 / 06</div>
+    <div class="slide-title">強制収容・拷問・洗脳</div>
+    <div class="slide-body">
+      反乱を起こした人々は<span class="highlight">武力で鎮圧・殺害</span>された。<br>
+      その後、大量の収容所が建設され、<br>
+      言語・宗教・思想の改変が強制される。<br><br>
+      中国政府は「<strong>職業訓練センター</strong>」と説明するが、<br>
+      実態は洗脳施設であり、臓器売買が横行。<br>
+      これまでに<span class="highlight">300万人以上</span>が収容されたとされる。
+    </div>
+  </div>
+
+  <!-- スライド4: 情報統制 -->
+  <div class="slide s-general">
+    <div class="redline"></div>
+    <div class="slide-num">03 / 06</div>
+    <div class="slide-title">見えない壁 — 情報統制</div>
+    <div class="slide-body">
+      中国国内ではインターネットが<strong>厳しく制限</strong>され、<br>
+      SNSは政府の検閲を通ったものだけが公開される。<br><br>
+      施設は都市部から<span class="highlight">絶対に見えない</span>場所に計算して建設。<br>
+      TBSの現地取材では、モスクが跡形もなく消え、<br>
+      近隣住民は「<strong>ここにはなかった</strong>」と繰り返すのみだった。<br><br>
+      子どもたちは親から引き離され、<span class="highlight">文化・言語・アイデンティティ</span>を奪われる。
+    </div>
+  </div>
+
+  <!-- スライド5: SNSの力 -->
+  <div class="slide s-general">
+    <div class="redline"></div>
+    <div class="slide-num">04 / 06</div>
+    <div class="slide-title">SNSが世界を変えた前例</div>
+    <div class="slide-body">
+      中国のゼロコロナ政策に対する<strong>白紙運動</strong>。<br>
+      圧倒的な国家権力の前に、国民は無力に見えた。<br><br>
+      しかし<span class="highlight">SNSによる情報拡散</span>がその壁を打ち破り、<br>
+      中国政府は政策の撤回を余儀なくされた。<br><br>
+      ウイグルの人々は監視をかいくぐり、<br>
+      <strong>声なき声で私たちに助けを求めている。</strong>
+    </div>
+  </div>
+
+  <!-- スライド6: 国際社会 -->
+  <div class="slide s-general">
+    <div class="redline"></div>
+    <div class="slide-num">05 / 06</div>
+    <div class="slide-title">国際社会はすでに動いている</div>
+    <div class="slide-body">
+      アメリカは<strong>ウイグル人権法</strong>を制定。<br>
+      多くの国がこれを<span class="highlight">ジェノサイド（集団虐殺）</span>と認定している。<br><br>
+      しかし日本では、署名活動・企業への圧力・<br>
+      国内ウイグル人の保護——<strong>当たり前のことがまだできていない。</strong><br><br>
+      日本ウイグル協会が署名活動を実施中。<br>
+      最近は学生からの署名も増えている。
+    </div>
+  </div>
+
+  <!-- スライド7: CTA -->
+  <div class="slide s-last">
+    <div class="cta">
+      彼らは私たちに<br><span>助けを求めている。</span>
+    </div>
+    <div class="slide-body" style="text-align:center;max-width:600px;margin:0 auto;">
+      ナチスの過ちを二度と繰り返さないと、<br>
+      人類は誓ったはずだ。<br>
+      その誓いを守れるのは、あなたかもしれない。
+    </div>
+    <div class="action">この事実を広めてください</div>
+    <div class="org">日本ウイグル協会 — 署名活動実施中</div>
+  </div>
+
+</div>
+
+<!-- ナビゲーション -->
+<button class="btn btn-prev" onclick="change(-1)">&#8592;</button>
+<button class="btn btn-next" onclick="change(1)">&#8594;</button>
+
+<div class="nav" id="nav"></div>
+
+<script>
+  const slides=document.querySelectorAll('.slide');
+  const nav=document.getElementById('nav');
+  const progress=document.getElementById('progress');
+  let cur=0;
+
+  slides.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='nav-dot'+(i===0?' active':'');
+    d.onclick=()=>go(i);
+    nav.appendChild(d);
+  });
+
+  function go(n){
+    slides[cur].classList.remove('active');
+    nav.children[cur].classList.remove('active');
+    cur=(n+slides.length)%slides.length;
+    slides[cur].classList.add('active');
+    nav.children[cur].classList.add('active');
+    progress.style.width=((cur+1)/slides.length*100)+'%';
+  }
+
+  function change(d){go(cur+d);}
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key==='ArrowDown')change(1);
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp')change(-1);
+  });
+
+  progress.style.width=(1/slides.length*100)+'%';
+</script>
+</body>
+</html>
