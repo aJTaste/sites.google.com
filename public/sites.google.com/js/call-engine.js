@@ -294,6 +294,7 @@ function _onCallEnd(payload){
     _ui('hideCallModal');
   }
 }
+let _vcSyncInterval=null; // 先頭の変数宣言部分に追加
 
 export async function joinVoiceChannel(channelId){
   if(!peer||!peer.open){_toast('通話エンジン準備中です');return;}
@@ -313,6 +314,19 @@ export async function joinVoiceChannel(channelId){
     user_name:state.currentProfile.display_name,
     avatar_url:state.currentProfile.avatar_url||null,
   });
+
+  // 30秒ごとにvc-syncを再送して参加者UIを維持
+  if(_vcSyncInterval)clearInterval(_vcSyncInterval);
+  _vcSyncInterval=setInterval(()=>{
+    if(!vcId)return;
+    _broadcast('vc-sync',{
+      channel_id:channelId,
+      user_id:_myId(),
+      peer_id:_myPeerId(),
+      user_name:state.currentProfile.display_name,
+      avatar_url:state.currentProfile.avatar_url||null,
+    });
+  },30000);
 
   _ui('showVoiceChannelUI',channelId);
 }
@@ -375,6 +389,10 @@ function _setupVcCall(call,payload){
 export function leaveVoiceChannel(){
   if(!vcId)return;
   const ch=vcId;
+
+  // インターバル停止を追加
+  if(_vcSyncInterval){clearInterval(_vcSyncInterval);_vcSyncInterval=null;}
+
   Object.values(vcCalls).forEach(c=>{try{c.close();}catch(e){}});
   vcCalls={};
   _stopStream(vcStream);vcStream=null;
