@@ -40,13 +40,13 @@ export async function loadVcMessages(channelId){
     .from('voice_messages')
     .select('*')
     .eq('channel_id',channelId)
-    .order('created_at',{ascending:true})
+    .order('created_at',{ascending:false})
     .limit(50);
   if(error){console.error('[vcChat] load:',error);return;}
   const area=document.getElementById('vc-chat-messages');
   if(!area)return;
   area.innerHTML='';
-  (data||[]).forEach(msg=>_appendMessage(msg,false));
+  (data||[]).slice().reverse().forEach(msg=>_appendMessage(msg,false));
   area.scrollTop=area.scrollHeight;
 }
 
