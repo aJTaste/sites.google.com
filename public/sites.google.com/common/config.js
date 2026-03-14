@@ -8,8 +8,6 @@ export const NAV_ITEMS=[
   {id:'proxy',icon:'vpn_key',title:'Proxy',href:'/sites.google.com/proxy.html'},
   {id:'docs',icon:'edit_note',title:'Docs',href:'/sites.google.com/docs.html'},
   {id:'images',icon:'animated_images',title:'Images',href:'/sites.google.com/images.html'},
-  {id:'links',icon:'link',title:'Links',href:'/sites.google.com/links.html'},
-  {id:'files',icon:'folder',title:'Files',href:'/sites.google.com/files.html'}
 ];
 
 // アプリケーション情報
