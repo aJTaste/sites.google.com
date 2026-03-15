@@ -3,6 +3,14 @@
 
 export const UPDATES=[
   {
+    version:"2.0.0",
+    date:"2026-3-15",
+    changes:[
+      "界隈機能を実装しました。",
+      "複数のツールを削除しました。"
+    ]
+  },
+  {
     version:"1.7.1",
     date:"2026-03-01",
     changes:[
