@@ -1059,3 +1059,33 @@
   .message-author{font-size:12px;}
   .message-text{font-size:13px;}
 }
+/* 界隈セレクター */
+.community-switcher{
+  display:flex;
+  gap:4px;
+  padding:8px 8px 4px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.community-switcher::-webkit-scrollbar{display:none;}
+.community-tab{
+  flex-shrink:0;
+  padding:4px 10px;
+  border-radius:20px;
+  border:1px solid var(--border);
+  background:none;
+  font-size:12px;
+  font-weight:600;
+  color:var(--text-secondary);
+  cursor:pointer;
+  transition:all 0.12s;
+  white-space:nowrap;
+}
+.community-tab:hover{background:var(--bg-secondary);color:var(--text-primary);}
+.community-tab.active{
+  background:var(--main);
+  border-color:var(--main);
+  color:#fff;
+}

@@ -2,8 +2,8 @@
 console.log('[DEBUG] chat.js: ファイル読み込み開始');
 
 import{initPage,supabase}from'../common/core.js';
-import{state,updateState,fetchChannels}from'./chat-state.js';
-import{displayUsers}from'./chat-ui.js';
+import{state,updateState,fetchChannels,fetchUserCommunities}from'./chat-state.js';
+import{displayUsers,renderCommunitySwitcher}from'./chat-ui.js';
 import{requestNotificationPermission,showNotification}from'./chat-utils.js';
 import'./chat-handlers.js';
 import'./chat-modals.js';
@@ -44,6 +44,9 @@ try{
   const channels=await fetchChannels();
   updateState('channels',channels);
   console.log('[DEBUG] 3: channels fetch ✅ 件数:', channels.length);
+  const communities=await fetchUserCommunities(profile.id);
+  updateState('communities',communities);
+  renderCommunitySwitcher();
 }catch(e){console.error('[DEBUG] 3: channels fetch ❌', e);}
 
 console.log('[DEBUG] 4: loadUsers開始');

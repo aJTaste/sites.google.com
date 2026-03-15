@@ -1,6 +1,6 @@
 // UI表示関連の関数
 
-import{state}from'./chat-state.js';
+import{state,fetchChannels,updateState}from'./chat-state.js';
 import{formatLastOnline}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
 import{geoAvatarDataUrl}from'../common/geo-avatar.js';
@@ -11,6 +11,46 @@ function esc(text){
   const d=document.createElement('div');
   d.textContent=text||'';
   return d.innerHTML;
+}
+
+// ========================================
+// 界隈セレクターの描画
+// ========================================
+export function renderCommunitySwitcher(){
+  const el=document.getElementById('community-switcher');
+  if(!el)return;
+  const communities=state.communities||[];
+  if(communities.length<=1){el.hidden=true;return;}
+  el.hidden=false;
+  el.innerHTML='';
+  communities.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='community-tab'+(state.currentCommunityId===c.id?' active':'');
+    btn.textContent=c.name;
+    btn.addEventListener('click',()=>_switchCommunity(c.id));
+    el.appendChild(btn);
+  });
+}
+
+async function _switchCommunity(communityId){
+  if(state.currentCommunityId===communityId)return;
+  updateState('currentCommunityId',communityId);
+  updateState('selectedChannelId',null);
+  updateState('selectedUserId',null);
+  const channels=await fetchChannels(communityId);
+  updateState('channels',channels);
+  renderCommunitySwitcher();
+  renderSidebarItems();
+  const chatMain=document.getElementById('chat-main');
+  if(chatMain)chatMain.innerHTML=`
+    <div class="chat-empty">
+      <div class="chat-empty-icon">
+        <span class="material-symbols-outlined">forum</span>
+      </div>
+      <h3>ChatHub</h3>
+      <p>チャンネルまたはユーザーを選択してください</p>
+    </div>
+  `;
 }
 
 // ========================================

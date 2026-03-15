@@ -19,11 +19,26 @@ export async function fetchChannels(communityId=DEFAULT_COMMUNITY_ID){
   }));
 }
 
+export async function fetchUserCommunities(userId){
+  const{data,error}=await supabase
+    .from('community_members')
+    .select('community_id,role,communities(id,name)')
+    .eq('user_id',userId);
+  if(error){console.error('[fetchUserCommunities]',error);return[];}
+  return(data||[]).map(m=>({
+    id:m.community_id,
+    role:m.role,
+    name:m.communities?.name||'界隈'
+  }));
+}
+
 // グローバル状態
 export const state={
   currentProfile:null,
   allUsers:[],
   channels:[],           // ← NEW: DBから取得したチャンネル一覧
+  communities:[],
+  currentCommunityId:DEFAULT_COMMUNITY_ID,
   selectedUserId:null,
   selectedChannelId:null,
   messageSubscription:null,
