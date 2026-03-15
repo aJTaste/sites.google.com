@@ -7,7 +7,7 @@ await initPage('kaiwai-apply','界隈を作成する',{onUserLoaded:async(profil
   userId=profile.id;
   await checkRequest();
   setupForm();
-});
+}});
 
 // ========================================
 // 既存申請チェック
