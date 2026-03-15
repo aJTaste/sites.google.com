@@ -22,7 +22,7 @@ function setupForm(){
 // 参加処理
 // ========================================
 async function joinCommunity(){
-  const code=document.getElementById('inp-code').value.trim();
+  const code=document.getElementById('inp-code').value.trim().toLowerCase();
   const errCode=document.getElementById('err-code');
   const errSubmit=document.getElementById('err-submit');
   errCode.textContent='';

@@ -2,7 +2,7 @@
 console.log('[DEBUG] chat.js: ファイル読み込み開始');
 
 import{initPage,supabase}from'../common/core.js';
-import{state,updateState,fetchChannels,fetchUserCommunities}from'./chat-state.js';
+import{state,updateState,fetchChannels,fetchUserCommunities,DEFAULT_COMMUNITY_ID}from'./chat-state.js';
 import{displayUsers,renderCommunitySwitcher}from'./chat-ui.js';
 import{requestNotificationPermission,showNotification}from'./chat-utils.js';
 import'./chat-handlers.js';
@@ -39,19 +39,15 @@ await initPage('chat','ChatHub',{
     try{await requestNotificationPermission();console.log('[DEBUG] 2: requestNotificationPermission ✅');}
     catch(e){console.warn('[DEBUG] 2: requestNotificationPermission ❌', e);}
 
-    console.log('[DEBUG] 3: channels fetch開始');
-try{
-  const channels=await fetchChannels();
-  updateState('channels',channels);
-  console.log('[DEBUG] 3: channels fetch ✅ 件数:', channels.length);
+    try{
   const communities=await fetchUserCommunities(profile.id);
   updateState('communities',communities);
+  const firstId=communities[0]?.id||DEFAULT_COMMUNITY_ID;
+  updateState('currentCommunityId',firstId);
+  const channels=await fetchChannels(firstId);
+  updateState('channels',channels);
   renderCommunitySwitcher();
-}catch(e){console.error('[DEBUG] 3: channels fetch ❌', e);}
-
-console.log('[DEBUG] 4: loadUsers開始');
-
-    console.log('[DEBUG] 3: loadUsers開始');
+}catch(e){console.error('[communities/channels fetch]',e);}
     try{await loadUsers();console.log('[DEBUG] 3: loadUsers ✅ ユーザー数:', state.allUsers?.length);}
     catch(e){console.error('[DEBUG] 3: loadUsers ❌', e);}
 

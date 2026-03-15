@@ -69,10 +69,13 @@ async function loadProfiles(){
       memberIds=(members||[]).map(m=>m.user_id);
     }
     
-    let query=supabase.from('profiles').select('*').order('created_at',{ascending:false});
-    if(memberIds&&memberIds.length>0){
-      query=query.in('id',memberIds);
+    if(!memberIds||memberIds.length===0){
+      allProfiles=[];
+      displayProfiles();
+      return;
     }
+    let query=supabase.from('profiles').select('*').order('created_at',{ascending:false});
+    query=query.in('id',memberIds);
     
     const{data:profiles,error}=await query;
     

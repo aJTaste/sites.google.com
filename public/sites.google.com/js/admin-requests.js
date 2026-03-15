@@ -221,7 +221,10 @@ async function approveRequest(req){
     .single();
 
   if(e1){
-    alert('承認失敗 (communities INSERT): '+e1.message);
+    const msg=(e1.message.includes('duplicate')||e1.message.includes('unique'))
+      ?'招待コードが他の界隈と重複しています。コードを変更して再度承認してください。'
+      :'承認失敗: '+e1.message;
+    alert(msg);
     if(btn){btn.disabled=false;btn.textContent='承認';}
     return;
   }
