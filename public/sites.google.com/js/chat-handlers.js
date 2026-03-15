@@ -1,5 +1,4 @@
 // イベントハンドラー関連（Supabase版）- 入力中表示機能追加
-
 import{supabase}from'../common/supabase-config.js';
 import{state,updateState}from'./chat-state.js'
 import{displayUsers,createChatHTML,createChannelChatHTML,showProfilePopup}from'./chat-ui.js';
