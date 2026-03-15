@@ -1,0 +1,343 @@
+.ar-wrap{
+  max-width:720px;
+  margin:0 auto;
+  padding:32px 16px 48px;
+}
+
+/* ページヘッダー */
+.ar-page-head{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  margin-bottom:24px;
+}
+.ar-page-icon{
+  width:44px;
+  height:44px;
+  background:var(--main-light);
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-shrink:0;
+}
+.ar-page-icon .material-symbols-outlined{
+  font-size:24px;
+  color:var(--main);
+}
+.ar-page-head h2{
+  font-size:20px;
+  font-weight:700;
+  margin-bottom:2px;
+}
+.ar-page-head p{
+  font-size:13px;
+  color:var(--text-secondary);
+  margin:0;
+}
+
+/* タブ */
+.ar-tabs{
+  display:flex;
+  gap:6px;
+  margin-bottom:20px;
+  border-bottom:1px solid var(--border);
+  padding-bottom:0;
+}
+.ar-tab{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 14px;
+  font-size:14px;
+  font-weight:600;
+  color:var(--text-secondary);
+  background:none;
+  border:none;
+  border-bottom:2px solid transparent;
+  margin-bottom:-1px;
+  cursor:pointer;
+  transition:color .12s,border-color .12s;
+}
+.ar-tab:hover{ color:var(--text-primary); }
+.ar-tab.active{
+  color:var(--main);
+  border-bottom-color:var(--main);
+}
+.ar-tab-badge{
+  display:none;
+  padding:1px 7px;
+  font-size:11px;
+  font-weight:700;
+  border-radius:10px;
+  background:var(--main);
+  color:#fff;
+}
+.ar-tab-badge.visible{ display:inline-block; }
+
+/* ローディング */
+.ar-loading{
+  text-align:center;
+  padding:48px 0;
+  color:var(--text-secondary);
+}
+
+/* 空状態 */
+.ar-empty{
+  text-align:center;
+  padding:56px 0;
+}
+.ar-empty .material-symbols-outlined{
+  font-size:44px;
+  color:var(--text-tertiary);
+  display:block;
+  margin-bottom:12px;
+}
+.ar-empty p{
+  font-size:14px;
+  color:var(--text-secondary);
+}
+
+/* 申請カード */
+.ar-card{
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:18px 20px;
+  margin-bottom:12px;
+  transition:box-shadow .15s;
+}
+.ar-card:hover{
+  box-shadow:0 2px 8px rgba(0,0,0,.06);
+}
+.ar-card-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.ar-card-left{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+}
+.ar-requester-avatar{
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  overflow:hidden;
+  background:var(--bg-secondary);
+  flex-shrink:0;
+}
+.ar-requester-avatar img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.ar-requester-name{
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-primary);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.ar-date{
+  font-size:12px;
+  color:var(--text-tertiary);
+}
+
+.ar-community-name{
+  font-size:17px;
+  font-weight:700;
+  margin-bottom:4px;
+}
+.ar-meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-bottom:6px;
+}
+.ar-meta-item{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  font-size:12px;
+  color:var(--text-secondary);
+}
+.ar-meta-item .material-symbols-outlined{
+  font-size:14px;
+}
+.ar-desc{
+  font-size:13px;
+  color:var(--text-secondary);
+  line-height:1.6;
+  margin-bottom:0;
+}
+
+/* アクション */
+.ar-actions{
+  display:flex;
+  gap:8px;
+  margin-top:14px;
+  padding-top:12px;
+  border-top:1px solid var(--border-light);
+}
+.btn-approve{
+  padding:7px 16px;
+  font-size:13px;
+  font-weight:600;
+  color:#fff;
+  background:#22c55e;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background .12s;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.btn-approve:hover{ background:#16a34a; }
+.btn-approve:disabled{ opacity:.5;cursor:not-allowed; }
+.btn-reject-open{
+  padding:7px 16px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--text-primary);
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:6px;
+  cursor:pointer;
+  transition:background .12s;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.btn-reject-open:hover{ background:var(--bg-secondary); }
+
+/* 承認済み・却下済みバッジ */
+.ar-status-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 10px;
+  font-size:12px;
+  font-weight:600;
+  border-radius:6px;
+}
+.badge-approved{
+  background:#dcfce7;
+  color:#15803d;
+}
+.badge-rejected{
+  background:#fee2e2;
+  color:#b91c1c;
+}
+[data-theme="dark"] .badge-approved{
+  background:rgba(21,128,61,.18);
+  color:#4ade80;
+}
+[data-theme="dark"] .badge-rejected{
+  background:rgba(185,28,28,.18);
+  color:#fca5a5;
+}
+.ar-review-note{
+  font-size:12px;
+  color:var(--text-secondary);
+  margin-top:6px;
+  padding:8px 12px;
+  background:var(--bg-secondary);
+  border-radius:6px;
+  border-left:3px solid var(--border);
+}
+
+/* 却下モーダル */
+.ar-modal-overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:200;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:16px;
+}
+.ar-modal{
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:12px;
+  width:100%;
+  max-width:420px;
+  padding:20px 24px;
+}
+.ar-modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+}
+.ar-modal-head h3{
+  font-size:16px;
+  font-weight:700;
+}
+.ar-modal-close{
+  background:none;
+  border:none;
+  color:var(--text-secondary);
+  cursor:pointer;
+  padding:2px;
+  display:flex;
+  align-items:center;
+}
+.ar-modal-target{
+  font-size:14px;
+  font-weight:600;
+  color:var(--main);
+  margin-bottom:14px;
+}
+.ar-modal actions{ }
+.ar-modal textarea{
+  width:100%;
+  padding:10px 14px;
+  font-size:14px;
+  border:1px solid var(--border);
+  border-radius:6px;
+  background:var(--bg-primary);
+  color:var(--text-primary);
+  resize:vertical;
+  font-family:inherit;
+  margin-bottom:0;
+}
+.ar-modal textarea:focus{
+  outline:none;
+  border-color:var(--main);
+  box-shadow:0 0 0 3px var(--main-light);
+}
+.ar-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:14px;
+}
+.btn-danger{
+  padding:9px 18px;
+  font-size:14px;
+  font-weight:600;
+  color:#fff;
+  background:#ef4444;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  transition:background .12s;
+}
+.btn-danger:hover{ background:#dc2626; }
+.btn-danger:disabled{ opacity:.5;cursor:not-allowed; }
+
+@media(max-width:600px){
+  .ar-wrap{ padding:16px 12px 40px; }
+  .ar-card{ padding:14px 14px; }
+  .ar-actions{ flex-direction:column; }
+  .btn-approve,.btn-reject-open{ justify-content:center; }
+}
