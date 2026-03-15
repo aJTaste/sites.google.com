@@ -2,7 +2,6 @@ import{supabase}from'../common/supabase-config.js';
 import{generateGeoAvatar,canvasToBlob,geoAvatarDataUrl,seedFromId}from'../common/geo-avatar.js';
 
 const form=document.getElementById('register-form');
-const userIdInput=document.getElementById('user-id');
 const passwordInput=document.getElementById('password');
 const passwordConfirmInput=document.getElementById('password-confirm');
 const displayNameInput=document.getElementById('display-name');
@@ -67,64 +66,18 @@ displayNameInput.addEventListener('input',()=>{
   }
 });
 
-// ID重複チェック
-userIdInput.addEventListener('input',async()=>{
-  const userId=userIdInput.value.trim();
-  const idError=document.getElementById('id-error');
-
-  if(userId.length<10){
-    idError.textContent='';
-    return;
-  }
-
-  if(!/^207d23\d{4}$/.test(userId)){
-    idError.textContent='207d23 + 4桁の数字で入力してください';
-    return;
-  }
-
-  try{
-    const{data}=await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('user_id',userId)
-      .single();
-
-    if(data){
-      idError.textContent='このIDはすでに使用されています';
-    }else{
-      idError.textContent='';
-      idError.classList.add('success-message');
-      idError.textContent='✓ 使用可能なIDです';
-      setTimeout(()=>{idError.classList.remove('success-message');},2000);
-    }
-  }catch(error){
-    if(error.code==='PGRST116'){
-      idError.textContent='';
-    }
-  }
-});
-
 // フォーム送信
 form.addEventListener('submit',async(e)=>{
   e.preventDefault();
 
-  const userId=userIdInput.value.trim();
   const password=passwordInput.value;
   const passwordConfirm=passwordConfirmInput.value;
   const displayName=displayNameInput.value.trim();
   const lastName=lastNameInput.value.trim();
   const firstName=firstNameInput.value.trim();
 
-  const idError=document.getElementById('id-error');
   const passwordError=document.getElementById('password-error');
-
-  idError.textContent='';
   passwordError.textContent='';
-
-  if(!/^207d23\d{4}$/.test(userId)){
-    idError.textContent='207d23 + 4桁の数字で入力してください';
-    return;
-  }
 
   if(password.length<8){
     passwordError.textContent='パスワードは8文字以上で入力してください';
@@ -145,19 +98,10 @@ form.addEventListener('submit',async(e)=>{
   submitBtn.textContent='登録中...';
 
   try{
-    // 重複チェック
-    const{data:existing}=await supabase
-      .from('profiles')
-      .select('user_id')
-      .eq('user_id',userId)
-      .single();
-
-    if(existing){
-      idError.textContent='このIDはすでに使用されています';
-      submitBtn.disabled=false;
-      submitBtn.textContent='登録';
-      return;
-    }
+    // 連番IDを発行
+    const{data:seqData,error:seqError}=await supabase.rpc('next_user_id');
+    if(seqError)throw seqError;
+    const userId=seqData;
 
     // ユーザー作成
     const{data:authData,error:authError}=await supabase.auth.signUp({
@@ -232,14 +176,14 @@ form.addEventListener('submit',async(e)=>{
       });
     if(memberError)console.warn('[register] community_members:',memberError);
 
-    alert('登録完了！');
+    alert(`登録完了！\nあなたのIDは「${userId}」です。\nログイン時に必要なのでメモしてください。`);
     window.location.href='hub.html';
 
   }catch(error){
     console.error('登録エラー:',error);
 
-    if(error.message.includes('User already registered')){
-      idError.textContent='このIDはすでに使用されています';
+    if(false){
+      // 連番IDなので重複は起きない
     }else{
       alert('登録に失敗しました: '+error.message);
     }
