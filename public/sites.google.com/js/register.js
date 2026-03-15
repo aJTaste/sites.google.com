@@ -223,6 +223,15 @@ form.addEventListener('submit',async(e)=>{
 
     if(profileError)throw profileError;
 
+    const{error:memberError}=await supabase
+      .from('community_members')
+      .insert({
+        community_id:'00000000-0000-0000-0000-000000000001',
+        user_id:uid,
+        role:'member'
+      });
+    if(memberError)console.warn('[register] community_members:',memberError);
+
     alert('登録完了！');
     window.location.href='hub.html';
 
