@@ -6,6 +6,7 @@ import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
 import{handleImageFile}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
 
+
 console.log('chat-handlers.js読み込み開始');
 
 // ========================================
