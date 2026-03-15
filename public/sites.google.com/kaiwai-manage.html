@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>界隈メンバー管理 | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+  <style>
+    .manage-wrap{max-width:520px;margin:40px auto;padding:0 16px 40px;}
+    .manage-head{display:flex;align-items:center;gap:12px;margin-bottom:24px;}
+    .manage-head-icon{width:48px;height:48px;border-radius:12px;background:var(--main-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+    .manage-head-icon .material-symbols-outlined{font-size:26px;color:var(--main);}
+    .manage-head h2{font-size:20px;font-weight:700;margin-bottom:2px;}
+    .manage-head p{font-size:13px;color:var(--text-secondary);margin:0;}
+    .community-select{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);font-size:14px;margin-bottom:20px;cursor:pointer;}
+    .member-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;background:var(--bg-primary);}
+    .member-avatar{width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;}
+    .member-avatar img{width:40px;height:40px;object-fit:cover;}
+    .member-info{flex:1;min-width:0;}
+    .member-name{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+    .member-id{font-size:11px;color:var(--text-tertiary);margin-top:1px;}
+    .member-action{flex-shrink:0;}
+    .role-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+    .role-owner{background:#fef3c7;color:#92400e;}
+    .role-moderator{background:#ede9fe;color:#5b21b6;}
+    [data-theme="dark"] .role-owner{background:rgba(146,64,14,0.2);color:#fcd34d;}
+    [data-theme="dark"] .role-moderator{background:rgba(91,33,182,0.2);color:#c4b5fd;}
+    .btn-promote{padding:6px 12px;border-radius:6px;border:none;background:var(--main);color:#fff;font-size:12px;font-weight:600;cursor:pointer;}
+    .btn-demote{padding:6px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer;}
+    .btn-promote:hover{opacity:.85;}
+    .btn-demote:hover{background:var(--bg-primary);}
+    .manage-empty{text-align:center;padding:40px;color:var(--text-tertiary);font-size:14px;}
+  </style>
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <div class="main-container">
+      <main class="main-content">
+        <div class="manage-wrap">
+          <div class="manage-head">
+            <div class="manage-head-icon">
+              <span class="material-symbols-outlined">manage_accounts</span>
+            </div>
+            <div>
+              <h2>界隈メンバー管理</h2>
+              <p id="community-label">読み込み中...</p>
+            </div>
+          </div>
+          <select class="community-select" id="community-select" hidden></select>
+          <div id="member-list">
+            <div class="manage-empty">読み込み中...</div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script type="module" src="js/kaiwai-manage.js"></script>
+  <script src="common/stealth-mode.js"></script>
+  <script src="common/capture-handler.js"></script>
+  <script src="common/eruda-init.js"></script>
+</body>
+</html>

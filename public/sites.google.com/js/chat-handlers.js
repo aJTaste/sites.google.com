@@ -5,6 +5,7 @@ import{displayUsers,createChatHTML,createChannelChatHTML,showProfilePopup}from'.
 import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
 import{handleImageFile}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
+import{getCurrentCommunityRole}from'./chat-state.js';
 
 
 console.log('chat-handlers.js読み込み開始');
@@ -172,7 +173,7 @@ const channel=(state.channels||[]).find(c=>c.id===channelId);
     return;
   }
 
-  if(!canAccessChannel(state.currentProfile.role,channel.requiredRole)){
+  if(!canAccessChannel(getCurrentCommunityRole(),channel.requiredRole)){
     alert('このチャンネルへのアクセス権限がありません');
     return;
   }

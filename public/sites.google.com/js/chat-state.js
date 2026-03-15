@@ -66,3 +66,9 @@ export function resetMessageState(){
   state.selectedImage=null;
   state.replyToMessage=null;
 }
+
+// 現在の界隈におけるロールを返す（グローバルロールより優先）
+export function getCurrentCommunityRole(){
+  const c=(state.communities||[]).find(c=>c.id===state.currentCommunityId);
+  return c?.role||state.currentProfile?.role||'user';
+}

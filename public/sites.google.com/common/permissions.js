@@ -9,9 +9,11 @@ export const ROLES={
 
 // 権限の階層（数値が大きいほど上位）
 const ROLE_HIERARCHY={
-  admin:3,
+  admin:4,
+  owner:3,
   moderator:2,
-  user:1
+  user:1,
+  member:1
 };
 
 /**

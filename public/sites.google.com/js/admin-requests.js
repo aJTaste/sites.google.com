@@ -244,7 +244,19 @@ async function approveRequest(req){
     return;
   }
 
-  // Step3: community_requests UPDATE
+  // Step3: デフォルトチャンネルを作成
+  const DEFAULT_CHANNELS=[
+    {name:'連絡',description:'お知らせや連絡事項',icon:'campaign',required_role:null},
+    {name:'チャンネルA',description:'自由に使えるチャンネル',icon:'tag',required_role:null},
+    {name:'チャンネルB',description:'自由に使えるチャンネル',icon:'tag',required_role:null},
+    {name:'モデレーター専用',description:'モデレーター限定チャット',icon:'shield',required_role:'moderator'},
+  ];
+  const{error:ech}=await supabase
+    .from('channels')
+    .insert(DEFAULT_CHANNELS.map(ch=>({...ch,community_id:community.id})));
+  if(ech)console.error('[approveRequest] channels INSERT failed',ech);
+
+  // Step4: community_requests UPDATE
   const{error:e3}=await supabase
     .from('community_requests')
     .update({
