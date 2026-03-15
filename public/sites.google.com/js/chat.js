@@ -2,7 +2,7 @@
 console.log('[DEBUG] chat.js: ファイル読み込み開始');
 
 import{initPage,supabase}from'../common/core.js';
-import{state,updateState,CHANNELS}from'./chat-state.js';
+import{state,updateState,fetchChannels}from'./chat-state.js';
 import{displayUsers}from'./chat-ui.js';
 import{requestNotificationPermission,showNotification}from'./chat-utils.js';
 import'./chat-handlers.js';
@@ -38,6 +38,15 @@ await initPage('chat','ChatHub',{
     console.log('[DEBUG] 2: requestNotificationPermission開始');
     try{await requestNotificationPermission();console.log('[DEBUG] 2: requestNotificationPermission ✅');}
     catch(e){console.warn('[DEBUG] 2: requestNotificationPermission ❌', e);}
+
+    console.log('[DEBUG] 3: channels fetch開始');
+try{
+  const channels=await fetchChannels();
+  updateState('channels',channels);
+  console.log('[DEBUG] 3: channels fetch ✅ 件数:', channels.length);
+}catch(e){console.error('[DEBUG] 3: channels fetch ❌', e);}
+
+console.log('[DEBUG] 4: loadUsers開始');
 
     console.log('[DEBUG] 3: loadUsers開始');
     try{await loadUsers();console.log('[DEBUG] 3: loadUsers ✅ ユーザー数:', state.allUsers?.length);}
@@ -330,7 +339,7 @@ async function loadUnreadCounts(){
       state.unreadCounts[user.user_id]=count||0;
     }
 
-    for(const channel of CHANNELS){
+    for(const channel of state.channels){
       const lastRead=readMap[channel.id];
       let q=supabase
         .from('channel_messages')

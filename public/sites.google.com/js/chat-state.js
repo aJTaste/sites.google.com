@@ -1,17 +1,29 @@
 // チャットアプリの状態管理
+import{supabase}from'../common/supabase-config.js';
 
-// 共有チャンネル定義
-export const CHANNELS=[
-  {id:'general',name:'連絡',desc:'報連相大事',icon:'campaign',requiredRole:'user'},
-  {id:'random',name:'共用チャット',desc:'全員見れます',icon:'chat_bubble',requiredRole:'user'},
-  {id:'tech',name:'to管理人',desc:'欲しいツールとかなんでも',icon:'code',requiredRole:'user'},
-  {id:'moderators',name:'教育委員会対策課',desc:'モデレーターのみ',icon:'shield',requiredRole:'moderator'}
-];
+export const DEFAULT_COMMUNITY_ID='00000000-0000-0000-0000-000000000001';
+
+// チャンネル一覧をDBから取得
+export async function fetchChannels(communityId=DEFAULT_COMMUNITY_ID){
+  const{data,error}=await supabase
+    .from('channels')
+    .select('id,name,description,icon,required_role')
+    .eq('community_id',communityId)
+    .order('created_at');
+  if(error){console.error('[fetchChannels]',error);return[];}
+  // 旧コードとの互換性のため desc / requiredRole も付与
+  return(data||[]).map(ch=>({
+    ...ch,
+    desc:ch.description||'',
+    requiredRole:ch.required_role
+  }));
+}
 
 // グローバル状態
 export const state={
   currentProfile:null,
   allUsers:[],
+  channels:[],           // ← NEW: DBから取得したチャンネル一覧
   selectedUserId:null,
   selectedChannelId:null,
   messageSubscription:null,
