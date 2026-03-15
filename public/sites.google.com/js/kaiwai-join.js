@@ -3,10 +3,10 @@ import{supabase}from'../common/supabase-config.js';
 
 let userId=null;
 
-await initPage('kaiwai-join','界隈に参加する',true,async(profile)=>{
+await initPage('kaiwai-join','界隈に参加する',{onUserLoaded:async(profile)=>{
   userId=profile.id;
   setupForm();
-});
+}});
 
 // ========================================
 // フォームセットアップ
