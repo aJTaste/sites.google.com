@@ -1,6 +1,6 @@
 // UI表示関連の関数
 
-import{state,CHANNELS}from'./chat-state.js';
+import{state}from'./chat-state.js';
 import{formatLastOnline}from'./chat-utils.js';
 import{canAccessChannel}from'../common/permissions.js';
 import{geoAvatarDataUrl}from'../common/geo-avatar.js';
@@ -32,7 +32,7 @@ function renderSidebarItems(){
   dmList.innerHTML='';
 
   // ---- チャンネルセクション ----
-  const accessibleChannels=CHANNELS.filter(ch=>
+const accessibleChannels=(state.channels||[]).filter(ch=>
     canAccessChannel(state.currentProfile?.role,ch.requiredRole)
   );
 

@@ -1,7 +1,7 @@
 // イベントハンドラー関連（Supabase版）- 入力中表示機能追加
 
 import{supabase}from'../common/supabase-config.js';
-import{state,updateState,CHANNELS}from'./chat-state.js';
+import{state,updateState}from'./chat-state.js'
 import{displayUsers,createChatHTML,createChannelChatHTML,showProfilePopup}from'./chat-ui.js';
 import{loadMessages,loadChannelMessages,sendMessage}from'./chat-messages.js';
 import{handleImageFile}from'./chat-utils.js';
@@ -166,7 +166,7 @@ export async function selectUser(userId){
 export async function selectChannel(channelId){
   console.log('selectChannel()実行:',channelId);
 
-  const channel=CHANNELS.find(c=>c.id===channelId);
+const channel=(state.channels||[]).find(c=>c.id===channelId);
   if(!channel){
     console.error('選択されたチャンネルが見つかりません:',channelId);
     return;
