@@ -11,6 +11,7 @@ await initPage('db','Database',{
       window.location.href='hub.html';
       return;
     }
+    window.currentUserId=profile.id;
     
     // 界隈セレクター生成
     await buildCommunitySelector(profile.id);
@@ -139,7 +140,10 @@ function displayProfiles(){
       <td>${profile.avatar_color||'-'}</td>
       <td>${formatDate(profile.created_at)}</td>
       <td>${formatDate(profile.updated_at)}</td>
-    `;
+      <td>
+        ${profile.id!=='${currentUserId}'?`<button onclick="deleteUser('${profile.id}','${profile.display_name}')" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">削除</button>`:''}
+      </td>
+    \`;
     
     tbody.appendChild(tr);
   });
@@ -166,3 +170,26 @@ function formatDate(dateStr){
 document.getElementById('refresh-btn').addEventListener('click',()=>{
   loadProfiles();
 });
+
+// ユーザー削除
+async function deleteUser(userId,displayName){
+  if(!confirm(`「${displayName}」を削除しますか？\nこの操作は取り消せません。`))return;
+
+  try{
+    const{data:{session}}=await supabase.auth.getSession();
+    const res=await fetch('https://hkdwcsosegaymdknpwon.supabase.co/functions/v1/delete-user',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'authorization':`Bearer ${session.access_token}`
+      },
+      body:JSON.stringify({target_id:userId})
+    });
+    const json=await res.json();
+    if(!res.ok)throw new Error(json.error||'削除失敗');
+    await loadProfiles();
+  }catch(e){
+    alert('削除に失敗しました: '+e.message);
+  }
+}
+window.deleteUser=deleteUser;
