@@ -1,6 +1,7 @@
 import{initPage,supabase}from'../common/core.js';
 
 let allProfiles=[];
+let currentCommunityId=null;
 
 // ページ初期化（モデレーター以上のみ）
 await initPage('db','Database',{
@@ -11,6 +12,9 @@ await initPage('db','Database',{
       return;
     }
     
+    // 界隈セレクター生成
+    await buildCommunitySelector(profile.id);
+    
     // データを読み込み
     await loadProfiles();
     
@@ -19,13 +23,57 @@ await initPage('db','Database',{
   }
 });
 
+// 界隈セレクター
+async function buildCommunitySelector(userId){
+  const{data:members}=await supabase
+    .from('community_members')
+    .select('community_id,communities(id,name)')
+    .eq('user_id',userId);
+  
+  const communities=(members||[]).map(m=>({id:m.community_id,name:m.communities?.name||'不明'}));
+  if(communities.length===0)return;
+  
+  currentCommunityId=communities[0].id;
+  
+  const header=document.querySelector('.db-header');
+  if(!header)return;
+  
+  const sel=document.createElement('select');
+  sel.style.cssText='padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--bg-primary);color:var(--text-primary);font-size:14px;cursor:pointer;';
+  communities.forEach(c=>{
+    const opt=document.createElement('option');
+    opt.value=c.id;
+    opt.textContent=c.name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change',async()=>{
+    currentCommunityId=sel.value;
+    await loadProfiles();
+  });
+  
+  const controls=header.querySelector('.db-controls');
+  if(controls)header.insertBefore(sel,controls);
+}
+
 // プロフィールデータを読み込み
 async function loadProfiles(){
   try{
-    const{data:profiles,error}=await supabase
-      .from('profiles')
-      .select('*')
-      .order('created_at',{ascending:false});
+    // 界隈メンバーのIDを取得
+    let memberIds=null;
+    if(currentCommunityId){
+      const{data:members}=await supabase
+        .from('community_members')
+        .select('user_id')
+        .eq('community_id',currentCommunityId);
+      memberIds=(members||[]).map(m=>m.user_id);
+    }
+    
+    let query=supabase.from('profiles').select('*').order('created_at',{ascending:false});
+    if(memberIds&&memberIds.length>0){
+      query=query.in('id',memberIds);
+    }
+    
+    const{data:profiles,error}=await query;
     
     if(error)throw error;
     
