@@ -7,7 +7,7 @@ let currentTab='pending';
 let rejectTargetId=null;
 let rejectTargetName='';
 
-await initPage('admin-requests','界隈申請管理',true,async(profile)=>{
+await initPage('admin-requests','界隈申請管理',{onUserLoaded:async(profile)=>{
   if(profile.role!=='admin'){
     window.location.href='hub.html';
     return;
@@ -17,7 +17,7 @@ await initPage('admin-requests','界隈申請管理',true,async(profile)=>{
   setupRejectModal();
   await loadTabCounts();
   await loadRequests();
-});
+}});
 
 // ========================================
 // タブ

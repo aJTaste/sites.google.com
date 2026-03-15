@@ -3,7 +3,7 @@ import{supabase}from'../common/supabase-config.js';
 
 let userId=null;
 
-await initPage('kaiwai-apply','界隈を作成する',true,async(profile)=>{
+await initPage('kaiwai-apply','界隈を作成する',{onUserLoaded:async(profile)=>{
   userId=profile.id;
   await checkRequest();
   setupForm();
