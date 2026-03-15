@@ -48,7 +48,7 @@ await initPage('chat','ChatHub',{
   updateState('channels',channels);
   renderCommunitySwitcher();
 }catch(e){console.error('[communities/channels fetch]',e);}
-    try{await loadUsers();console.log('[DEBUG] 3: loadUsers ✅ ユーザー数:', state.allUsers?.length);}
+    try{await loadUsers();renderCommunitySwitcher();console.log('[DEBUG] 3: loadUsers ✅ ユーザー数:', state.allUsers?.length);}
     catch(e){console.error('[DEBUG] 3: loadUsers ❌', e);}
 
     console.log('[DEBUG] 4: autoRestoreLastChat開始');

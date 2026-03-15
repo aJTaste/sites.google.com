@@ -23,8 +23,7 @@ export async function fetchUserCommunities(userId){
   const{data,error}=await supabase
     .from('community_members')
     .select('community_id,role,communities(id,name)')
-    .eq('user_id',userId)
-    .order('created_at');
+    .eq('user_id',userId);
   if(error){console.error('[fetchUserCommunities]',error);return[];}
   return(data||[]).map(m=>({
     id:m.community_id,

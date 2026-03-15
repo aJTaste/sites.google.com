@@ -69,7 +69,6 @@ export function displayUsers(){
 // ========================================
 
 function renderSidebarItems(){
-  renderCommunitySwitcher();
   const dmList=document.getElementById('dm-list');
   if(!dmList)return;
 
