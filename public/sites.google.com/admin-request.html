@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>界隈申請管理 | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/admin-requests.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <div class="main-container">
+      <main class="main-content">
+        <div class="ar-wrap">
+
+          <!-- ページヘッダー -->
+          <div class="ar-page-head">
+            <div class="ar-page-icon">
+              <span class="material-symbols-outlined">admin_panel_settings</span>
+            </div>
+            <div>
+              <h2>界隈申請管理</h2>
+              <p>ユーザーからの界隈作成申請を承認・却下します</p>
+            </div>
+          </div>
+
+          <!-- タブ -->
+          <div class="ar-tabs" id="ar-tabs">
+            <button class="ar-tab active" data-status="pending">
+              審査待ち
+              <span class="ar-tab-badge" id="count-pending"></span>
+            </button>
+            <button class="ar-tab" data-status="approved">
+              承認済み
+              <span class="ar-tab-badge" id="count-approved"></span>
+            </button>
+            <button class="ar-tab" data-status="rejected">
+              却下済み
+              <span class="ar-tab-badge" id="count-rejected"></span>
+            </button>
+          </div>
+
+          <!-- リスト -->
+          <div id="ar-list">
+            <div class="ar-loading">
+              <span class="loading"></span>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- 却下モーダル -->
+  <div class="ar-modal-overlay" id="reject-modal" hidden>
+    <div class="ar-modal">
+      <div class="ar-modal-head">
+        <h3>申請を却下</h3>
+        <button class="ar-modal-close" id="reject-cancel-btn">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <p class="ar-modal-target" id="reject-target-name"></p>
+      <label class="field-label" style="font-size:13px;margin-bottom:6px;display:block;">却下理由（申請者に表示・任意）</label>
+      <textarea id="reject-note" rows="3" placeholder="例: 既存の界隈と重複しています"></textarea>
+      <div class="ar-modal-actions">
+        <button class="btn-secondary" id="reject-cancel-btn2">キャンセル</button>
+        <button class="btn-danger" id="reject-confirm-btn">却下する</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/admin-requests.js"></script>
+  <script src="common/stealth-mode.js"></script>
+  <script src="common/capture-handler.js"></script>
+  <script src="common/eruda-init.js"></script>
+</body>
+</html>
