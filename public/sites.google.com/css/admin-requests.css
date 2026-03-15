@@ -259,7 +259,7 @@
   inset:0;
   background:rgba(0,0,0,.45);
   z-index:200;
-  display:flex;
+  display:none;
   align-items:center;
   justify-content:center;
   padding:16px;
@@ -341,3 +341,5 @@
   .ar-actions{ flex-direction:column; }
   .btn-approve,.btn-reject-open{ justify-content:center; }
 }
+
+.ar-modal-overlay:not([hidden]){display:flex;}
