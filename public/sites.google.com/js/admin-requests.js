@@ -214,6 +214,7 @@ async function approveRequest(req){
     .insert({
       name:req.name,
       description:req.description||null,
+      invite_code:req.invite_code||null,
       created_by:req.requester_id
     })
     .select('id')
