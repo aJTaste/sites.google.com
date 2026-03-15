@@ -104,6 +104,7 @@ console.log('[DEBUG] 4: loadUsers開始');
     catch(e){console.error('[DEBUG] 12: initCallEngine ❌', e);}
 
     window._appState=state;
+window._loadUsersByCommunity=loadUsers;
     console.log('[DEBUG] onUserLoaded完了 ✅');
 
     if(isMobile()){
@@ -299,19 +300,29 @@ window.sendCallBroadcast=async function(event,payload){
 // ユーザー一覧を読み込む
 // ========================================
 
-async function loadUsers(){
+async function loadUsers(communityId=null){
   console.log('[DEBUG] loadUsers: 開始');
+  const cid=communityId||state.currentCommunityId;
+  const{data:members,error:me}=await supabase
+    .from('community_members')
+    .select('user_id')
+    .eq('community_id',cid);
+  if(me){console.error('[DEBUG] loadUsers: members ❌',me);throw me;}
+  const memberIds=(members||[]).map(m=>m.user_id).filter(id=>id!==state.currentProfile.id);
+  if(memberIds.length===0){
+    updateState('allUsers',[]);
+    displayUsers();
+    return;
+  }
   const{data:profiles,error}=await supabase
     .from('profiles')
     .select('*')
-    .neq('id',state.currentProfile.id)
+    .in('id',memberIds)
     .order('last_online',{ascending:false,nullsFirst:false});
-
   if(error){
     console.error('[DEBUG] loadUsers: ❌ クエリエラー', error);
     throw error;
   }
-
   console.log('[DEBUG] loadUsers: 取得プロフィール数:', profiles?.length);
   updateState('allUsers',profiles||[]);
   await loadUnreadCounts();

@@ -40,6 +40,9 @@ async function _switchCommunity(communityId){
   const channels=await fetchChannels(communityId);
   updateState('channels',channels);
   renderCommunitySwitcher();
+  if(window._loadUsersByCommunity){
+    await window._loadUsersByCommunity(communityId);
+  }
   renderSidebarItems();
   const chatMain=document.getElementById('chat-main');
   if(chatMain)chatMain.innerHTML=`
