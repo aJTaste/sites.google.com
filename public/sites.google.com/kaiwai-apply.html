@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>界隈を作成する | AppHub</title>
+  <link rel="stylesheet" href="common/common.css">
+  <link rel="stylesheet" href="css/kaiwai-apply.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+  <link rel="icon" href="assets/favicon1.svg">
+  <link rel="apple-touch-icon" href="assets/icon1.svg">
+</head>
+<body class="page-loading">
+  <div class="app-container">
+    <div class="main-container">
+      <main class="main-content">
+        <div class="apply-wrap">
+
+          <!-- 却下通知（直近に却下された場合のみ表示） -->
+          <div class="apply-notice notice-rejected" id="rejection-notice" hidden>
+            <span class="material-symbols-outlined">cancel</span>
+            <div>
+              <strong>前回の申請は却下されました</strong>
+              <p id="rejection-note-text"></p>
+            </div>
+          </div>
+
+          <!-- フォーム -->
+          <div class="apply-card" id="state-form" hidden>
+            <div class="apply-card-head">
+              <div class="apply-icon">
+                <span class="material-symbols-outlined">group_add</span>
+              </div>
+              <h2>界隈を作成する</h2>
+              <p>新しい界隈の作成を申請します。<br>管理者が確認後、承認されます。</p>
+            </div>
+            <div class="apply-card-body">
+              <div class="field-group">
+                <label class="field-label">界隈名 <span class="req">*</span></label>
+                <input type="text" id="inp-name" maxlength="32" placeholder="例: ゲーム好き集まれ">
+                <span class="help-text">1〜32文字</span>
+                <span class="error-message" id="err-name"></span>
+              </div>
+              <div class="field-group">
+                <label class="field-label">説明</label>
+                <textarea id="inp-desc" maxlength="200" rows="3" placeholder="どんな界隈か説明してください（任意）"></textarea>
+                <div class="char-row">
+                  <span class="help-text">任意・200文字以内</span>
+                  <span class="char-count"><span id="desc-count">0</span>/200</span>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label">招待コード希望</label>
+                <input type="text" id="inp-invite" maxlength="16" placeholder="例: gamer2025（任意）">
+                <span class="help-text">任意・4〜16文字の英数字</span>
+                <span class="error-message" id="err-invite"></span>
+              </div>
+              <button class="btn-primary apply-submit-btn" id="submit-btn">申請する</button>
+              <span class="error-message" id="err-submit"></span>
+            </div>
+          </div>
+
+          <!-- 審査中 -->
+          <div class="apply-card status-card" id="state-pending" hidden>
+            <span class="material-symbols-outlined s-icon s-pending">hourglass_top</span>
+            <h2>審査中</h2>
+            <p class="s-name" id="pending-name"></p>
+            <p class="s-desc">管理者が確認しています。<br>しばらくお待ちください。</p>
+          </div>
+
+          <!-- 申請完了（送信直後） -->
+          <div class="apply-card status-card" id="state-done" hidden>
+            <span class="material-symbols-outlined s-icon s-done">check_circle</span>
+            <h2>申請しました！</h2>
+            <p class="s-desc">管理者が確認次第、結果をお知らせします。</p>
+          </div>
+
+        </div>
+      </main>
+    </div>
+  </div>
+  <script type="module" src="js/kaiwai-apply.js"></script>
+  <script src="common/stealth-mode.js"></script>
+  <script src="common/capture-handler.js"></script>
+  <script src="common/eruda-init.js"></script>
+</body>
+</html>
