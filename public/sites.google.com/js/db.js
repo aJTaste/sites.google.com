@@ -140,10 +140,8 @@ function displayProfiles(){
       <td>${profile.avatar_color||'-'}</td>
       <td>${formatDate(profile.created_at)}</td>
       <td>${formatDate(profile.updated_at)}</td>
-      <td>
-        ${profile.id!=='${currentUserId}'?`<button onclick="deleteUser('${profile.id}','${profile.display_name}')" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">削除</button>`:''}
-      </td>
-    \`;
+      <td>${profile.id!==window.currentUserId?'<button onclick="deleteUser(\''+profile.id+'\',\''+profile.display_name+'\')" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">削除</button>':''}</td>
+    `;
     
     tbody.appendChild(tr);
   });
@@ -192,4 +190,3 @@ async function deleteUser(userId,displayName){
     alert('削除に失敗しました: '+e.message);
   }
 }
-window.deleteUser=deleteUser;
