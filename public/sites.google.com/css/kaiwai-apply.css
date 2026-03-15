@@ -1,0 +1,155 @@
+.apply-wrap{
+  max-width:520px;
+  margin:40px auto;
+  padding:0 16px 40px;
+}
+
+/* 却下通知 */
+.apply-notice{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px 16px;
+  border-radius:8px;
+  margin-bottom:16px;
+  font-size:14px;
+}
+.notice-rejected{
+  background:#fff0f0;
+  border:1px solid #fca5a5;
+  color:#b91c1c;
+}
+[data-theme="dark"] .notice-rejected{
+  background:rgba(185,28,28,0.12);
+  border-color:rgba(252,165,165,0.25);
+  color:#fca5a5;
+}
+.apply-notice .material-symbols-outlined{
+  font-size:20px;
+  flex-shrink:0;
+  margin-top:1px;
+}
+.apply-notice strong{
+  display:block;
+  font-size:14px;
+  font-weight:600;
+  margin-bottom:2px;
+}
+.apply-notice p{
+  font-size:13px;
+  margin:0;
+  opacity:.85;
+}
+
+/* カード共通 */
+.apply-card{
+  background:var(--bg-primary);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+}
+
+/* フォームヘッダー */
+.apply-card-head{
+  padding:28px 28px 20px;
+  text-align:center;
+  border-bottom:1px solid var(--border-light);
+}
+.apply-icon{
+  width:52px;
+  height:52px;
+  background:var(--main-light);
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto 14px;
+}
+.apply-icon .material-symbols-outlined{
+  font-size:28px;
+  color:var(--main);
+}
+.apply-card-head h2{
+  font-size:20px;
+  font-weight:700;
+  margin-bottom:6px;
+}
+.apply-card-head p{
+  font-size:14px;
+  color:var(--text-secondary);
+  line-height:1.65;
+  margin:0;
+}
+
+/* フォーム本体 */
+.apply-card-body{
+  padding:24px 28px;
+}
+.field-group{
+  margin-bottom:20px;
+}
+.field-label{
+  display:block;
+  font-size:14px;
+  font-weight:600;
+  margin-bottom:6px;
+}
+.req{
+  color:var(--main);
+}
+.char-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-top:4px;
+}
+.char-count{
+  font-size:12px;
+  color:var(--text-tertiary);
+}
+.apply-submit-btn{
+  width:100%;
+  margin-top:4px;
+}
+#err-submit{
+  text-align:center;
+  display:block;
+  margin-top:8px;
+}
+
+/* ステータスカード */
+.status-card{
+  padding:52px 28px;
+  text-align:center;
+}
+.s-icon{
+  font-size:54px;
+  display:block;
+  margin-bottom:16px;
+}
+.s-pending{ color:#f59e0b; }
+.s-done{ color:#22c55e; }
+.status-card h2{
+  font-size:22px;
+  font-weight:700;
+  margin-bottom:8px;
+}
+.s-name{
+  font-size:16px;
+  font-weight:600;
+  color:var(--main);
+  margin-bottom:8px;
+}
+.s-desc{
+  font-size:14px;
+  color:var(--text-secondary);
+  line-height:1.65;
+  margin:0;
+}
+
+@media(max-width:540px){
+  .apply-wrap{ margin:16px auto; }
+  .apply-card-head{ padding:20px 20px 16px; }
+  .apply-card-body{ padding:20px; }
+  .status-card{ padding:36px 20px; }
+}
