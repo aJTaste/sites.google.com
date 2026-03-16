@@ -102,10 +102,17 @@ async function loadMembers(){
     // - myRole=moderator → memberのみMod昇格可（降格は不可）
     let btn='';
     if(!isSelf&&!isOwner){
-      if(m.role==='moderator'&&myRole==='owner'){
-        btn=`<button class="btn-demote mod-btn" data-uid="${m.user_id}" data-action="demote">Modを外す</button>`;
-      }else if(m.role==='member'){
-        btn=`<button class="btn-promote mod-btn" data-uid="${m.user_id}" data-action="promote">Modに設定</button>`;
+      if(myRole==='owner'){
+        if(m.role==='moderator'){
+          btn=`<button class="btn-demote mod-btn" data-uid="${m.user_id}" data-action="demote">Modを外す</button>`
+            +`<button class="btn-kick mod-btn" data-uid="${m.user_id}" data-name="${esc(p.display_name)}" data-action="kick">キック</button>`;
+        }else if(m.role==='member'){
+          btn=`<button class="btn-promote mod-btn" data-uid="${m.user_id}" data-action="promote">Modに設定</button>`
+            +`<button class="btn-kick mod-btn" data-uid="${m.user_id}" data-name="${esc(p.display_name)}" data-action="kick">キック</button>`;
+        }
+      }else if(myRole==='moderator'&&m.role==='member'){
+        btn=`<button class="btn-promote mod-btn" data-uid="${m.user_id}" data-action="promote">Modに設定</button>`
+          +`<button class="btn-kick mod-btn" data-uid="${m.user_id}" data-name="${esc(p.display_name)}" data-action="kick">キック</button>`;
       }
     }
 
@@ -121,7 +128,11 @@ async function loadMembers(){
   });
 
   list.querySelectorAll('.mod-btn').forEach(btn=>{
-    btn.addEventListener('click',()=>handleRoleChange(btn.dataset.uid,btn.dataset.action,btn));
+    if(btn.dataset.action==='kick'){
+      btn.addEventListener('click',()=>handleKick(btn.dataset.uid,btn.dataset.name,btn));
+    }else{
+      btn.addEventListener('click',()=>handleRoleChange(btn.dataset.uid,btn.dataset.action,btn));
+    }
   });
 }
 
@@ -143,6 +154,27 @@ async function handleRoleChange(userId,action,btn){
     alert('変更に失敗しました: '+error.message);
     btn.disabled=false;
     btn.textContent=action==='promote'?'Modに設定':'Modを外す';
+    return;
+  }
+  await loadMembers();
+}
+
+// ========================================
+// キック処理
+// ========================================
+async function handleKick(userId,displayName,btn){
+  if(!confirm(`「${displayName}」をこの界隈からキックしますか？`))return;
+  btn.disabled=true;
+  btn.textContent='処理中...';
+  const{error}=await supabase
+    .from('community_members')
+    .delete()
+    .eq('community_id',currentCommunityId)
+    .eq('user_id',userId);
+  if(error){
+    alert('キックに失敗しました: '+error.message);
+    btn.disabled=false;
+    btn.textContent='キック';
     return;
   }
   await loadMembers();
