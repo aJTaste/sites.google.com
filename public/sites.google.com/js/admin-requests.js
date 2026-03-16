@@ -246,9 +246,9 @@ async function approveRequest(req){
 
   // Step3: デフォルトチャンネルを作成
   const DEFAULT_CHANNELS=[
-    {name:'連絡',description:'お知らせや連絡事項',icon:'campaign',required_role:null},
-    {name:'チャンネルA',description:'自由に使えるチャンネル',icon:'tag',required_role:null},
-    {name:'チャンネルB',description:'自由に使えるチャンネル',icon:'tag',required_role:null},
+    {name:'連絡',description:'お知らせや連絡事項',icon:'campaign',required_role:null,sort_order:0},
+    {name:'チャンネルA',description:'自由に使えるチャンネル',icon:'tag',required_role:null,sort_order:1},
+    {name:'チャンネルB',description:'自由に使えるチャンネル',icon:'tag',required_role:null,sort_order:2},
     {name:'モデレーター専用',description:'モデレーター限定チャット',icon:'shield',required_role:'moderator'},
   ];
   const{error:ech}=await supabase

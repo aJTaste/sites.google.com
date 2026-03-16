@@ -7,9 +7,9 @@ export const DEFAULT_COMMUNITY_ID='00000000-0000-0000-0000-000000000001';
 export async function fetchChannels(communityId=DEFAULT_COMMUNITY_ID){
   const{data,error}=await supabase
     .from('channels')
-    .select('id,name,description,icon,required_role')
+    .select('id,name,description,icon,required_role,sort_order')
     .eq('community_id',communityId)
-    .order('created_at');
+    .order('sort_order');
   if(error){console.error('[fetchChannels]',error);return[];}
   // 旧コードとの互換性のため desc / requiredRole も付与
   return(data||[]).map(ch=>({
