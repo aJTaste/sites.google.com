@@ -1,7 +1,7 @@
 // メッセージ表示・送信関連（Supabase版）- Cloudinary対応 + ページネーション
 
 import{supabase}from'../common/supabase-config.js';
-import{state,updateState,resetMessageState}from'./chat-state.js';
+import{state,updateState,resetMessageState,getCurrentCommunityRole}from'./chat-state.js';
 import{getDmId,formatMessageTime,showNotification}from'./chat-utils.js';
 import{displayUsers}from'./chat-ui.js';
 import{uploadBase64ToCloudinary}from'../common/cloudinary.js';
@@ -639,7 +639,9 @@ async function buildChannelMessageElement(msg){
     editBtn.innerHTML='<span class="material-symbols-outlined">edit</span>';
     editBtn.onclick=()=>window.editMessage(msg.id,msg.text||'',false);
     actionsDiv.appendChild(editBtn);
-
+  }
+  const _cmRole=getCurrentCommunityRole();
+  if(isCurrentUser||['owner','admin','moderator'].includes(_cmRole)){
     const deleteBtn=document.createElement('button');
     deleteBtn.className='message-action-btn delete';deleteBtn.title='削除';
     deleteBtn.innerHTML='<span class="material-symbols-outlined">delete</span>';
