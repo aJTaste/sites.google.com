@@ -10,10 +10,15 @@ const iconPreview=document.getElementById('icon-preview');
 const uploadBtn=document.getElementById('upload-btn');
 const defaultBtn=document.getElementById('default-btn');
 const submitBtn=document.getElementById('submit-btn');
+const bioInput=document.getElementById('bio');
 
 let selectedFile=null;
 // 幾何学アイコンをプレビューとして表示（登録前は仮のランダムシードで生成）
 let previewSeed=Math.floor(Math.random()*2147483647);
+
+bioInput.addEventListener('input',()=>{
+  document.getElementById('bio-count').textContent=bioInput.value.length;
+});
 
 function showGeoPreview(seed){
   const canvas=generateGeoAvatar(128,seed);
@@ -70,7 +75,8 @@ form.addEventListener('submit',async(e)=>{
 
   const password=passwordInput.value;
   const passwordConfirm=passwordConfirmInput.value;
-  const displayName=displayNameInput.value.trim();  const firstName=firstNameInput.value.trim();
+  const displayName=displayNameInput.value.trim();
+  const bio=bioInput.value.trim();  const firstName=firstNameInput.value.trim();
 
   const passwordError=document.getElementById('password-error');
   passwordError.textContent='';

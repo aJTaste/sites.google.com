@@ -51,6 +51,11 @@
                 <label for="display-name">表示名</label>
                 <input type="text" id="display-name" placeholder="ニックネームや表示名" required>
               </div>
+              <div class="input-group">
+                <label for="bio">ステータスメッセージ</label>
+                <textarea id="bio" maxlength="100" placeholder="ひとことメモや自己紹介（任意・100文字以内）" style="width:100%;min-height:64px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;outline:none;"></textarea>
+                <div style="text-align:right;font-size:11px;color:var(--text-secondary);margin-top:2px;"><span id="bio-count">0</span>/100</div>
+              </div>
             </div>
             <div class="form-right">
               <label>アイコン</label>
