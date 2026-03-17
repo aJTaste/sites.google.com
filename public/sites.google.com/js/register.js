@@ -4,21 +4,16 @@ import{generateGeoAvatar,canvasToBlob,geoAvatarDataUrl,seedFromId}from'../common
 const form=document.getElementById('register-form');
 const passwordInput=document.getElementById('password');
 const passwordConfirmInput=document.getElementById('password-confirm');
-const displayNameInput=document.getElementById('display-name');const firstNameInput=document.getElementById('first-name');
+const displayNameInput=document.getElementById('display-name');
+const bioInput=document.getElementById('bio');
 const iconFileInput=document.getElementById('icon-file');
 const iconPreview=document.getElementById('icon-preview');
 const uploadBtn=document.getElementById('upload-btn');
 const defaultBtn=document.getElementById('default-btn');
 const submitBtn=document.getElementById('submit-btn');
-const bioInput=document.getElementById('bio');
 
 let selectedFile=null;
-// 幾何学アイコンをプレビューとして表示（登録前は仮のランダムシードで生成）
 let previewSeed=Math.floor(Math.random()*2147483647);
-
-bioInput.addEventListener('input',()=>{
-  document.getElementById('bio-count').textContent=bioInput.value.length;
-});
 
 function showGeoPreview(seed){
   const canvas=generateGeoAvatar(128,seed);
@@ -26,10 +21,12 @@ function showGeoPreview(seed){
   iconPreview.innerHTML=`<img src="${canvas.toDataURL('image/png')}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
 }
 
-// 初期プレビュー
 showGeoPreview(previewSeed);
 
-// 画像アップロード
+bioInput.addEventListener('input',()=>{
+  document.getElementById('bio-count').textContent=bioInput.value.length;
+});
+
 uploadBtn.addEventListener('click',()=>{
   iconFileInput.click();
 });
@@ -37,15 +34,12 @@ uploadBtn.addEventListener('click',()=>{
 iconFileInput.addEventListener('change',(e)=>{
   const file=e.target.files[0];
   if(!file)return;
-
   const iconError=document.getElementById('icon-error');
   iconError.textContent='';
-
   if(file.size>500*1024){
     iconError.textContent='画像サイズは500KB以下にしてください';
     return;
   }
-
   selectedFile=file;
   const reader=new FileReader();
   reader.onload=(ev)=>{
@@ -55,28 +49,19 @@ iconFileInput.addEventListener('change',(e)=>{
   reader.readAsDataURL(file);
 });
 
-// デフォルト（幾何学を新規生成）
 defaultBtn.addEventListener('click',()=>{
   selectedFile=null;
   previewSeed=Math.floor(Math.random()*2147483647);
   showGeoPreview(previewSeed);
 });
 
-// 表示名入力でも特に変化なし（幾何学はユーザーIDベースのため登録後に確定）
-displayNameInput.addEventListener('input',()=>{
-  if(!selectedFile){
-    // 幾何学プレビューはそのまま維持
-  }
-});
-
-// フォーム送信
 form.addEventListener('submit',async(e)=>{
   e.preventDefault();
 
   const password=passwordInput.value;
   const passwordConfirm=passwordConfirmInput.value;
   const displayName=displayNameInput.value.trim();
-  const bio=bioInput.value.trim();  const firstName=firstNameInput.value.trim();
+  const bio=bioInput.value.trim();
 
   const passwordError=document.getElementById('password-error');
   passwordError.textContent='';
@@ -85,12 +70,10 @@ form.addEventListener('submit',async(e)=>{
     passwordError.textContent='パスワードは8文字以上で入力してください';
     return;
   }
-
   if(password!==passwordConfirm){
     passwordError.textContent='パスワードが一致しません';
     return;
   }
-
   if(!displayName){
     alert('表示名を入力してください');
     return;
@@ -100,12 +83,10 @@ form.addEventListener('submit',async(e)=>{
   submitBtn.textContent='登録中...';
 
   try{
-    // 連番IDを発行
     const{data:seqData,error:seqError}=await supabase.rpc('next_user_id');
     if(seqError)throw seqError;
     const userId=seqData;
 
-    // ユーザー作成
     const{data:authData,error:authError}=await supabase.auth.signUp({
       email:`${userId}@ajtaste.jp`,
       password:password,
@@ -116,55 +97,39 @@ form.addEventListener('submit',async(e)=>{
         }
       }
     });
-
     if(authError)throw authError;
 
     const uid=authData.user.id;
     let avatarUrl=null;
 
     if(selectedFile){
-      // ユーザーが画像を選択した場合
       const fileExt=selectedFile.name.split('.').pop().toLowerCase()||'jpg';
       const storagePath=`${uid}.${fileExt}`;
-
       const{error:uploadError}=await supabase.storage
         .from('avatars')
         .upload(storagePath,selectedFile,{contentType:selectedFile.type});
-
       if(uploadError)throw uploadError;
-
-      const{data:urlData}=supabase.storage
-        .from('avatars')
-        .getPublicUrl(storagePath);
+      const{data:urlData}=supabase.storage.from('avatars').getPublicUrl(storagePath);
       avatarUrl=urlData.publicUrl;
-
     }else{
-      // 画像未選択 → 幾何学アイコンを自動生成
-      // ユーザーIDをシードにして決定論的なアイコンを生成
       const canvas=generateGeoAvatar(256,seedFromId(uid));
       const blob=await canvasToBlob(canvas);
       const storagePath=`${uid}.png`;
-
       const{error:uploadError}=await supabase.storage
         .from('avatars')
         .upload(storagePath,blob,{contentType:'image/png'});
-
       if(uploadError)throw uploadError;
-
-      const{data:urlData}=supabase.storage
-        .from('avatars')
-        .getPublicUrl(storagePath);
+      const{data:urlData}=supabase.storage.from('avatars').getPublicUrl(storagePath);
       avatarUrl=urlData.publicUrl;
     }
 
-    // プロフィール更新（avatar_colorは設定しない）
     const{error:profileError}=await supabase
       .from('profiles')
-      .update({        first_name:firstName,
-        avatar_url:avatarUrl
+      .update({
+        avatar_url:avatarUrl,
+        bio:bio
       })
       .eq('id',uid);
-
     if(profileError)throw profileError;
 
     const{error:memberError}=await supabase
@@ -181,18 +146,11 @@ form.addEventListener('submit',async(e)=>{
 
   }catch(error){
     console.error('登録エラー:',error);
-
-    if(false){
-      // 連番IDなので重複は起きない
-    }else{
-      alert('登録に失敗しました: '+error.message);
-    }
-
+    alert('登録に失敗しました: '+error.message);
     submitBtn.disabled=false;
     submitBtn.textContent='登録';
   }
 });
 
-// ページ表示
 document.body.classList.remove('page-loading');
 document.body.classList.add('page-loaded');
