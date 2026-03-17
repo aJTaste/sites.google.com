@@ -4,9 +4,7 @@ import{generateGeoAvatar,canvasToBlob,geoAvatarDataUrl,seedFromId}from'../common
 const form=document.getElementById('register-form');
 const passwordInput=document.getElementById('password');
 const passwordConfirmInput=document.getElementById('password-confirm');
-const displayNameInput=document.getElementById('display-name');
-const lastNameInput=document.getElementById('last-name');
-const firstNameInput=document.getElementById('first-name');
+const displayNameInput=document.getElementById('display-name');const firstNameInput=document.getElementById('first-name');
 const iconFileInput=document.getElementById('icon-file');
 const iconPreview=document.getElementById('icon-preview');
 const uploadBtn=document.getElementById('upload-btn');
@@ -72,9 +70,7 @@ form.addEventListener('submit',async(e)=>{
 
   const password=passwordInput.value;
   const passwordConfirm=passwordConfirmInput.value;
-  const displayName=displayNameInput.value.trim();
-  const lastName=lastNameInput.value.trim();
-  const firstName=firstNameInput.value.trim();
+  const displayName=displayNameInput.value.trim();  const firstName=firstNameInput.value.trim();
 
   const passwordError=document.getElementById('password-error');
   passwordError.textContent='';
@@ -158,9 +154,7 @@ form.addEventListener('submit',async(e)=>{
     // プロフィール更新（avatar_colorは設定しない）
     const{error:profileError}=await supabase
       .from('profiles')
-      .update({
-        last_name:lastName,
-        first_name:firstName,
+      .update({        first_name:firstName,
         avatar_url:avatarUrl
       })
       .eq('id',uid);
