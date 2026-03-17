@@ -1,0 +1,15 @@
+{
+  "name":"AppHub",
+  "short_name":"AppHub",
+  "description":"学生向けWebアプリ集",
+  "start_url":"/sites.google.com/hub.html",
+  "scope":"/sites.google.com/",
+  "display":"standalone",
+  "orientation":"any",
+  "background_color":"#ffffff",
+  "theme_color":"#ff6b35",
+  "icons":[
+    {"src":"/sites.google.com/assets/icon1.svg","sizes":"any","type":"image/svg+xml","purpose":"any"},
+    {"src":"/sites.google.com/assets/favicon1.svg","sizes":"any","type":"image/svg+xml","purpose":"maskable"}
+  ]
+}

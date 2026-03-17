@@ -594,3 +594,100 @@ input::placeholder,textarea::placeholder{
   margin-bottom:4px;
 }
 
+
+/* ===== PWA / モバイル強化 ===== */
+
+/* タップハイライト除去・ダブルタップズーム防止 */
+*{
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+}
+
+/* iOS入力ズーム防止（16px未満でズームが発生する） */
+@media(max-width:768px){
+  input,textarea,select{
+    font-size:16px !important;
+  }
+}
+
+/* セーフエリア対応（iPhoneノッチ・ホームインジケーター） */
+@supports(padding:env(safe-area-inset-bottom)){
+  .app-container{
+    padding-left:env(safe-area-inset-left);
+    padding-right:env(safe-area-inset-right);
+  }
+  .bottom-nav{
+    padding-bottom:env(safe-area-inset-bottom);
+    height:calc(56px + env(safe-area-inset-bottom));
+  }
+}
+
+/* PWAスタンドアロン起動時：ステータスバー分を確保 */
+@media(display-mode:standalone){
+  .top-header{
+    padding-top:env(safe-area-inset-top,0px);
+  }
+}
+
+/* スクロール慣性・オーバースクロール抑制 */
+.main-content{
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+}
+
+/* PWAインストールバナー */
+#pwa-banner{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+  background:var(--bg-primary);
+  border-top:2px solid var(--main);
+  padding:10px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  z-index:9998;
+  box-shadow:0 -4px 12px rgba(0,0,0,0.12);
+  animation:_pwaSlideUp 0.3s ease;
+}
+@keyframes _pwaSlideUp{
+  from{transform:translateY(100%);}
+  to{transform:translateY(0);}
+}
+.pwa-banner-text{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:14px;
+  color:var(--text-primary);
+}
+.pwa-banner-text .material-symbols-outlined{
+  font-size:20px;
+  color:var(--main);
+}
+.pwa-banner-btns{
+  display:flex;
+  gap:8px;
+}
+#pwa-install{
+  background:var(--main);
+  color:#fff;
+  border:none;
+  padding:7px 16px;
+  border-radius:6px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  min-height:36px;
+}
+#pwa-dismiss{
+  background:none;
+  border:1px solid var(--border);
+  color:var(--text-secondary);
+  cursor:pointer;
+  font-size:14px;
+  padding:4px 10px;
+  border-radius:6px;
+  min-height:36px;
+}
