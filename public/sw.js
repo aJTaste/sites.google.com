@@ -1,4 +1,4 @@
-const CACHE='apphub-v2';
+const CACHE='apphub-v3';
 const STATIC=[
   '/sites.google.com/common/common.css',
   '/sites.google.com/assets/favicon1.svg',
