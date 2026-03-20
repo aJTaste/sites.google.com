@@ -117,14 +117,11 @@ function createBottomNav(pageId,role){
     {href:'proxy.html',icon:'public',title:'Proxy',id:'proxy'},
     {href:'docs.html',icon:'edit_note',title:'Docs',id:'docs'},
   ];
-  const navHTML=items.map(item=>{
-    const activeClass=item.id===pageId?'active':'';
-    return`<a href="${item.href}" class="bottom-nav-item ${activeClass}">
-      <span class="material-symbols-outlined">${item.icon}</span>
-      <span>${item.title}</span>
-    </a>`;
+  const items_html=items.map(item=>{
+    const active=item.id===pageId?'bn-active':'';
+    return`<a href="${item.href}" class="bn-item ${active}"><span class="material-symbols-outlined">${item.icon}</span><span class="bn-label">${item.title}</span></a>`;
   }).join('');
-  return`<nav class="bottom-nav">${navHTML}</nav>`;
+  return`<nav id="bottom-nav" class="bottom-nav-fixed">${items_html}</nav>`;
 }
 
 // ========================================
@@ -219,8 +216,10 @@ export async function initPage(pageId,pageTitle,options={}){
       if(mainContainer){
         mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,profile.role));
       }
-      // ボトムナビをapp-containerの末尾に追加
-      container.insertAdjacentHTML('beforeend',createBottomNav(pageId,profile.role));
+      // ボトムナビを body に fixed で追加（flexレイアウト外に置くことで隙間問題を解消）
+      if(!document.getElementById('bottom-nav')){
+        document.body.insertAdjacentHTML('beforeend',createBottomNav(pageId,profile.role));
+      }
     }
     
     // イベントリスナー設定
