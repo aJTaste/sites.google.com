@@ -246,6 +246,8 @@ input::placeholder,textarea::placeholder{
   display:flex;
   align-items:center;
   gap:12px;
+  flex:1;
+  min-width:0;
 }
 
 .logo-icon{
@@ -410,6 +412,7 @@ input::placeholder,textarea::placeholder{
   flex:1;
   display:flex;
   overflow:hidden;
+  min-height:0;
 }
 
 /* サイドバー */
@@ -506,6 +509,7 @@ input::placeholder,textarea::placeholder{
   align-items:center;
   justify-content:space-around;
   width:100%;
+  flex-shrink:0;
 }
 
 .bottom-nav-item{
@@ -880,5 +884,42 @@ input::placeholder,textarea::placeholder{
   }
   .bottom-nav-item .material-symbols-outlined{
     font-size:20px;
+  }
+}
+
+/* =======================================
+   Mobile Fix v3  2026-03-20
+   ======================================= */
+
+/* user-avatar: 親ボタンサイズに追従（36px固定 vs 32pxボタンの不一致を修正） */
+#user-avatar{
+  width:100%!important;
+  height:100%!important;
+}
+
+@media(max-width:768px){
+  /* ボトムナビ: 常に最前面・視認性向上 */
+  .bottom-nav{
+    z-index:150;
+    box-shadow:0 -1px 10px rgba(0,0,0,0.08);
+  }
+  /* ヘッダー: 縮まないよう保証 */
+  .top-header{
+    flex-shrink:0;
+  }
+  /* ヘッダー左: テキストが溢れてもアイコン類を押し出さない */
+  .header-left{
+    overflow:hidden;
+  }
+  /* ヘッダー右: アイコン・アバターが消えないよう保証 */
+  .header-right{
+    flex-shrink:0;
+  }
+  /* ユーザーボタン: アバターが確実に収まるサイズに */
+  .user-btn{
+    width:34px;
+    height:34px;
+    padding:0;
+    flex-shrink:0;
   }
 }

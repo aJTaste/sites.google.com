@@ -69,7 +69,7 @@ export function createHeader(pageTitle){
         </button>
         <div class="user-menu">
           <button class="user-btn" id="user-btn">
-            <div id="user-avatar" style="width:36px;height:36px;border-radius:50%;overflow:hidden;background:transparent;"></div>
+            <div id="user-avatar" style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:transparent;"></div>
           </button>
           <div class="user-dropdown" id="user-dropdown">
             <div class="dropdown-item" id="settings-btn">
