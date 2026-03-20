@@ -1253,3 +1253,167 @@
   }
 
 }
+
+/* ================================================================
+   Chat Mobile Improvements v2  2026-03-19
+   ================================================================ */
+@media(max-width:768px){
+
+  /* ── サイドバードロワー ──────────────────────── */
+  .dm-sidebar{
+    width:82%;
+    max-width:300px;
+    box-shadow:6px 0 36px rgba(0,0,0,.25);
+  }
+  .dm-overlay{
+    background:rgba(0,0,0,.5);
+    backdrop-filter:blur(2px);
+    -webkit-backdrop-filter:blur(2px);
+  }
+
+  /* ── チャットヘッダー ────────────────────────── */
+  .chat-header{
+    height:52px;
+    padding:0 10px;
+    gap:6px;
+  }
+  .chat-header-name{
+    font-size:14px;
+  }
+  .chat-header-status{
+    font-size:11px;
+  }
+  .back-btn{
+    display:flex;
+    width:36px;
+    height:36px;
+    flex-shrink:0;
+  }
+
+  /* ── メッセージリスト ────────────────────────── */
+  .chat-messages{
+    padding:6px 10px 8px;
+  }
+  .message{
+    padding:2px 8px;
+    margin-top:4px;
+  }
+  .message.grouped{
+    margin-top:0;
+  }
+  .message-text{
+    font-size:14px;
+    line-height:1.55;
+  }
+  .message-author{
+    font-size:12px;
+  }
+  .message-time{
+    font-size:10px;
+  }
+  .message-avatar{
+    width:32px;
+    height:32px;
+  }
+  .message-image{
+    max-width:100%;
+    max-height:240px;
+    border-radius:10px;
+  }
+
+  /* ── 入力エリア ──────────────────────────────── */
+  .chat-input-container{
+    padding:6px 10px;
+    padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
+  }
+  .chat-input{
+    font-size:16px!important;
+    min-height:34px;
+  }
+  .chat-input-wrapper{
+    padding:4px 5px;
+  }
+  .send-btn{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+  }
+  .action-btn{
+    width:32px;
+    height:32px;
+  }
+  .typing-indicator{
+    font-size:11px;
+    min-height:14px;
+    padding-top:2px;
+  }
+
+  /* ── プロフィールポップアップ ─────────────────── */
+  .profile-popup{
+    left:12px!important;
+    right:12px!important;
+    width:auto!important;
+    max-width:100%;
+  }
+
+  /* ── スクロールダウンボタン ──────────────────── */
+  .scroll-down-btn{
+    bottom:70px;
+    right:10px;
+    width:34px;
+    height:34px;
+  }
+
+  /* ── DMリスト ────────────────────────────────── */
+  .dm-list{
+    padding:6px 4px 12px;
+  }
+  .dm-section-label{
+    padding:10px 6px 4px;
+    font-size:10px;
+    letter-spacing:.5px;
+  }
+  .dm-item{
+    padding:7px 8px;
+    min-height:46px;
+  }
+  .dm-item-avatar,
+  .dm-item-avatar img{
+    width:36px;
+    height:36px;
+  }
+  .dm-item-name{
+    font-size:13px;
+  }
+  .dm-item-status{
+    font-size:10px;
+  }
+  .channel-item{
+    padding:5px 8px;
+    min-height:42px;
+  }
+  .channel-icon{
+    width:32px;
+    height:32px;
+    border-radius:8px;
+  }
+  .channel-icon .material-symbols-outlined{
+    font-size:16px;
+  }
+  .channel-name{
+    font-size:12px;
+  }
+  .channel-desc{
+    font-size:10px;
+  }
+
+  /* ── 日付区切り ──────────────────────────────── */
+  .date-separator{
+    padding:10px 4px 4px;
+  }
+  .date-separator span{
+    font-size:10px;
+    padding:2px 8px;
+  }
+
+}
