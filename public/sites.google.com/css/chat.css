@@ -1130,7 +1130,7 @@
 
   /* ── メッセージリスト ────────────────────────── */
   .chat-messages{
-    padding:6px 10px 8px;
+    padding-bottom:calc(56px + env(safe-area-inset-bottom, 0px) + 16px);
   }
   .message{
     padding:2px 8px;
@@ -1204,7 +1204,7 @@
 
   /* ── DMリスト ────────────────────────────────── */
   .dm-list{
-    padding:6px 4px 12px;
+    padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));
   }
   .dm-section-label{
     padding:10px 6px 4px;

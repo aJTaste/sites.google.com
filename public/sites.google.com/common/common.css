@@ -732,9 +732,10 @@ input::placeholder,textarea::placeholder{
 
   /* ── メインコンテンツ ─────────────────────────── */
   .main-content{
-    padding:10px 10px 16px;
-    /* fixed bottom-nav 分を補填（nav高さ56px + safe-area） */
-    padding-bottom:calc(66px + env(safe-area-inset-bottom,0px));
+    padding:10px 10px 0; /* 下の padding はここで持たない */
+    /* ボトムナビ高さ(56px) + セーフエリア + 余白(10px) */
+    padding-bottom:calc(56px + env(safe-area-inset-bottom, 0px) + 10px);
+    -webkit-overflow-scrolling:touch;
   }
 
   /* ── モーダル → ボトムシート ──────────────────── */
@@ -917,4 +918,4 @@ input::placeholder,textarea::placeholder{
   .bn-item{
     position:relative;
   }
-}
+}}
