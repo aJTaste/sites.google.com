@@ -7,7 +7,7 @@
   "display":"standalone",
   "orientation":"any",
   "background_color":"#ffffff",
-  "theme_color":"#ff6b35",
+  "theme_color":"#ffffff",
   "icons":[
     {"src":"/sites.google.com/assets/icon1.svg","sizes":"any","type":"image/svg+xml","purpose":"any"},
     {"src":"/sites.google.com/assets/favicon1.svg","sizes":"any","type":"image/svg+xml","purpose":"maskable"}
