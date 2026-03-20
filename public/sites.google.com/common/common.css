@@ -55,6 +55,7 @@
 }
 
 /* リセット */
+html{background:var(--bg-primary);}
 *{
   margin:0;
   padding:0;
@@ -230,6 +231,7 @@ input::placeholder,textarea::placeholder{
   height:100vh;
   height:100dvh;
   overflow:hidden;
+  background:var(--bg-primary);
 }
 
 /* トップヘッダー */
