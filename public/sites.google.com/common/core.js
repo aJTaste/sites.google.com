@@ -113,8 +113,9 @@ function createBottomNav(pageId,role){
   const items=[
     {href:'hub.html',icon:'home',title:'ホーム',id:'hub'},
     {href:'chat.html',icon:'forum',title:'チャット',id:'chat'},
-    {href:'gate.html',icon:'disabled_by_default',title:'Gate',id:'gate'},
-    {href:'proxy.html',icon:'vpn_key',title:'Proxy',id:'proxy'},
+    {href:'games.html',icon:'stadia_controller',title:'ゲーム',id:'games'},
+    {href:'proxy.html',icon:'public',title:'Proxy',id:'proxy'},
+    {href:'docs.html',icon:'edit_note',title:'Docs',id:'docs'},
   ];
   const navHTML=items.map(item=>{
     const activeClass=item.id===pageId?'active':'';
