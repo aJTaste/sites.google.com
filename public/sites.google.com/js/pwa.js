@@ -1,7 +1,39 @@
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js',{scope:'/sites.google.com/'})
-      .catch(e=>console.warn('[PWA]',e));
+  window.addEventListener('load',async()=>{
+    try{
+      const reg=await navigator.serviceWorker.register('/sw.js',{scope:'/sites.google.com/'});
+
+      // 新しいSWが待機状態になったら即座にスキップ→リロード
+      const applyUpdate=worker=>{
+        worker.postMessage('SKIP_WAITING');
+      };
+
+      if(reg.waiting){
+        // すでに待機中のSWがある場合
+        applyUpdate(reg.waiting);
+      }
+
+      reg.addEventListener('updatefound',()=>{
+        const newWorker=reg.installing;
+        newWorker.addEventListener('statechange',()=>{
+          if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
+            // 旧バージョンが動いている状態で新SWがインストール完了
+            applyUpdate(newWorker);
+          }
+        });
+      });
+
+      // SWが切り替わったらページをリロード（新バージョン反映）
+      let refreshing=false;
+      navigator.serviceWorker.addEventListener('controllerchange',()=>{
+        if(!refreshing){
+          refreshing=true;
+          window.location.reload();
+        }
+      });
+    }catch(e){
+      console.warn('[PWA]',e);
+    }
   });
 }
 

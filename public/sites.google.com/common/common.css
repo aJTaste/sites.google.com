@@ -67,6 +67,7 @@ body{
   color:var(--text-primary);
   background:var(--bg-secondary);
   min-height:100vh;
+  overscroll-behavior:none;
 }
 
 /* ========================================
@@ -227,6 +228,7 @@ input::placeholder,textarea::placeholder{
   display:flex;
   flex-direction:column;
   height:100vh;
+  height:100dvh;
   overflow:hidden;
 }
 
@@ -620,15 +622,15 @@ input::placeholder,textarea::placeholder{
     padding-left:env(safe-area-inset-left);
     padding-right:env(safe-area-inset-right);
   }
+  /* padding-bottomのみ: 高さはアイテム分だけ、ノッチ端末は内側に余白 */
   .bottom-nav{
     padding-bottom:env(safe-area-inset-bottom);
-    height:calc(56px + env(safe-area-inset-bottom));
   }
 }
 
 /* PWAスタンドアロン起動時：ステータスバー分を確保 */
 @media(display-mode:standalone){
-  .top-header{
+  .app-container{
     padding-top:env(safe-area-inset-top,0px);
   }
 }
@@ -765,7 +767,7 @@ input::placeholder,textarea::placeholder{
 
   /* ── ボトムナビ ──────────────────────────────── */
   .bottom-nav{
-    height:calc(58px + env(safe-area-inset-bottom,0px));
+    height:auto;
     padding-bottom:env(safe-area-inset-bottom,0px);
     background:var(--bg-primary);
     border-top:1px solid var(--border);

@@ -1,4 +1,4 @@
-const CACHE='apphub-v3';
+const CACHE='apphub-v4';
 const STATIC=[
   '/sites.google.com/assets/favicon1.svg',
   '/sites.google.com/assets/icon1.svg',
@@ -13,11 +13,14 @@ self.addEventListener('activate',e=>{
   );
   self.clients.claim();
 });
+// pwa.js から SKIP_WAITING を受け取ったら即座に有効化
+self.addEventListener('message',e=>{
+  if(e.data==='SKIP_WAITING') self.skipWaiting();
+});
 self.addEventListener('fetch',e=>{
   const url=new URL(e.request.url);
   if(url.origin!==self.location.origin)return;
   const dst=e.request.destination;
-  // アイコン・フォントのみキャッシュファースト
   if(dst==='image'||dst==='font'){
     e.respondWith(
       caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{
@@ -28,7 +31,6 @@ self.addEventListener('fetch',e=>{
     );
     return;
   }
-  // CSS・JS・HTMLはネットワークファースト（常に最新を取得、失敗時のみキャッシュ）
   e.respondWith(
     fetch(e.request).then(r=>{
       const clone=r.clone();
