@@ -1,0 +1,5 @@
+{
+  "scripts": {
+    "build": "python3 update-sw-version.py"
+  }
+}
