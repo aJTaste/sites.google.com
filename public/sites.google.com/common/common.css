@@ -734,9 +734,7 @@ input::placeholder,textarea::placeholder{
 
   /* ── メインコンテンツ ─────────────────────────── */
   .main-content{
-    padding:10px 10px 0; /* 下の padding はここで持たない */
-    /* ボトムナビ高さ(56px) + セーフエリア + 余白(10px) */
-    padding-bottom:calc(56px + env(safe-area-inset-bottom, 0px) + 10px);
+    padding:10px 10px calc(56px + env(safe-area-inset-bottom,0px) + 12px);
     -webkit-overflow-scrolling:touch;
   }
 
