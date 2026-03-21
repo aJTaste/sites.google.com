@@ -42,7 +42,7 @@ export function createHeader(pageTitle){
         <!-- 更新情報 -->
         <div class="update-info">
           <button class="up-data" id="update-btn">
-            ${UPDATE_INFO.current.version} · ${UPDATE_INFO.current.date}あ
+            ${UPDATE_INFO.current.version} · ${UPDATE_INFO.current.date}
           </button>
           <div class="update-dropdown" id="update-dropdown">
             ${updateHistory}
