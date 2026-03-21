@@ -1,0 +1,45 @@
+/* ========================================
+   スケルトンスクリーン
+   ======================================== */
+@keyframes skeleton-shimmer{
+  0%{background-position:200% 0;}
+  100%{background-position:-200% 0;}
+}
+.skeleton{
+  border-radius:6px;
+  background:linear-gradient(90deg,var(--bg-secondary) 25%,var(--border-light) 50%,var(--bg-secondary) 75%);
+  background-size:200% 100%;
+  animation:skeleton-shimmer 1.4s ease infinite;
+}
+.skeleton-wrap{
+  max-width:900px;
+  padding:8px 0;
+}
+.skeleton-title{
+  height:28px;
+  width:40%;
+  margin-bottom:20px;
+}
+.skeleton-text{
+  height:14px;
+  width:100%;
+  margin-bottom:10px;
+}
+.skeleton-text.short{
+  width:60%;
+  margin-bottom:24px;
+}
+.skeleton-card-row{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+  margin-top:8px;
+}
+.skeleton-card{
+  height:120px;
+  border-radius:8px;
+}
+@media(max-width:640px){
+  .skeleton-card-row{grid-template-columns:1fr 1fr;}
+  .skeleton-card-row .skeleton-card:last-child{display:none;}
+}

@@ -11,6 +11,109 @@ let currentProfile=null;
 let onlineStatusInterval=null;
 
 // ========================================
+// プロフィールキャッシュ（sessionStorage）
+// ========================================
+const _CACHE_KEY='apphub_profile_v1';
+const _CACHE_TTL=5*60*1000; // 5分
+
+function _getCachedProfile(){
+  try{
+    const raw=sessionStorage.getItem(_CACHE_KEY);
+    if(!raw)return null;
+    const{profile,ts}=JSON.parse(raw);
+    if(Date.now()-ts>_CACHE_TTL)return null;
+    return profile;
+  }catch{return null;}
+}
+
+function _setCachedProfile(profile){
+  try{
+    sessionStorage.setItem(_CACHE_KEY,JSON.stringify({profile,ts:Date.now()}));
+  }catch{}
+}
+
+function _clearProfileCache(){
+  try{sessionStorage.removeItem(_CACHE_KEY);}catch{}
+}
+
+// ========================================
+// ナビゲーション プログレスバー
+// ========================================
+let _progressTimer=null;
+let _progressEl=null;
+
+function _initProgressBar(){
+  if(document.getElementById('apphub-progress'))return;
+  const el=document.createElement('div');
+  el.id='apphub-progress';
+  el.style.cssText='position:fixed;top:0;left:0;height:2px;width:0%;background:var(--main);z-index:99999;transition:width 0.2s ease,opacity 0.3s ease;pointer-events:none;opacity:0;';
+  document.body.appendChild(el);
+  _progressEl=el;
+}
+
+function _progressStart(){
+  if(!_progressEl)_initProgressBar();
+  clearTimeout(_progressTimer);
+  _progressEl.style.transition='width 0.2s ease,opacity 0.1s ease';
+  _progressEl.style.opacity='1';
+  _progressEl.style.width='0%';
+  // 擬似進行：200ms毎に進む
+  let pct=0;
+  const tick=()=>{
+    pct=pct<70?pct+Math.random()*15:pct<90?pct+2:pct;
+    _progressEl.style.width=Math.min(pct,92)+'%';
+    if(pct<92)_progressTimer=setTimeout(tick,200);
+  };
+  _progressTimer=setTimeout(tick,50);
+}
+
+function _progressDone(){
+  if(!_progressEl)return;
+  clearTimeout(_progressTimer);
+  _progressEl.style.transition='width 0.15s ease,opacity 0.4s ease 0.1s';
+  _progressEl.style.width='100%';
+  setTimeout(()=>{
+    if(_progressEl)_progressEl.style.opacity='0';
+    setTimeout(()=>{if(_progressEl)_progressEl.style.width='0%';},400);
+  },150);
+}
+
+// ========================================
+// リンクのプリフェッチ（ホバー時）
+// ========================================
+function _setupPrefetch(){
+  const prefetched=new Set();
+  document.addEventListener('mouseover',(e)=>{
+    const a=e.target.closest('a[href]');
+    if(!a||a.target==='_blank')return;
+    const href=a.href;
+    if(!href.startsWith(location.origin))return;
+    if(prefetched.has(href))return;
+    prefetched.add(href);
+    const link=document.createElement('link');
+    link.rel='prefetch';
+    link.href=href;
+    document.head.appendChild(link);
+  },{passive:true});
+}
+
+// ========================================
+// ページ間遷移インターセプト（プログレスバー）
+// ========================================
+function _setupNavIntercept(){
+  document.addEventListener('click',(e)=>{
+    const a=e.target.closest('a[href]');
+    if(!a||a.target==='_blank'||e.ctrlKey||e.metaKey||e.shiftKey)return;
+    const href=a.href;
+    if(!href.startsWith(location.origin))return;
+    if(href===location.href)return;
+    _progressStart();
+  });
+  // ブラウザバック/フォワード時
+  window.addEventListener('pagehide',_progressDone);
+}
+
+// ========================================
 // UI生成関数
 // ========================================
 
@@ -89,7 +192,7 @@ export function createSidebar(activePage,userRole){
       </a>
     `;
   }).join('');
-  
+
   return`
     <aside class="sidebar">
       <nav class="sidebar-nav">
@@ -99,7 +202,6 @@ export function createSidebar(activePage,userRole){
   `;
 }
 
-// createSidebar関数の後に追加
 function createBottomNav(pageId,role){
   const items=[
     {href:'hub.html',icon:'home',title:'ホーム',id:'hub'},
@@ -116,6 +218,26 @@ function createBottomNav(pageId,role){
 }
 
 // ========================================
+// スケルトンスクリーン
+// ========================================
+function _showSkeleton(){
+  const main=document.querySelector('.main-content');
+  if(!main||main.querySelector('.skeleton-wrap'))return;
+  main.innerHTML=`
+    <div class="skeleton-wrap">
+      <div class="skeleton skeleton-title"></div>
+      <div class="skeleton skeleton-text"></div>
+      <div class="skeleton skeleton-text short"></div>
+      <div class="skeleton-card-row">
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+        <div class="skeleton skeleton-card"></div>
+      </div>
+    </div>
+  `;
+}
+
+// ========================================
 // ページ初期化
 // ========================================
 
@@ -125,163 +247,176 @@ export async function initPage(pageId,pageTitle,options={}){
     redirectIfNotAuth=true,
     onUserLoaded=null
   }=options;
-  
+
+  _initProgressBar();
+  _setupNavIntercept();
+  _setupPrefetch();
+
   if(!requireAuth){
     showPage();
     return null;
   }
-  
-  try{
-    // セッション確認
-    const{data:{session},error}=await supabase.auth.getSession();
-    
-    if(error)throw error;
-    
-    if(!session){
-      if(redirectIfNotAuth){
-        window.location.href='/sites.google.com/login.html';
-      }
-      return null;
-    }
-    
-    currentUser=session.user;
-    
-    // プロフィール取得
-    const{data:profile,error:profileError}=await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id',currentUser.id)
-      .single();
-    
-    if(profileError){
-      console.error('プロフィール取得エラー:',profileError);
-      alert('アカウント情報の取得に失敗しました');
-      await supabase.auth.signOut();
-      window.location.href='/sites.google.com/login.html';
-      return null;
-    }
-    
-    currentProfile=profile;
-    
-    // オンライン状態を更新
-    await updateOnlineStatus(true);
-    
-    // 定期的にオンライン状態を更新（30秒ごと）
-    if(onlineStatusInterval){
-      clearInterval(onlineStatusInterval);
-    }
-    onlineStatusInterval=setInterval(async()=>{
-      await updateOnlineStatus(true);
-    },30000);
-    
-    // オフライン時の処理
-    const handleOffline=async()=>{
-      await updateOnlineStatus(false);
-      if(onlineStatusInterval){
-        clearInterval(onlineStatusInterval);
-      }
-    };
-    
-    window.addEventListener('beforeunload',handleOffline);
-    window.addEventListener('pagehide',handleOffline);
-    document.addEventListener('visibilitychange',async()=>{
-      if(document.hidden){
-        await updateOnlineStatus(false);
-      }else{
-        await updateOnlineStatus(true);
-      }
-    });
-    
-    // UI生成
-    const container=document.querySelector('.app-container')||document.body;
-    const hasHeader=!container.querySelector('.top-header');
-    const hasSidebar=!container.querySelector('.sidebar');
-    
-    if(hasHeader){
-      container.insertAdjacentHTML('afterbegin',createHeader(pageTitle));
-    }
-    
-    // hasSidebar ブロック内
-    if(hasSidebar){
-      const mainContainer=container.querySelector('.main-container');
-      if(mainContainer){
-        mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,profile.role));
-      }
-      // ボトムナビを body に fixed で追加（flexレイアウト外に置くことで隙間問題を解消）
-      if(!document.getElementById('bottom-nav')){
-        document.body.insertAdjacentHTML('beforeend',createBottomNav(pageId,profile.role));
-      }
-    }
-    
-    // イベントリスナー設定
-    setupHeaderEvents();
 
-    // ダークモード初期化
-    initDarkMode();
-    
-    // アバター表示
-    updateAvatarDisplay();
-    startHeaderClock();
-    
-    // db.htmlへのアクセス制御（モデレーター以上）
-    if(pageId==='db'){
-      if(!['moderator','admin'].includes(profile.role)){
+  // ダークモードを最初に適用（ちらつき防止）
+  initDarkMode();
+
+  try{
+    // キャッシュ済みプロフィールがあれば即座にUI描画
+    const cachedProfile=_getCachedProfile();
+    let sessionPromise=supabase.auth.getSession();
+
+    if(cachedProfile){
+      // キャッシュヒット：UI先行描画
+      currentProfile=cachedProfile;
+      _buildUI(pageId,pageTitle,cachedProfile);
+      setupHeaderEvents();
+      updateAvatarDisplay();
+      startHeaderClock();
+      showPage(); // ← ここで即表示
+      _progressDone();
+
+      // バックグラウンドでセッション検証 + プロフィール最新化
+      sessionPromise.then(async({data:{session},error})=>{
+        if(error||!session){
+          _clearProfileCache();
+          window.location.href='/sites.google.com/login.html';
+          return;
+        }
+        currentUser=session.user;
+        // バックグラウンドでプロフィール更新（UI更新なし）
+        const{data:freshProfile}=await supabase
+          .from('profiles').select('*').eq('id',currentUser.id).single();
+        if(freshProfile){
+          _setCachedProfile(freshProfile);
+          currentProfile=freshProfile;
+          updateAvatarDisplay();
+        }
+        // オンライン状態はfire-and-forget
+        _updateOnlineStatusBg(true);
+        _startOnlineInterval();
+        _setupVisibilityHandlers();
+        if(onUserLoaded)await onUserLoaded(currentProfile);
+      });
+    }else{
+      // キャッシュなし：通常フロー（ただし並列化）
+      const{data:{session},error}=await sessionPromise;
+      if(error||!session){
+        if(redirectIfNotAuth)window.location.href='/sites.google.com/login.html';
+        return null;
+      }
+      currentUser=session.user;
+
+      // プロフィール取得（ここだけawait）
+      const{data:profile,error:profileError}=await supabase
+        .from('profiles').select('*').eq('id',currentUser.id).single();
+      if(profileError){
+        console.error('プロフィール取得エラー:',profileError);
+        await supabase.auth.signOut();
+        window.location.href='/sites.google.com/login.html';
+        return null;
+      }
+
+      currentProfile=profile;
+      _setCachedProfile(profile);
+
+      _buildUI(pageId,pageTitle,profile);
+      setupHeaderEvents();
+      updateAvatarDisplay();
+      startHeaderClock();
+
+      // オンライン更新はfire-and-forget
+      _updateOnlineStatusBg(true);
+      _startOnlineInterval();
+      _setupVisibilityHandlers();
+
+      if(pageId==='db'&&!['moderator','admin'].includes(profile.role)){
         alert('このページへのアクセス権限がありません');
         window.location.href='/sites.google.com/hub.html';
         return null;
       }
+
+      if(onUserLoaded)await onUserLoaded(profile);
+
+      showPage();
+      _progressDone();
     }
-    
-    // コールバック実行
-    if(onUserLoaded){
-      await onUserLoaded(profile);
-    }
-    
-    // ページ表示
-    showPage();
-    
-    return profile;
-    
+
+    return currentProfile;
+
   }catch(error){
     console.error('初期化エラー:',error);
-    if(redirectIfNotAuth){
-      window.location.href='/sites.google.com/login.html';
-    }
+    if(redirectIfNotAuth)window.location.href='/sites.google.com/login.html';
     return null;
   }
 }
 
-// オンライン状態を更新
-async function updateOnlineStatus(isOnline){
-  try{
-    await supabase
-      .from('profiles')
-      .update({
-        is_online:isOnline,
-        last_online:new Date().toISOString()
-      })
-      .eq('id',currentUser.id);
-  }catch(error){
-    console.error('オンライン状態更新エラー:',error);
+// ========================================
+// UI構築（共通）
+// ========================================
+function _buildUI(pageId,pageTitle,profile){
+  const container=document.querySelector('.app-container')||document.body;
+  if(!container.querySelector('.top-header')){
+    container.insertAdjacentHTML('afterbegin',createHeader(pageTitle));
   }
+  const mainContainer=container.querySelector('.main-container');
+  if(mainContainer&&!mainContainer.querySelector('.sidebar')){
+    mainContainer.insertAdjacentHTML('afterbegin',createSidebar(pageId,profile.role));
+  }
+  if(!document.getElementById('bottom-nav')){
+    document.body.insertAdjacentHTML('beforeend',createBottomNav(pageId,profile.role));
+  }
+}
+
+// ========================================
+// オンライン状態（fire-and-forget）
+// ========================================
+function _updateOnlineStatusBg(isOnline){
+  if(!currentUser)return;
+  supabase.from('profiles').update({
+    is_online:isOnline,
+    last_online:new Date().toISOString()
+  }).eq('id',currentUser.id).then(({error})=>{
+    if(error)console.warn('online status:',error.message);
+  });
+}
+
+async function updateOnlineStatus(isOnline){
+  _updateOnlineStatusBg(isOnline);
+}
+
+function _startOnlineInterval(){
+  if(onlineStatusInterval)clearInterval(onlineStatusInterval);
+  onlineStatusInterval=setInterval(()=>{
+    if(!document.hidden)_updateOnlineStatusBg(true);
+  },30000);
+}
+
+function _setupVisibilityHandlers(){
+  document.addEventListener('visibilitychange',()=>{
+    _updateOnlineStatusBg(!document.hidden);
+  });
+  window.addEventListener('beforeunload',()=>{
+    _clearProfileCache(); // ログアウト等でキャッシュをリセット
+    _updateOnlineStatusBg(false);
+  });
+  window.addEventListener('pagehide',()=>{
+    _updateOnlineStatusBg(false);
+  });
 }
 
 // ========================================
 // アバター表示更新
 // ========================================
-
 function updateAvatarDisplay(){
   const userAvatar=document.getElementById('user-avatar');
   if(!userAvatar||!currentProfile)return;
-  const url=currentProfile.avatar_url
-  ||geoAvatarDataUrl(currentProfile.id,40);
+  const url=currentProfile.avatar_url||geoAvatarDataUrl(currentProfile.id,40);
   userAvatar.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
 }
 
 // ========================================
 // ローディング制御
 // ========================================
-
 function showPage(){
   document.body.classList.remove('page-loading');
   document.body.classList.add('page-loaded');
@@ -290,46 +425,34 @@ function showPage(){
 // ========================================
 // ヘッダーイベント設定
 // ========================================
-
 function setupHeaderEvents(){
   const userBtn=document.getElementById('user-btn');
   const userDropdown=document.getElementById('user-dropdown');
-  
+
   if(userBtn&&userDropdown){
     userBtn.addEventListener('click',(e)=>{
       e.stopPropagation();
       userDropdown.classList.toggle('show');
     });
-    
     document.addEventListener('click',()=>{
       userDropdown.classList.remove('show');
     });
   }
-  
-  const profileBtn=document.getElementById('profile-btn');
-  if(profileBtn){
-    profileBtn.addEventListener('click',()=>{
-      window.location.href='/sites.google.com/profile.html';
-    });
-  }
-  
+
   const settingsBtn=document.getElementById('settings-btn');
   if(settingsBtn){
     settingsBtn.addEventListener('click',()=>{
       window.location.href='/sites.google.com/settings.html';
     });
   }
-  
+
   const logoutBtn=document.getElementById('logout-btn');
   if(logoutBtn){
     logoutBtn.addEventListener('click',async()=>{
       try{
-        // オフライン状態に更新
-        await updateOnlineStatus(false);
-        if(onlineStatusInterval){
-          clearInterval(onlineStatusInterval);
-        }
-        
+        _clearProfileCache();
+        _updateOnlineStatusBg(false);
+        if(onlineStatusInterval)clearInterval(onlineStatusInterval);
         await supabase.auth.signOut();
         window.location.href='/sites.google.com/login.html';
       }catch(error){
@@ -338,61 +461,38 @@ function setupHeaderEvents(){
       }
     });
   }
-  
-  // 更新情報ドロップダウン
+
   const updateBtn=document.getElementById('update-btn');
   const updateDropdown=document.getElementById('update-dropdown');
-
   if(updateBtn&&updateDropdown){
     updateBtn.addEventListener('click',(e)=>{
       e.stopPropagation();
       updateDropdown.classList.toggle('show');
     });
-
     document.addEventListener('click',()=>{
       updateDropdown.classList.remove('show');
     });
   }
-  
-  // 通知ボタン：パスワード式 隠し遷移
+
   const notifyBtn=document.getElementById('notification-btn');
   if(notifyBtn){
     notifyBtn.addEventListener('click',()=>{
       const input=prompt('通知設定');
-      if(input==='saitu'){
-        window.location.href='/sites.google.com/db.html';
-      }
+      if(input==='saitu')window.location.href='/sites.google.com/db.html';
     });
   }
 
-  // ダークモード切替
   const themeToggle=document.getElementById('theme-toggle');
   const themeIcon=document.getElementById('theme-icon');
-
   if(themeToggle&&themeIcon){
-    // 初期状態を読み込み
-    const savedTheme=localStorage.getItem('darkModeEnabled');
-    const isDark=savedTheme==='true';
-    
-    if(isDark){
-      document.documentElement.setAttribute('data-theme','dark');
-      themeIcon.textContent='light_mode';
-    }
-    
-    // クリックイベント
+    const isDark=localStorage.getItem('darkModeEnabled')==='true';
+    if(isDark)themeIcon.textContent='light_mode';
     themeToggle.addEventListener('click',()=>{
-      const currentTheme=document.documentElement.getAttribute('data-theme');
-      const newTheme=currentTheme==='dark'?'light':'dark';
-      
-      document.documentElement.setAttribute('data-theme',newTheme);
-      
-      if(newTheme==='dark'){
-        themeIcon.textContent='light_mode';
-        localStorage.setItem('darkModeEnabled','true');
-      }else{
-        themeIcon.textContent='dark_mode';
-        localStorage.setItem('darkModeEnabled','false');
-      }
+      const isDark=document.documentElement.getAttribute('data-theme')==='dark';
+      const next=isDark?'light':'dark';
+      document.documentElement.setAttribute('data-theme',next);
+      themeIcon.textContent=isDark?'dark_mode':'light_mode';
+      localStorage.setItem('darkModeEnabled',String(!isDark));
     });
   }
 }
@@ -414,28 +514,16 @@ function startHeaderClock(){
   setInterval(tick,1000);
 }
 
-// ダークモード初期化
+// ダークモード初期化（ちらつき防止）
 function initDarkMode(){
-  const savedTheme=localStorage.getItem('darkModeEnabled');
-  if(savedTheme==='true'){
+  if(localStorage.getItem('darkModeEnabled')==='true'){
     document.documentElement.setAttribute('data-theme','dark');
   }
 }
 
-
-
 // ========================================
 // ユーティリティ関数
 // ========================================
-
-// 現在のユーザー情報を取得
-export function getCurrentUser(){
-  return currentUser;
-}
-
-export function getCurrentProfile(){
-  return currentProfile;
-}
-
-// Supabaseクライアントをエクスポート
+export function getCurrentUser(){return currentUser;}
+export function getCurrentProfile(){return currentProfile;}
 export{supabase};
