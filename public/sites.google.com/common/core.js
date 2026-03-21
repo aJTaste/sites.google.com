@@ -216,8 +216,6 @@ export async function initPage(pageId,pageTitle,options={}){
     // イベントリスナー設定
     setupHeaderEvents();
 
-    fetchGitHubCommits();
-
     // ダークモード初期化
     initDarkMode();
     
