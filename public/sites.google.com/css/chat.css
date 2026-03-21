@@ -1204,7 +1204,7 @@
 
   /* ── DMリスト ────────────────────────────────── */
   .dm-list{
-    padding-bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+    padding-bottom:calc(56px + env(safe-area-inset-bottom,0px) + 8px);
   }
   .dm-section-label{
     padding:10px 6px 4px;
