@@ -226,10 +226,10 @@ input::placeholder,textarea::placeholder{
 
 /* アプリ全体のコンテナ */
 .app-container{
+  position:fixed;
+  inset:0;
   display:flex;
   flex-direction:column;
-  height:100vh;
-  height:100dvh;
   overflow:hidden;
   background:var(--bg-primary);
 }
@@ -668,12 +668,6 @@ input::placeholder,textarea::placeholder{
    Mobile UI/UX Overhaul v2  2026-03-19
    ================================================================ */
 @media(max-width:768px){
-
-  /* ── レイアウト ──────────────────────────────── */
-  .app-container{
-    height:100svh;
-    height:100dvh;
-  }
 
   /* ── ヘッダー ────────────────────────────────── */
   .top-header{
