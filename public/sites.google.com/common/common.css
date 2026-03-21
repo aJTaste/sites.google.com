@@ -276,50 +276,6 @@ input::placeholder,textarea::placeholder{
   font-size:20px;
 }
 
-/* GitHubコミット数バッジ */
-.gh-commit-badge{
-  display:inline-flex;
-  align-items:center;
-  gap:5px;
-  padding:3px 9px 3px 7px;
-  background:var(--bg-secondary);
-  border:1px solid var(--border);
-  border-radius:20px;
-  text-decoration:none;
-  color:var(--text-secondary);
-  font-size:11px;
-  font-weight:600;
-  white-space:nowrap;
-  flex-shrink:0;
-  transition:border-color .15s,color .15s,background .15s;
-}
-
-.gh-commit-badge:hover{
-  border-color:var(--main);
-  color:var(--main);
-  background:var(--main-light);
-  text-decoration:none;
-}
-
-.gh-commit-badge-icon{
-  width:13px;
-  height:13px;
-  fill:currentColor;
-  flex-shrink:0;
-  opacity:.75;
-}
-
-#gh-commit-count{
-  font-variant-numeric:tabular-nums;
-}
-
-/* 900px以下では非表示（ヘッダーが窮屈になるため） */
-@media(max-width:900px){
-  .gh-commit-badge{
-    display:none;
-  }
-}
-
 .page-title{
   font-size:16px;
   font-weight:500;
@@ -686,7 +642,6 @@ input::placeholder,textarea::placeholder{
     overflow:hidden;
   }
   .update-info,
-  .gh-commit-badge,
   .header-clock{
     display:none!important;
   }
