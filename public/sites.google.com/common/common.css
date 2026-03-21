@@ -55,7 +55,12 @@
 }
 
 /* リセット */
-html{background:var(--bg-primary);}
+html{
+  background:var(--bg-primary);
+  height:100%;
+  overflow:hidden;
+  overscroll-behavior:none;
+}
 *{
   margin:0;
   padding:0;
@@ -67,7 +72,8 @@ body{
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;
   color:var(--text-primary);
   background:var(--bg-secondary);
-  min-height:100vh;
+  height:100%;
+  overflow:hidden;
   overscroll-behavior:none;
 }
 
