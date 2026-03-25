@@ -1,6 +1,6 @@
 DO $$
 DECLARE
-  TARGET_USER_ID text:='';
+  TARGET_USER_ID text:='id';
   TARGET_UUID uuid;
 BEGIN
   SELECT id INTO TARGET_UUID FROM profiles WHERE user_id=TARGET_USER_ID LIMIT 1;
