@@ -1,9 +1,69 @@
-*{margin:0;padding:0;box-sizing:border-box;}
-html,body{height:100%;overflow:hidden;}
-body{display:flex;flex-direction:column;background:#1a1a2e;color:#fff;font-family:sans-serif;}
-#bar{display:flex;gap:8px;padding:8px;background:#16213e;align-items:center;}
-#inp{flex:1;padding:8px 12px;border-radius:6px;border:none;font-size:1rem;background:#0f3460;color:#fff;outline:none;}
-#inp:focus{outline:2px solid #e94560;}
-button{padding:8px 14px;border-radius:6px;border:none;background:#e94560;color:#fff;cursor:pointer;font-size:1rem;}
-button:hover{background:#c73652;}
-#frame{flex:1;border:none;background:#fff;}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  background: #f5f6f7; /* エラーページと統一 */
+  color: #333;
+  font-family: sans-serif;
+}
+
+/* 上部バー */
+#bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #ffffff;
+  align-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+/* 入力欄 */
+#inp {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid #d0d4d8;
+  font-size: 1rem;
+  background: #ffffff;
+  color: #333;
+  outline: none;
+  transition: 0.2s;
+}
+
+#inp:focus {
+  border-color: #4a5a6a;
+  box-shadow: 0 0 0 2px rgba(74, 90, 106, 0.2);
+}
+
+/* ボタン */
+button {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  background: #4a5a6a; /* 落ち着いたブルーグレー */
+  color: #fff;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: #3c4a57;
+}
+
+/* iframe */
+#frame {
+  flex: 1;
+  border: none;
+  background: #ffffff;
+}
