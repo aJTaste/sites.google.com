@@ -48,16 +48,58 @@ class UrlRewriter{
 }
 
 // エラーページHTML
-function errorPage(title,msg,target=""){
-  return`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${title}</title>
-<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:white}
-.box{background:#16213e;color:#eee;padding:2em;border-radius:12px;max-width:480px;width:90%;text-align:center}
-h2{color:#e94560;margin-bottom:.5em}p{color:#aaa;font-size:.9em;word-break:break-all}
-.url{background:#0f3460;padding:.5em 1em;border-radius:6px;font-size:.8em;margin-top:1em;color:#88b;word-break:break-all}
-</style></head><body><div class="box">
-<h2>⚠ ${title}</h2><p>${msg}</p>${target?`<div class="url">${target}</div>`:""}
-</div></body></html>`;
+function errorPage(title, msg, target = "") {
+  return `<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${title}</title>
+<style>
+  body {
+    font-family: sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    background: #f5f6f7;
+    color: #333;
+  }
+  .box {
+    background: #ffffff;
+    padding: 2.2em 2em;
+    border-radius: 10px;
+    max-width: 460px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  h2 {
+    font-size: 1.3em;
+    margin-bottom: 0.6em;
+    color: #2c3e50;
+    font-weight: 600;
+  }
+  p {
+    font-size: 0.92em;
+    color: #555;
+    line-height: 1.6;
+    word-break: break-all;
+  }
+  .url {
+    background: #eef1f5;
+    padding: 0.6em 1em;
+    border-radius: 6px;
+    font-size: 0.82em;
+    margin-top: 1.2em;
+    color: #4a5a6a;
+    word-break: break-all;
+  }
+</style></head><body>
+<div class="box">
+  <h2>${title}</h2>
+  <p>${msg}</p>
+  ${target ? `<div class="url">${target}</div>` : ""}
+</div>
+</body></html>`;
 }
+
 
 export default{
   async fetch(req){
