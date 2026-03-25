@@ -6,7 +6,7 @@ alias gp='git push'
 alias gl='git log --oneline --graph --decorate'
 
 # All-in-one add+commit+push (message required)
-function aiueo() {
+function komitto() {
   if [ -z "$1" ]; then
     echo "Usage:  \"commit message\""
     return 1
