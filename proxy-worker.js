@@ -50,7 +50,7 @@ class UrlRewriter{
 // エラーページHTML
 function errorPage(title,msg,target=""){
   return`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8"><title>${title}</title>
-<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:#1a1a2e}
+<style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0;background:white}
 .box{background:#16213e;color:#eee;padding:2em;border-radius:12px;max-width:480px;width:90%;text-align:center}
 h2{color:#e94560;margin-bottom:.5em}p{color:#aaa;font-size:.9em;word-break:break-all}
 .url{background:#0f3460;padding:.5em 1em;border-radius:6px;font-size:.8em;margin-top:1em;color:#88b;word-break:break-all}
