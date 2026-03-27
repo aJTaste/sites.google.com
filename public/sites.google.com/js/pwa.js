@@ -17,8 +17,8 @@ if('serviceWorker' in navigator){
         const newWorker=reg.installing;
         newWorker.addEventListener('statechange',()=>{
           if(newWorker.state==='installed'&&navigator.serviceWorker.controller){
-            // 旧バージョンが動いている状態で新SWがインストール完了
-            applyUpdate(newWorker);
+            // 更新バナーを表示
+            _showUpdateBanner();
           }
         });
       });
@@ -43,6 +43,28 @@ window.addEventListener('beforeinstallprompt',e=>{
   _prompt=e;
   if(!localStorage.getItem('pwa-dismissed')) _showBanner();
 });
+
+function _showUpdateBanner(){
+  if(document.getElementById('pwa-update-banner')) return;
+  const el=document.createElement('div');
+  el.id='pwa-update-banner';
+  el.innerHTML=
+    '<div class="pwa-banner-text">'+
+      '<span class="material-symbols-outlined">refresh</span>'+
+      'アプリが更新されました。リロードしてください。'+
+    '</div>'+
+    '<div class="pwa-banner-btns">'+
+      '<button id="pwa-reload">リロード</button>'+
+      '<button id="pwa-update-dismiss">後で</button>'+
+    '</div>';
+  document.body.appendChild(el);
+  document.getElementById('pwa-reload').onclick=()=>{
+    window.location.reload();
+  };
+  document.getElementById('pwa-update-dismiss').onclick=()=>{
+    el.remove();
+  };
+}
 
 function _showBanner(){
   if(document.getElementById('pwa-banner')) return;

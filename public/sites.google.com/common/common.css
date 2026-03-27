@@ -873,4 +873,75 @@ input::placeholder,textarea::placeholder{
   .bn-item{
     position:relative;
   }
-}}
+}
+
+/* PWA Banner Styles */
+#pwa-banner, #pwa-update-banner {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+[data-theme="dark"] #pwa-banner, [data-theme="dark"] #pwa-update-banner {
+  background: rgba(28, 28, 30, 0.95);
+}
+.pwa-banner-text {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.pwa-banner-btns {
+  display: flex;
+  gap: 8px;
+}
+.pwa-banner-btns button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#pwa-install, #pwa-reload {
+  background: var(--main);
+  color: white;
+}
+#pwa-install:hover, #pwa-reload:hover {
+  background: var(--main-hover);
+}
+#pwa-dismiss, #pwa-update-dismiss {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+#pwa-dismiss:hover, #pwa-update-dismiss:hover {
+  background: var(--border-light);
+}
+@media (max-width: 480px) {
+  #pwa-banner, #pwa-update-banner {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    padding: 12px;
+  }
+  .pwa-banner-text {
+    font-size: 13px;
+  }
+  .pwa-banner-btns button {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+}
