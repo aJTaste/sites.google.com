@@ -11,7 +11,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="AppHub">
   <meta name="description" content="学生向けの便利ツール集AppHub。チャット、ファイル共有、プロキシブラウザなど、学校生活をサポートする機能が満載。">
-  <title>AppHub aJTaste - 学生のための便利ツール集（v1.0.0時点）</title>
+  <title>AppHub aJTaste - 学生のための便利ツール集（v2.0.0時点）</title>
 <link rel="icon" href="/sites.google.com/assets/favicon.svg">
 <link rel="icon" href="/sites.google.com/assets/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" href="/sites.google.com/assets/apple-touch-icon.png">
@@ -344,10 +344,10 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon">
-          <span class="material-symbols-outlined">security</span>
+          <span class="material-symbols-outlined">groups</span>
         </div>
-        <h3>偽装モード</h3>
-        <p>Meta(検索)+1キーで、画面を瞬時に「まなびポケット」に偽装。緊急時も安心です。</p>
+        <h3>Kaiwai</h3>
+        <p>界隈機能で、特定のグループやコミュニティに参加できます。メンバー限定のチャットや共有が可能です。</p>
       </div>
     </div>
   </section>
@@ -373,10 +373,26 @@
       <a href="register.html">新規登録</a>
       <a href="login.html">ログイン</a>
     </div>
-    <p class="footer-text">© 2025 AppHub aJTaste. このプロジェクトの情報を基に、Claude AIが紹介ページを制作しました。</p>
+    <p class="footer-text">© 2026 AppHub aJTaste. このプロジェクトの情報を基に、Claude AIが紹介ページを制作しました。</p>
   </footer>
 
   <script type="module">
+    import { supabase } from './common/supabase-config.js';
+
+    // モバイルアプリからのアクセスでログイン済みの場合、hub.htmlにリダイレクト
+    async function checkAndRedirect() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        // 最後に開いていた画面をlocalStorageから取得、なければhub.html
+        const lastPage = localStorage.getItem('apphub_last_page') || 'hub.html';
+        window.location.href = lastPage;
+      }
+    }
+
+    // PWA起動時やモバイルアプリからのアクセス時にチェック
+    if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+      checkAndRedirect();
+    }
   </script>
   <script src="js/pwa.js"></script>
 </body>
