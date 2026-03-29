@@ -143,7 +143,8 @@ VOICE_CHANNELS.forEach(vc=>{
   if(!state.allUsers?.length)return;
 
   const sorted=[...state.allUsers].sort((a,b)=>{
-    if(a.is_online!==b.is_online)return a.is_online?-1:1;
+    const ao=_isOnline(a),bo=_isOnline(b);
+    if(ao!==bo)return ao?-1:1;
     return new Date(b.last_online||b.created_at)-new Date(a.last_online||a.created_at);
   });
 
