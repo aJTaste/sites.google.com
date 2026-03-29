@@ -7,6 +7,12 @@ import{geoAvatarDataUrl}from'../common/geo-avatar.js';
 import{supabase}from'../common/supabase-config.js';
 import{startDmCall,joinVoiceChannel}from'./call-engine.js';
 
+function _isOnline(user){
+  if(!user||!user.is_online)return false;
+  if(!user.last_online)return false;
+  return Date.now()-new Date(user.last_online).getTime()<3*60*1000;
+}
+
 function esc(text){
   const d=document.createElement('div');
   d.textContent=text||'';
@@ -157,7 +163,7 @@ VOICE_CHANNELS.forEach(vc=>{
       dmItem.className=itemCls;
 
       const iconSrc=user.avatar_url||geoAvatarDataUrl(user.id,40);
-      const isOnline=user.is_online||false;
+      const isOnline=_isOnline(user);
       const onlineIndicator=isOnline
         ?'<div class="online-indicator"></div>':'';
       const currentPage=user.current_page||'';
@@ -239,7 +245,7 @@ export function showProfilePopup(profile,anchorEl){
   popup.className='profile-popup';
 
   const iconSrc=profile.avatar_url||geoAvatarDataUrl(profile.id,56);
-  const isOnline=profile.is_online||false;
+  const isOnline=_isOnline(profile);
   const currentPage=profile.current_page||'';
   const statusText=isOnline
     ?(currentPage?esc(currentPage):'オンライン')
@@ -319,7 +325,7 @@ function closeProfilePopup(){
 
 export function createChatHTML(selectedUser){
   const iconSrc=selectedUser.avatar_url||geoAvatarDataUrl(selectedUser.id,36);
-  const isOnline=selectedUser.is_online||false;
+  const isOnline=_isOnline(selectedUser);
   const currentPage=selectedUser.current_page||'';
   const statusText=isOnline
     ?(currentPage?esc(currentPage):'オンライン')
