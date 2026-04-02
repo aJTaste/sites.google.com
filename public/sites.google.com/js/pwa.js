@@ -1,3 +1,12 @@
+// 最終ページ記録（PWA起動時のリダイレクト用）
+(()=>{
+  const p=location.pathname;
+  const skip=['/index.html','/login.html','/register.html','/404.html'];
+  if(p.includes('/sites.google.com/')&&!skip.some(s=>p.endsWith(s))){
+    localStorage.setItem('apphub_last_page',location.href);
+  }
+})();
+
 if('serviceWorker' in navigator){
   window.addEventListener('load',async()=>{
     try{

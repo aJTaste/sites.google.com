@@ -2,6 +2,7 @@ import{initPage,supabase}from'../common/core.js';
 
 let allProfiles=[];
 let currentCommunityId=null;
+function esc(s){const d=document.createElement('div');d.textContent=String(s??'');return d.innerHTML;}
 
 // ページ初期化（モデレーター以上のみ）
 await initPage('db','Database',{
@@ -133,14 +134,14 @@ function displayProfiles(){
     tr.innerHTML=`
       <td><code>${profile.id}</code></td>
       <td><strong>${profile.user_id}</strong></td>
-      <td>${profile.display_name}</td>
-      <td>${profile.last_name||'-'}</td>
-      <td>${profile.first_name||'-'}</td>
+      <td>${esc(profile.display_name)}</td>
+      <td>${esc(profile.last_name||'-')}</td>
+      <td>${esc(profile.first_name||'-')}</td>
       <td>${profile.role}</td>
       <td>${profile.is_online?'<span style="color:#2da44e;">●</span>':'<span style="color:#8b949e;">○</span>'}</td>
       <td>${formatDate(profile.last_online)}</td>
-      <td>${profile.avatar_url?'<a href="'+profile.avatar_url+'" target="_blank">URL</a>':'-'}</td>
-      <td>${profile.avatar_color||'-'}</td>
+      <td>${profile.avatar_url?'<a href="'+profile.avatar_url+'" target="_blank" rel="noopener noreferrer">URL</a>':'-'}</td>
+      <td>${esc(profile.avatar_color||'-')}</td>
       <td>${formatDate(profile.created_at)}</td>
       <td>${formatDate(profile.updated_at)}</td>
       <td>${profile.id!==window.currentUserId?'<button onclick="deleteUser(\''+profile.id+'\',\''+profile.display_name+'\')" style="padding:4px 10px;background:#ef4444;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:12px;">削除</button>':''}</td>
@@ -193,3 +194,5 @@ async function deleteUser(userId,displayName){
     alert('削除に失敗しました: '+e.message);
   }
 }
+
+window.deleteUser=deleteUser;

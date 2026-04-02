@@ -218,26 +218,6 @@ function createBottomNav(pageId,role){
 }
 
 // ========================================
-// スケルトンスクリーン
-// ========================================
-function _showSkeleton(){
-  const main=document.querySelector('.main-content');
-  if(!main||main.querySelector('.skeleton-wrap'))return;
-  main.innerHTML=`
-    <div class="skeleton-wrap">
-      <div class="skeleton skeleton-title"></div>
-      <div class="skeleton skeleton-text"></div>
-      <div class="skeleton skeleton-text short"></div>
-      <div class="skeleton-card-row">
-        <div class="skeleton skeleton-card"></div>
-        <div class="skeleton skeleton-card"></div>
-        <div class="skeleton skeleton-card"></div>
-      </div>
-    </div>
-  `;
-}
-
-// ========================================
 // ページ初期化
 // ========================================
 

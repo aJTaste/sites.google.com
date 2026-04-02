@@ -54,8 +54,8 @@ function activateStealth() {
   document.title = 'まなびポケット';
 
   if (faviconLink) {
-    faviconLink.href = '/sites.google.com/assets/manabi.png';
-    faviconLink.type = 'image/png';
+    faviconLink.href = '/sites.google.com/assets/manabi.svg';
+    faviconLink.type = 'image/svg+xml';
   }
 }
 
